@@ -2774,6 +2774,8 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
   }
 
   function advanceToWordIndex(idx) {
+    // Late speech-recognition results must never move the script once the user has paused / left Voice mode
+    if (scrollMode !== 'voice') return;
     const words = document.querySelectorAll('.script-word');
     if (!words.length) return;
     spokenWordIndex = Math.min(words.length - 1, idx);
@@ -2843,9 +2845,14 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
     } else {
       stopVoiceSim();
       isVoiceSpeaking = false;
+      window.__externalVoiceActive = false;
+      voiceHoldUntil = 0;
+      clearTimeout(window.__nativeSpeechTimer);
+      clearTimeout(window.__studioMicTimer);
       if (micMeterWrap) micMeterWrap.style.display = 'none';
       if (recognition) {
-        try { recognition.stop(); } catch (e) {}
+        try { recognition.onresult = null; recognition.onend = null; recognition.abort(); } catch (e) {}
+        recognition = null;
       }
       hudModeStatus.textContent = 'Mode: Constant WPM · Click-Through ON';
       statusBox.innerHTML = '<strong>Deterministic WPM Mode:</strong> Scrolls smoothly at your target speaking pace and automatically pauses on <code>[PAUSE Ns]</code> cues.';
@@ -4146,8 +4153,14 @@ endstream endobj
     } else if (type === 'AUDIENCE_PREVIEW_CHANGE') {
       document.body.classList.toggle('audience-view-active', Boolean(payload.active));
     } else if (type === 'VOICE_SPEAKING_STATE') {
-      window.__externalVoiceActive = Boolean(payload.speaking);
-      isVoiceSpeaking = Boolean(payload.speaking);
+      // Ignore stale voice flags from the other window unless this window is also in Voice mode
+      const speaking = scrollMode === 'voice' && Boolean(payload.speaking);
+      window.__externalVoiceActive = speaking;
+      isVoiceSpeaking = speaking;
+      if (scrollMode !== 'voice') {
+        isReceivingSync = false;
+        return;
+      }
       hudModeStatus.textContent = isVoiceSpeaking
         ? '🟢 Voice Detected · Scrolling with Your Voice'
         : '🎙️ Voice Tracking ON · Speak into Mic to Scroll';
