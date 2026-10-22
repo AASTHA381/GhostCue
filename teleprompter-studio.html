@@ -4116,6 +4116,14 @@ endstream endobj
   let lastProcessedCmdId = null;
 
   function applySyncCommand(type, payload = {}, cmdId = null) {
+    try {
+      applySyncCommandInner(type, payload, cmdId);
+    } finally {
+      isReceivingSync = false;
+    }
+  }
+
+  function applySyncCommandInner(type, payload = {}, cmdId = null) {
     if (cmdId && cmdId === lastProcessedCmdId) return;
     if (cmdId) lastProcessedCmdId = cmdId;
     isReceivingSync = true;

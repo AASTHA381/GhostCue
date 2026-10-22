@@ -13,16 +13,27 @@ let overlayWindow = null;
 let clickThrough = true;
 let speechProcess = null;
 
+// Shows the Quick Drawer reliably, even after hide() or when presenting over a full-screen Space
+function showStudioWindow() {
+  if (!studioWindow || studioWindow.isDestroyed()) return;
+  if (studioWindow.isMinimized()) studioWindow.restore();
+  studioWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  studioWindow.setAlwaysOnTop(true, 'floating');
+  studioWindow.show();
+  studioWindow.moveTop();
+  studioWindow.focus();
+  studioWindow.webContents.executeJavaScript(
+    `(function(){ var d = document.getElementById('quickDrawerShell'); if (d) d.classList.remove('drawer-collapsed'); })();`
+  ).catch(() => {});
+}
+
 // Prevent multiple instances of GhostCue from ever opening duplicate speech notes
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   app.quit();
 } else {
   app.on('second-instance', () => {
-    if (studioWindow && !studioWindow.isDestroyed()) {
-      studioWindow.show();
-      studioWindow.focus();
-    }
+    showStudioWindow();
   });
 }
 
@@ -169,10 +180,7 @@ async function createWindows() {
 
   // Clicking the GhostCue icon in the macOS Dock opens the Studio window when you want to upload/edit scripts
   app.on('activate', () => {
-    if (studioWindow && !studioWindow.isDestroyed()) {
-      studioWindow.show();
-      studioWindow.focus();
-    }
+    showStudioWindow();
   });
 
   // 2. Floating Notch-Docked Stealth Teleprompter HUD
@@ -235,10 +243,6 @@ async function createWindows() {
   const handleRendererIpc = (event, level, message) => {
     if (!overlayWindow || overlayWindow.isDestroyed()) return;
     if (message === '__GHOSTCUE_IPC__:HEADER_ENTER') {
-      // Auto-hide Studio window if it was left open behind the overlay so clicking ◀/▶ never reveals the Studio app
-      if (studioWindow && !studioWindow.isDestroyed() && studioWindow.isVisible() && !studioWindow.isFocused()) {
-        studioWindow.hide();
-      }
       overlayWindow.setIgnoreMouseEvents(false);
     } else if (message === '__GHOSTCUE_IPC__:HEADER_LEAVE') {
       if (clickThrough && !dragTimer) {
@@ -255,11 +259,10 @@ async function createWindows() {
       overlayWindow.webContents.executeJavaScript(`if (typeof setOverlayVisible === 'function') setOverlayVisible(true);`).catch(() => {});
     } else if (message === '__GHOSTCUE_IPC__:TOGGLE_STUDIO') {
       if (studioWindow && !studioWindow.isDestroyed()) {
-        if (studioWindow.isVisible()) {
+        if (studioWindow.isVisible() && studioWindow.isFocused()) {
           studioWindow.hide();
         } else {
-          studioWindow.show();
-          studioWindow.focus();
+          showStudioWindow();
         }
       }
     } else if (message === '__GHOSTCUE_IPC__:HIDE_STUDIO') {
