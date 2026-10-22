@@ -3246,12 +3246,8 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
   if (hudSegWpmBtn) {
     hudSegWpmBtn.onclick = (e) => {
       e.stopPropagation();
-      if (scrollMode === 'voice') {
-        setScrollMode('wpm');
-        togglePlay(true);
-      } else {
-        togglePlay();
-      }
+      if (scrollMode === 'voice') setScrollMode('wpm');
+      togglePlay(true);
     };
   }
   const hudSegVoiceBtn = document.getElementById('hudSegVoiceBtn');
