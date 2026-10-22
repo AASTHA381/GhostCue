@@ -1,0 +1,45 @@
+{
+  "name": "ghostcue-stealth-teleprompter",
+  "version": "1.0.0",
+  "description": "Invisible webcam-docked teleprompter for macOS & Windows presentations, pitches, and video calls",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "compile:speech": "swiftc macos-speech-helper.swift -o macos-speech-helper",
+    "dist:mac": "electron-builder --mac dmg",
+    "dist:win": "electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "com.ghostcue.teleprompter",
+    "productName": "GhostCue",
+    "files": [
+      "teleprompter-studio.html",
+      "main.js",
+      "pdf.min.js",
+      "pdf.worker.min.js",
+      "macos-speech-helper"
+    ],
+    "asarUnpack": [
+      "macos-speech-helper"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "entitlements.mac.plist",
+      "entitlementsInherit": "entitlements.mac.plist",
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "GhostCue uses your microphone locally to scroll your presentation script in sync with your voice.",
+        "NSSpeechRecognitionUsageDescription": "GhostCue performs on-device speech recognition so your script advances only when you speak."
+      }
+    },
+    "win": {
+      "target": "nsis"
+    }
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8",
+    "pdfjs-dist": "^3.11.174"
+  }
+}

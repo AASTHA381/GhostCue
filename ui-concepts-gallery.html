@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GhostCue — 5 UI/UX Design Directions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+  body {
+    background: #07090e;
+    color: #f8fafc;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    padding: 0;
+  }
+  .concept-frame {
+    width: 100%;
+    max-width: 1000px;
+    height: 580px;
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.75);
+    margin: 12px auto;
+  }
+
+  /* ==========================================================================
+     CONCEPT 1: APPLE DYNAMIC ISLAND CONTINUITY + ZEN STUDIO (NOTION / CRAFT)
+     ========================================================================== */
+  #concept1 {
+    background: radial-gradient(120% 90% at 50% 0%, #1a2234 0%, #090b10 65%);
+    border: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    flex-direction: column;
+  }
+  .c1-menubar {
+    height: 28px;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(20px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 18px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.8);
+  }
+  /* Seamless Dynamic Island Morphing from Camera Notch */
+  .c1-dynamic-island {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 520px;
+    background: #000000;
+    border-bottom-left-radius: 28px;
+    border-bottom-right-radius: 28px;
+    border: 1px solid rgba(255,255,255,0.14);
+    border-top: none;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.95), 0 0 0 1px rgba(56,189,248,0.15);
+    padding: 10px 22px 18px;
+    z-index: 20;
+  }
+  .c1-island-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .c1-pill-stealth {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #34d399;
+    background: rgba(16,185,129,0.12);
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+  .c1-cam-notch {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #0b0d13;
+    padding: 4px 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.07);
+  }
+  .c1-lens { width: 9px; height: 9px; border-radius: 50%; background: radial-gradient(circle, #38bdf8, #0f172a); }
+  .c1-led { width: 5px; height: 5px; border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981; }
+  .c1-island-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .c1-icon-btn {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.09);
+    color: #f8fafc;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .c1-icon-btn.play { background: #10b981; color: #022c22; }
+  .c1-icon-btn.close { background: rgba(239,68,68,0.2); color: #fca5a5; }
+  .c1-eyeline {
+    font-size: 21px;
+    font-weight: 600;
+    color: #ffffff;
+    line-height: 1.4;
+    text-align: center;
+    padding: 8px 14px;
+    background: linear-gradient(90deg, transparent, rgba(56,189,248,0.12), transparent);
+    border-radius: 10px;
+  }
+  .c1-nextline {
+    font-size: 16px;
+    color: rgba(255,255,255,0.38);
+    text-align: center;
+    margin-top: 6px;
+  }
+  /* Clean 2-Pane Zen Studio Below */
+  .c1-studio-window {
+    width: 92%;
+    height: 365px;
+    margin: 155px auto 0;
+    background: rgba(15, 18, 26, 0.88);
+    backdrop-filter: blur(30px);
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.1);
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+  }
+  .c1-sidebar {
+    background: rgba(255,255,255,0.02);
+    border-right: 1px solid rgba(255,255,255,0.07);
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .c1-nav-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; font-weight: 600; }
+  .c1-doc-item {
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #cbd5e1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .c1-doc-item.active { background: rgba(56,189,248,0.14); color: #38bdf8; font-weight: 600; }
+  .c1-main-editor {
+    padding: 28px 48px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  .c1-doc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+  .c1-doc-h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+  .c1-primary-cta {
+    background: #10b981;
+    color: #022c22;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 9px 18px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 0 25px rgba(16,185,129,0.4);
+  }
+  .c1-slide-block {
+    display: grid;
+    grid-template-columns: 95px 1fr;
+    gap: 18px;
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .c1-slide-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: #38bdf8;
+    background: rgba(56,189,248,0.12);
+    padding: 5px 10px;
+    border-radius: 6px;
+    height: fit-content;
+    text-align: center;
+  }
+  .c1-slide-text { font-size: 15px; line-height: 1.6; color: #e2e8f0; }
+  .c1-floating-dock {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(20, 25, 36, 0.95);
+    border: 1px solid rgba(255,255,255,0.14);
+    padding: 8px 18px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    font-size: 12px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.6);
+  }
+
+  /* ==========================================================================
+     CONCEPT 2: RAYCAST / LINEAR COMMAND HUD (KEYBOARD-FIRST, ZERO TOOLBAR CLUTTER)
+     ========================================================================== */
+  #concept2 {
+    background: #050507;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 32px 32px;
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+  .c2-hud {
+    width: 500px;
+    margin: 22px auto 0;
+    background: rgba(12, 13, 18, 0.92);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-top: 2px solid #818cf8;
+    border-radius: 14px;
+    padding: 14px 20px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.9), 0 0 40px rgba(129,140,248,0.15);
+  }
+  .c2-hud-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #94a3b8;
+    margin-bottom: 12px;
+  }
+  .c2-kbd {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.16);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    color: #e2e8f0;
+  }
+  .c2-launcher {
+    width: 820px;
+    margin: 36px auto 0;
+    background: #0c0d12;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 30px 90px rgba(0,0,0,0.85);
+  }
+  .c2-searchbar {
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .c2-cmd-input {
+    font-size: 15px;
+    color: #f8fafc;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .c2-mode-pills {
+    display: flex;
+    gap: 8px;
+  }
+  .c2-pill {
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    background: rgba(255,255,255,0.05);
+    color: #94a3b8;
+  }
+  .c2-pill.active { background: #6366f1; color: #ffffff; }
+  .c2-body {
+    display: grid;
+    grid-template-columns: 1fr 270px;
+    height: 330px;
+  }
+  .c2-script-stream {
+    padding: 20px 24px;
+    border-right: 1px solid rgba(255,255,255,0.07);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .c2-inspector {
+    padding: 18px;
+    background: rgba(255,255,255,0.015);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .c2-stat-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #94a3b8;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .c2-footer {
+    padding: 10px 20px;
+    background: #08090d;
+    border-top: 1px solid rgba(255,255,255,0.07);
+    display: flex;
+    justify-content: space-between;
+    font-size: 11.5px;
+    color: #64748b;
+  }
+
+  /* ==========================================================================
+     CONCEPT 3: KEYNOTE STORYBOARD TIMELINE (SLIDE CARDS SYNCED WITH NOTES)
+     ========================================================================== */
+  #concept3 {
+    background: linear-gradient(180deg, #0b0f17 0%, #06080d 100%);
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 20px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .c3-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    padding: 10px 18px;
+    border-radius: 12px;
+  }
+  .c3-stepper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .c3-step {
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.05);
+    color: #94a3b8;
+  }
+  .c3-step.active { background: rgba(56,189,248,0.16); color: #38bdf8; border: 1px solid rgba(56,189,248,0.4); }
+  .c3-storyboard {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+  }
+  .c3-slide-row {
+    display: grid;
+    grid-template-columns: 230px 1fr 140px;
+    gap: 20px;
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 14px;
+    padding: 14px;
+    align-items: center;
+  }
+  .c3-slide-row.live {
+    background: rgba(16,185,129,0.06);
+    border-color: rgba(16,185,129,0.45);
+    box-shadow: 0 0 30px rgba(16,185,129,0.1);
+  }
+  .c3-thumb {
+    height: 118px;
+    border-radius: 9px;
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    border: 1px solid rgba(255,255,255,0.12);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .c3-notes-col {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .c3-notes-line {
+    font-size: 16.5px;
+    line-height: 1.5;
+    color: #f8fafc;
+    font-weight: 500;
+  }
+  .c3-telemetry-col {
+    text-align: right;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #94a3b8;
+  }
+
+  /* ==========================================================================
+     CONCEPT 4: ULTRA-MINIMAL CAM-RING + POPOVER PILL (ZERO SEPARATE STUDIO WINDOW!)
+     ========================================================================== */
+  #concept4 {
+    background: linear-gradient(135deg, #e0f2fe 0%, #f8fafc 50%, #f1f5f9 100%);
+    color: #0f172a;
+    position: relative;
+  }
+  /* Simulated real Google Slides / PDF presentation occupying 100% of screen */
+  .c4-slide-bg {
+    position: absolute;
+    inset: 0;
+    padding: 80px 90px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .c4-deck-title { font-size: 40px; font-weight: 800; color: #0f172a; letter-spacing: -0.03em; max-width: 680px; }
+  .c4-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .c4-card { background: #ffffff; border-radius: 16px; padding: 28px; box-shadow: 0 12px 32px rgba(15,23,42,0.06); border: 1px solid #e2e8f0; }
+  /* Compact Floating Notch Capsule + Expandable Drawer */
+  .c4-notch-widget {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 480px;
+    background: rgba(9, 12, 20, 0.90);
+    backdrop-filter: blur(28px);
+    color: #ffffff;
+    border-radius: 22px;
+    border: 1px solid rgba(255,255,255,0.18);
+    box-shadow: 0 28px 70px rgba(15,23,42,0.45);
+    overflow: hidden;
+    z-index: 30;
+  }
+  .c4-drawer-popover {
+    position: absolute;
+    top: 235px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 480px;
+    background: rgba(13, 17, 28, 0.96);
+    backdrop-filter: blur(28px);
+    color: #f8fafc;
+    border-radius: 18px;
+    border: 1px solid rgba(56,189,248,0.35);
+    padding: 18px;
+    box-shadow: 0 24px 60px rgba(15,23,42,0.5);
+    z-index: 30;
+  }
+
+  /* ==========================================================================
+     CONCEPT 5: EXECUTIVE TELEPROMPTER CONSOLE (BROADCAST / TED STAGE CONFIDENCE MONITOR)
+     ========================================================================== */
+  #concept5 {
+    background: #090807;
+    color: #fef3c7;
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    display: grid;
+    grid-template-rows: 64px 1fr 76px;
+  }
+  .c5-header {
+    padding: 0 28px;
+    border-bottom: 1px solid rgba(245, 158, 11, 0.16);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #0d0b09;
+  }
+  .c5-stage {
+    display: grid;
+    grid-template-columns: 280px 1fr 280px;
+    align-items: stretch;
+  }
+  .c5-left, .c5-right {
+    padding: 24px;
+    border-right: 1px solid rgba(245, 158, 11, 0.12);
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .c5-right { border-right: none; border-left: 1px solid rgba(245, 158, 11, 0.12); }
+  .c5-center-prompter {
+    padding: 36px 56px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 22px;
+    background: radial-gradient(circle at 50% 45%, rgba(245,158,11,0.08), transparent 70%);
+  }
+  .c5-serif-line {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 1.35;
+    color: #fde68a;
+  }
+  .c5-footer-transport {
+    border-top: 1px solid rgba(245, 158, 11, 0.16);
+    background: #0d0b09;
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+
+  <!-- ==================== CONCEPT 1 ==================== -->
+  <section class="concept-frame" id="concept1">
+    <div class="c1-menubar">
+      <span> &nbsp; <strong>GhostCue Studio</strong> &nbsp; File &nbsp; Edit &nbsp; View</span>
+      <span>🛡️ Screen-Share Stealth Active &nbsp; · &nbsp; Thu 9:41 AM</span>
+    </div>
+
+    <!-- Morphing Dynamic Island HUD -->
+    <div class="c1-dynamic-island">
+      <div class="c1-island-top">
+        <span class="c1-pill-stealth">● Invisible on Zoom/Meet</span>
+        <div class="c1-cam-notch">
+          <span class="c1-lens"></span>
+          <span class="c1-led"></span>
+          <span style="font-size:10px;color:#94a3b8;font-family:'JetBrains Mono',monospace;">SLIDE 1 / 3</span>
+        </div>
+        <div class="c1-island-actions">
+          <span class="c1-icon-btn play">▶</span>
+          <span class="c1-icon-btn">◀</span>
+          <span class="c1-icon-btn">▶</span>
+          <span class="c1-icon-btn">🔒</span>
+          <span class="c1-icon-btn close">✕</span>
+        </div>
+      </div>
+      <div class="c1-eyeline">
+        In Q3, we reached <span style="color:#38bdf8">128% net dollar retention</span> across enterprise.
+      </div>
+      <div class="c1-nextline">
+        while cutting customer onboarding time by 40% in 14 regions.
+      </div>
+    </div>
+
+    <!-- Clean 2-Pane Zen Studio (Eliminates 8-Button Top Bar & 3-Column Clutter) -->
+    <div class="c1-studio-window">
+      <aside class="c1-sidebar">
+        <div class="c1-nav-title">Presentation Scripts</div>
+        <div class="c1-doc-item active">
+          <span>Galderma Case Study</span>
+          <span style="font-size:11px;opacity:0.7;">3 Slides</span>
+        </div>
+        <div class="c1-doc-item">
+          <span>MyGate Case Analysis</span>
+          <span style="font-size:11px;opacity:0.5;">5 Slides</span>
+        </div>
+        <div class="c1-doc-item">
+          <span>Series A Investor Pitch</span>
+          <span style="font-size:11px;opacity:0.5;">4 Slides</span>
+        </div>
+        <div style="margin-top:auto;padding:14px;border:1px dashed rgba(255,255,255,0.18);border-radius:10px;text-align:center;font-size:12px;color:#94a3b8;">
+          + Drop <strong>.PDF, .DOCX, .PPTX</strong>
+        </div>
+      </aside>
+
+      <main class="c1-main-editor">
+        <div class="c1-doc-header">
+          <div>
+            <div class="c1-doc-h1">Galderma Rising Achievers Case Study</div>
+            <div style="font-size:12px;color:#94a3b8;margin-top:3px;">3 Slides · 1m 45s Target Duration · Auto-Synced to Notch</div>
+          </div>
+          <div class="c1-primary-cta">
+            🚀 Present Now (Hides Studio)
+          </div>
+        </div>
+
+        <div class="c1-slide-block">
+          <div class="c1-slide-tag">SLIDE 1</div>
+          <div class="c1-slide-text">
+            Good morning everyone. Our case study on the <strong>Galderma Sunscreen Challenge</strong> focuses on expanding clinical dermatology adoption across Tier-1 cities.
+          </div>
+        </div>
+        <div class="c1-slide-block">
+          <div class="c1-slide-tag">SLIDE 2</div>
+          <div class="c1-slide-text">
+            In Q3, we hit a major inflection point: <strong>128% net dollar retention</strong> across our enterprise cohort, while cutting onboarding time by <strong>40%</strong>.
+          </div>
+        </div>
+
+        <!-- Unified Bottom Floating Pill Dock replaces the entire Right Column! -->
+        <div class="c1-floating-dock">
+          <span style="color:#34d399;font-weight:600;">🎙️ Voice-Sync: ON</span>
+          <span style="color:rgba(255,255,255,0.2)">|</span>
+          <span>Pace: <strong>105 WPM</strong></span>
+          <span style="color:rgba(255,255,255,0.2)">|</span>
+          <span>Text: <strong>20px</strong></span>
+          <span style="color:rgba(255,255,255,0.2)">|</span>
+          <span>🔒 Click-Through</span>
+        </div>
+      </main>
+    </div>
+  </section>
+
+  <!-- ==================== CONCEPT 2 ==================== -->
+  <section class="concept-frame" id="concept2">
+    <div class="c2-hud">
+      <div class="c2-hud-top">
+        <span style="color:#34d399;">● STEALTH LOCKED</span>
+        <span>SLIDE 2 OF 3 &nbsp;·&nbsp; 105 WPM</span>
+        <span><span class="c2-kbd">⌥ Space</span> Play &nbsp; <span class="c2-kbd">✕</span></span>
+      </div>
+      <div style="font-size:20px;font-weight:600;color:#fff;line-height:1.4;">
+        ▸ &nbsp; We identified a <span style="color:#818cf8;background:rgba(129,140,248,0.16);padding:1px 6px;border-radius:4px;">$140M addressable gap</span> in clinical skincare. &nbsp; ◂
+      </div>
+      <div style="font-size:15px;color:#64748b;margin-top:6px;padding-left:22px;">
+        Our 3-pillar rollout delivers 42% repeat purchase rates by Q4.
+      </div>
+    </div>
+
+    <!-- Raycast / Linear Command Palette Studio -->
+    <div class="c2-launcher">
+      <div class="c2-searchbar">
+        <div class="c2-cmd-input">
+          <span style="color:#818cf8;font-weight:700;">⌘</span>
+          <span>MyGate_Case_Analysis.pdf</span>
+          <span style="font-size:11px;background:rgba(16,185,129,0.15);color:#34d399;padding:2px 8px;border-radius:4px;">3 Slides Extracted</span>
+        </div>
+        <div class="c2-mode-pills">
+          <span class="c2-pill active">🎙️ Voice Track</span>
+          <span class="c2-pill">Constant 105 WPM</span>
+          <span class="c2-pill" style="background:rgba(16,185,129,0.2);color:#6ee7b7;">▶ Start (⌥Space)</span>
+        </div>
+      </div>
+
+      <div class="c2-body">
+        <div class="c2-script-stream">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#818cf8;">[SLIDE 1 · EXECUTIVE SUMMARY]</div>
+          <div style="font-size:15px;line-height:1.6;color:#f1f5f9;">
+            25,000+ communities on the platform across 50+ Indian cities with <strong>USD 67.5M raised</strong> from institutional investors.
+          </div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#818cf8;margin-top:6px;">[SLIDE 2 · PLATFORM EVOLUTION]</div>
+          <div style="font-size:15px;line-height:1.6;color:#f1f5f9;">
+            Transitioning from gate visitor automation to full Society ERP, maintenance billing, and <strong>MyGate Exclusives</strong> commerce.
+          </div>
+        </div>
+
+        <div class="c2-inspector">
+          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:#64748b;">Live Telemetry</div>
+          <div class="c2-stat-row"><span>Mic Voice Input</span><span style="color:#34d399;">🟢 68% Active</span></div>
+          <div class="c2-stat-row"><span>Speaking Speed</span><span style="color:#f8fafc;">105 WPM</span></div>
+          <div class="c2-stat-row"><span>Screen-Share Shield</span><span style="color:#34d399;">Protected</span></div>
+          <div class="c2-stat-row"><span>Click-Through</span><span style="color:#818cf8;">Locked (⌥L)</span></div>
+          <div style="margin-top:auto;background:rgba(99,102,241,0.14);border:1px solid rgba(99,102,241,0.35);padding:10px;border-radius:8px;font-size:12px;text-align:center;color:#c7d2fe;">
+            📥 Import .PDF / .DOCX / .PPTX
+          </div>
+        </div>
+      </div>
+
+      <div class="c2-footer">
+        <span><strong>⌥ Space</strong> Play/Pause &nbsp;·&nbsp; <strong>⌥ ←/→</strong> Change Slide &nbsp;·&nbsp; <strong>⌥ ↑/↓</strong> Speed ±5 WPM</span>
+        <span><strong>⌥ H</strong> Hide/Show HUD</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== CONCEPT 3 ==================== -->
+  <section class="concept-frame" id="concept3">
+    <div class="c3-topbar">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#10b981,#38bdf8);display:flex;align-items:center;justify-content:center;font-weight:800;color:#022c22;">G</div>
+        <strong>GhostCue Storyboard</strong>
+      </div>
+      <div class="c3-stepper">
+        <span class="c3-step">1. Import Deck (.PDF / .PPTX / .DOCX)</span>
+        <span style="color:#475569;">→</span>
+        <span class="c3-step active">2. Edit Slide-by-Slide Notes</span>
+        <span style="color:#475569;">→</span>
+        <span class="c3-step" style="background:#10b981;color:#022c22;">3. 🚀 Launch Notch HUD</span>
+      </div>
+      <div style="font-size:12px;color:#34d399;font-weight:600;">🎙️ Mic Voice-Sync Ready</div>
+    </div>
+
+    <div class="c3-storyboard">
+      <div class="c3-slide-row live">
+        <div class="c3-thumb">
+          <span style="font-size:10px;color:#34d399;font-family:'JetBrains Mono',monospace;">● ON AIR · SLIDE 1 / 3</span>
+          <div style="font-size:15px;font-weight:700;">Galderma Sunscreen Challenge</div>
+          <span style="font-size:11px;color:#94a3b8;">GRAD 3.0 Portfolio</span>
+        </div>
+        <div class="c3-notes-col">
+          <div style="font-size:11px;color:#34d399;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;">Spoken Script for Slide 1 (Currently in Webcam HUD)</div>
+          <div class="c3-notes-line">
+            "Good morning panel. Today we present our strategic portfolio recommendation for the <span style="color:#38bdf8;">Galderma Sunscreen Challenge</span>, targeting 24% market share."
+          </div>
+        </div>
+        <div class="c3-telemetry-col">
+          <div style="color:#34d399;font-weight:700;font-size:14px;">0m 28s</div>
+          <div style="margin-top:4px;">48 words</div>
+          <div style="margin-top:8px;display:inline-block;background:rgba(16,185,129,0.2);color:#6ee7b7;padding:3px 8px;border-radius:4px;font-size:10px;">▶ Playing</div>
+        </div>
+      </div>
+
+      <div class="c3-slide-row">
+        <div class="c3-thumb">
+          <span style="font-size:10px;color:#94a3b8;font-family:'JetBrains Mono',monospace;">UP NEXT · SLIDE 2 / 3</span>
+          <div style="font-size:15px;font-weight:700;">MyGate At a Glance (2022)</div>
+          <span style="font-size:11px;color:#94a3b8;">25,000+ Communities</span>
+        </div>
+        <div class="c3-notes-col">
+          <div style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;">Spoken Script for Slide 2</div>
+          <div class="c3-notes-line" style="color:#cbd5e1;">
+            "Looking at our scale across 50+ Indian cities, we have onboarded <strong>25,000+ communities</strong> and raised <strong>USD 67.5M</strong> to expand from gate automation into full Society ERP."
+          </div>
+        </div>
+        <div class="c3-telemetry-col">
+          <div style="color:#f8fafc;font-weight:700;font-size:14px;">0m 34s</div>
+          <div style="margin-top:4px;">56 words</div>
+          <div style="margin-top:8px;font-size:10px;color:#64748b;">Jump (⌥ →)</div>
+        </div>
+      </div>
+
+      <div class="c3-slide-row">
+        <div class="c3-thumb">
+          <span style="font-size:10px;color:#94a3b8;font-family:'JetBrains Mono',monospace;">SLIDE 3 / 3</span>
+          <div style="font-size:15px;font-weight:700;">Financial Roadmap &amp; ROI</div>
+          <span style="font-size:11px;color:#94a3b8;">3.8x Marketing Return</span>
+        </div>
+        <div class="c3-notes-col">
+          <div style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;">Spoken Script for Slide 3</div>
+          <div class="c3-notes-line" style="color:#cbd5e1;">
+            "We break even in Month 7 with a projected <strong>3.8x return on marketing spend</strong>. I would love to open the floor for your questions."
+          </div>
+        </div>
+        <div class="c3-telemetry-col">
+          <div style="color:#f8fafc;font-weight:700;font-size:14px;">0m 22s</div>
+          <div style="margin-top:4px;">38 words</div>
+          <div style="margin-top:8px;font-size:10px;color:#64748b;">Jump (⌥ →)</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== CONCEPT 4 ==================== -->
+  <section class="concept-frame" id="concept4">
+    <!-- Underlying Real Presentation Deck (No Separate Studio Window At All!) -->
+    <div class="c4-slide-bg">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#0284c7;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;">LIVE PRESENTATION DECK · SLIDE 3 OF 3</div>
+        <div class="c4-deck-title">MyGate: Gate Automation to Community Platform</div>
+      </div>
+      <div class="c4-cards">
+        <div class="c4-card">
+          <div style="font-size:34px;font-weight:800;color:#0f172a;">25,000+</div>
+          <div style="font-size:14px;color:#64748b;margin-top:6px;">Communities on Platform</div>
+        </div>
+        <div class="c4-card">
+          <div style="font-size:34px;font-weight:800;color:#0284c7;">USD 67.5M</div>
+          <div style="font-size:14px;color:#64748b;margin-top:6px;">Raised from Investors</div>
+        </div>
+        <div class="c4-card">
+          <div style="font-size:34px;font-weight:800;color:#10b981;">1,500+</div>
+          <div style="font-size:14px;color:#64748b;margin-top:6px;">Employees Across 50+ Cities</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Single-Window Notch Widget with Built-in Popover Drawer -->
+    <div class="c4-notch-widget">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.1);font-size:11.5px;">
+        <span style="color:#34d399;font-weight:600;">🛡️ Invisible HUD</span>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="background:#10b981;color:#022c22;padding:2px 9px;border-radius:6px;font-weight:700;">🎙️ Voice ON</span>
+          <span style="background:rgba(255,255,255,0.1);padding:2px 8px;border-radius:6px;">◀ Slide 3/3 ▶</span>
+          <span style="background:rgba(56,189,248,0.2);color:#7dd3fc;padding:2px 8px;border-radius:6px;font-weight:600;">📂 Scripts ▾</span>
+          <span style="background:#ef4444;color:#fff;padding:2px 7px;border-radius:6px;font-weight:700;">✕</span>
+        </div>
+      </div>
+      <div style="padding:18px 22px;">
+        <div style="font-size:21px;font-weight:600;line-height:1.4;color:#fff;">
+          ▸ &nbsp; Across <span style="color:#38bdf8;">25,000+ communities</span> and 50+ cities, we raised <span style="color:#34d399;">$67.5M</span>.
+        </div>
+        <div style="font-size:15px;color:rgba(255,255,255,0.45);margin-top:8px;">
+          expanding from visitor entry automation into full Society ERP and Homes.
+        </div>
+      </div>
+    </div>
+
+    <!-- Drop-Down Popover Drawer Directly Attached to the Notch HUD (Replaces Big Studio Window!) -->
+    <div class="c4-drawer-popover">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <span style="font-size:12px;font-weight:700;color:#7dd3fc;text-transform:uppercase;letter-spacing:0.05em;">Quick Script &amp; Pace Popover (No Separate App Window!)</span>
+        <span style="font-size:11px;color:#94a3b8;">Auto-closes when you speak</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+        <div style="background:rgba(255,255,255,0.06);padding:10px 12px;border-radius:10px;border:1px solid rgba(56,189,248,0.4);font-size:12.5px;font-weight:600;">
+          📄 MyGate_Case_Analysis.pdf <span style="float:right;color:#fca5a5;">✕</span>
+        </div>
+        <div style="background:rgba(255,255,255,0.04);padding:10px 12px;border-radius:10px;border:1px dashed rgba(255,255,255,0.2);font-size:12.5px;color:#94a3b8;text-align:center;">
+          + Upload .PDF / .DOCX / .PPTX
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.04);padding:8px 12px;border-radius:10px;font-size:12px;">
+        <span>Speed: <strong>105 WPM</strong></span>
+        <span>Size: <strong>20px</strong></span>
+        <span style="color:#34d399;">🟢 Mic Level: 72%</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== CONCEPT 5 ==================== -->
+  <section class="concept-frame" id="concept5">
+    <header class="c5-header">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="background:#f59e0b;color:#090807;font-weight:800;padding:4px 10px;border-radius:6px;font-size:12px;">STAGE PRO</span>
+        <span style="font-size:15px;font-weight:700;color:#fef3c7;">GhostCue Executive Confidence Monitor</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;font-family:'JetBrains Mono',monospace;font-size:12px;">
+        <span style="color:#34d399;">● STEALTH AFFINITY LOCKED</span>
+        <span style="background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.4);padding:4px 12px;border-radius:999px;color:#fcd34d;">AMBER EYEGLASS ANTI-GLARE</span>
+      </div>
+    </header>
+
+    <div class="c5-stage">
+      <aside class="c5-left">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#d97706;font-weight:700;">Slide Cues</div>
+        <div style="padding:12px;border-radius:10px;background:rgba(245,158,11,0.14);border:1px solid rgba(245,158,11,0.4);font-size:13px;font-weight:600;">
+          01 · Executive Summary
+          <div style="font-size:11px;color:#fcd34d;margin-top:4px;font-family:'JetBrains Mono',monospace;">ACTIVE · 00:32</div>
+        </div>
+        <div style="padding:12px;border-radius:10px;background:rgba(255,255,255,0.03);font-size:13px;color:#a8a29e;">
+          02 · Market Fragmentation
+        </div>
+        <div style="padding:12px;border-radius:10px;background:rgba(255,255,255,0.03);font-size:13px;color:#a8a29e;">
+          03 · Edge Architecture
+        </div>
+        <div style="margin-top:auto;padding:12px;border-radius:10px;border:1px dashed rgba(245,158,11,0.3);text-align:center;font-size:12px;color:#fcd34d;">
+          📥 Load .PDF / .DOCX / .PPTX
+        </div>
+      </aside>
+
+      <main class="c5-center-prompter">
+        <div style="font-size:18px;color:rgba(254,243,199,0.28);font-weight:500;">
+          Good morning everyone. Thank you for joining our Series A briefing today.
+        </div>
+        <div class="c5-serif-line">
+          ▸ &nbsp; In Q3, we reached <span style="color:#ffffff;text-decoration:underline;text-decoration-color:#f59e0b;">128% net dollar retention</span> across enterprise, while cutting onboarding by 40%.
+        </div>
+        <div style="font-size:21px;color:rgba(254,243,199,0.45);font-weight:500;">
+          Today, distributed teams lose 6.4 hours every single week jumping between five tools.
+        </div>
+      </main>
+
+      <aside class="c5-right">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#d97706;font-weight:700;">Stage Clock &amp; Voice</div>
+        <div style="background:rgba(255,255,255,0.03);padding:16px;border-radius:12px;text-align:center;">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:32px;font-weight:700;color:#34d399;">01:14</div>
+          <div style="font-size:11px;color:#a8a29e;margin-top:4px;">REMAINING AT 105 WPM</div>
+        </div>
+        <div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);padding:14px;border-radius:12px;font-size:12px;color:#6ee7b7;">
+          🎙️ <strong>Voice-Sync Active</strong>
+          <div style="margin-top:6px;height:6px;background:rgba(0,0,0,0.4);border-radius:999px;overflow:hidden;">
+            <div style="width:74%;height:100%;background:#10b981;"></div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <footer class="c5-footer-transport">
+      <div style="display:flex;gap:12px;align-items:center;">
+        <span style="background:#f59e0b;color:#090807;font-weight:800;padding:8px 20px;border-radius:8px;font-size:13px;">⏸ PAUSE (⌥ SPACE)</span>
+        <span style="background:rgba(255,255,255,0.07);padding:8px 14px;border-radius:8px;font-size:13px;">⏮ PREV SLIDE</span>
+        <span style="background:rgba(255,255,255,0.07);padding:8px 14px;border-radius:8px;font-size:13px;">⏭ NEXT SLIDE</span>
+      </div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#a8a29e;">
+        PACE: <strong>105 WPM</strong> &nbsp;|&nbsp; FONT: <strong>30PX</strong> &nbsp;|&nbsp; CLICK-THROUGH: <strong>ON</strong>
+      </div>
+    </footer>
+  </section>
+
+  <script>
+    const c = new URLSearchParams(window.location.search).get('c');
+    if (c) {
+      document.querySelectorAll('.concept-frame').forEach(el => {
+        if (el.id !== 'concept' + c) el.style.display = 'none';
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.DS_Store
+.env
+.env.*
+*.pem
+*.p12
+*.key
+# Built from macos-speech-helper.swift via `npm run compile:speech`
+macos-speech-helper

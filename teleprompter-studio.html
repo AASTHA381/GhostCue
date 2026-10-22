@@ -1,0 +1,4190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GhostCue — Invisible Webcam Teleprompter & Pitch Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg-deep: #dff0ff;
+    --bg-panel: #f4f9ff;
+    --bg-card: #ffffff;
+    --bg-elevated: #e8f3ff;
+    --border: rgba(37, 99, 235, 0.14);
+    --border-strong: rgba(37, 99, 235, 0.24);
+    --text-main: #0f172a;
+    --text-muted: #334155;
+    --text-dim: #64748b;
+    --emerald: #059669;
+    --emerald-soft: rgba(16, 185, 129, 0.14);
+    --cyan: #0284c7;
+    --cyan-soft: rgba(2, 132, 199, 0.13);
+    --amber: #d97706;
+    --amber-soft: rgba(245, 158, 11, 0.16);
+    --rose: #e11d48;
+    --violet: #7c3aed;
+    --hud-width: 550px;
+    --hud-opacity: 0.84;
+    --hud-font-size: 20px;
+    --hud-text-color: #ffffff;
+    --hud-accent-color: #38bdf8;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', sans-serif;
+    background:
+      radial-gradient(ellipse 90% 60% at 50% -10%, rgba(56, 189, 248, 0.32), transparent 65%),
+      linear-gradient(180deg, #d8ecff 0%, #eaf4ff 50%, #f3f8ff 100%);
+    color: var(--text-main);
+    min-height: 100vh;
+    overflow-x: hidden;
+    user-select: none;
+  }
+
+  /* Pure Overlay Mode when launched inside Electron with ?mode=overlay */
+  body.overlay-only-mode {
+    background: transparent !important;
+    overflow: hidden;
+  }
+  body.overlay-only-mode .top-app-bar,
+  body.overlay-only-mode .studio-workspace,
+  body.overlay-only-mode .quick-drawer-shell,
+  body.overlay-only-mode .stage-container .slide-deck-sim,
+  body.overlay-only-mode .stage-container .zoom-bar-sim,
+  body.overlay-only-mode .stage-container .macbook-notch,
+  body.overlay-only-mode .stage-container .Stage-menubar {
+    display: none !important;
+  }
+  body.overlay-only-mode .stage-wrapper {
+    padding: 0 !important;
+    background: transparent !important;
+  }
+  body.overlay-only-mode .stage-container {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    height: 100vh !important;
+  }
+  body.overlay-only-mode .teleprompter-hud {
+    top: 28px; /* Clears MacBook physical camera notch & macOS 28px menu bar */
+    width: var(--hud-width);
+    max-width: calc(100vw - 12px);
+  }
+
+  /* Pure Studio Control Mode when launched inside Electron with ?mode=studio (Notch-First Quick Drawer Window) */
+  body.studio-only-mode {
+    background: transparent !important;
+    overflow: hidden !important;
+  }
+  body.studio-only-mode .stage-container,
+  body.studio-only-mode .top-app-bar {
+    position: fixed !important;
+    left: -9999px !important;
+    top: 0 !important;
+    width: 460px !important;
+    height: 250px !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+  body.studio-only-mode .stage-wrapper {
+    padding: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* ==========================================================================
+     DIRECTION 5: NOTCH-FIRST QUICK DRAWER UI (FLOATING COMPACT STUDIO CARD)
+     ========================================================================== */
+  body:not(.overlay-only-mode):not(.studio-only-mode) .top-app-bar,
+  body:not(.overlay-only-mode):not(.studio-only-mode) .slide-deck-sim,
+  body:not(.overlay-only-mode):not(.studio-only-mode) .Stage-menubar,
+  body:not(.overlay-only-mode):not(.studio-only-mode) .macbook-notch {
+    display: none !important;
+  }
+  body:not(.overlay-only-mode):not(.studio-only-mode) .stage-wrapper {
+    padding: 12px 20px 0 !important;
+    background: transparent !important;
+  }
+  body:not(.overlay-only-mode):not(.studio-only-mode) .stage-container {
+    height: 258px !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  body:not(.overlay-only-mode):not(.studio-only-mode) .teleprompter-hud {
+    top: 8px !important;
+  }
+
+  /* 3-State Segmented Mode Pill inside Floating Notch HUD Header */
+  .hud-mode-pill-group {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.13);
+    padding: 2px;
+    border-radius: 8px;
+    gap: 2px;
+  }
+  .hud-seg-mode-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', sans-serif;
+    font-size: 10.5px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.14s ease;
+    white-space: nowrap;
+  }
+  .hud-seg-mode-btn:hover {
+    color: #f8fafc;
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .hud-seg-mode-btn.active-pause {
+    background: rgba(255, 255, 255, 0.14);
+    color: #ffffff;
+  }
+  .hud-seg-mode-btn.active-wpm {
+    background: #38bdf8;
+    color: #03131d;
+    font-weight: 700;
+  }
+  .hud-seg-mode-btn.active-voice {
+    background: #10b981;
+    color: #03150e;
+    font-weight: 700;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.45);
+  }
+
+  /* Floating Quick Drawer Card directly beneath the Notch HUD (Executive Light-Blue Theme) */
+  .quick-drawer-shell {
+    width: 1120px;
+    max-width: calc(100vw - 24px);
+    margin: 4px auto 20px;
+    background: linear-gradient(180deg, rgba(240, 247, 255, 0.96) 0%, rgba(226, 240, 255, 0.96) 100%);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    border: 1.5px solid rgba(59, 130, 246, 0.26);
+    border-radius: 22px;
+    padding: 18px 22px;
+    box-shadow:
+      0 24px 60px rgba(15, 23, 42, 0.14),
+      0 4px 16px rgba(37, 99, 235, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  body.studio-only-mode .quick-drawer-shell {
+    margin: 6px auto;
+    height: calc(100vh - 12px);
+  }
+  .quick-drawer-shell.drawer-collapsed {
+    display: none !important;
+  }
+  .qd-header {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(37, 99, 235, 0.14);
+    -webkit-app-region: drag;
+  }
+  .qd-header-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .qd-header-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(59, 130, 246, 0.18);
+    border-radius: 12px;
+    padding: 6px 10px;
+  }
+  .qd-toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .qd-header button,
+  .qd-header label,
+  .qd-header input {
+    -webkit-app-region: no-drag;
+  }
+  .qd-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+  .qd-brand-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    background: linear-gradient(135deg, #0284c7, #2563eb);
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 14.5px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.28);
+  }
+  .qd-title {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.015em;
+    white-space: nowrap;
+  }
+  .qd-subtitle {
+    font-size: 11px;
+    color: #475569;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .qd-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 11px;
+    border-radius: 999px;
+    background: #ecfdf5;
+    border: 1px solid rgba(5, 150, 105, 0.3);
+    color: #047857;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .qd-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6.5px 11px;
+    border-radius: 8px;
+    background: #ffffff;
+    border: 1px solid rgba(37, 99, 235, 0.22);
+    color: #1e293b;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+  .qd-btn:hover {
+    border-color: #0284c7;
+    color: #0369a1;
+    background: #f0f9ff;
+    transform: translateY(-1px);
+  }
+  .qd-btn-primary {
+    background: linear-gradient(135deg, #0284c7, #2563eb);
+    border-color: #1d4ed8;
+    color: #ffffff;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+  }
+  .qd-btn-primary:hover {
+    background: linear-gradient(135deg, #0369a1, #1d4ed8);
+    border-color: #1e40af;
+    color: #ffffff;
+  }
+  .qd-btn-danger {
+    color: #be123c;
+    border-color: rgba(225, 29, 72, 0.28);
+    background: rgba(255, 241, 242, 0.9);
+  }
+  .qd-btn-danger:hover {
+    background: #e11d48;
+    border-color: #e11d48;
+    color: #ffffff;
+  }
+  .qd-grid {
+    display: grid;
+    grid-template-columns: 262px 1fr 288px;
+    gap: 16px;
+    flex: 1;
+    min-height: 410px;
+    overflow: hidden;
+  }
+  .qd-left-col {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 16px;
+    padding: 14px;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+    overflow: hidden;
+  }
+  .qd-col-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(59, 130, 246, 0.14);
+    gap: 6px;
+  }
+  .qd-col-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #0369a1;
+    white-space: nowrap;
+  }
+  .qd-script-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    overflow-y: auto;
+    max-height: 175px;
+    padding-right: 2px;
+  }
+  .qd-script-list .script-item {
+    padding: 9px 11px;
+    background: #f8fbff;
+    border: 1px solid rgba(59, 130, 246, 0.14);
+    border-radius: 10px;
+  }
+  .qd-script-list .script-item:hover {
+    background: #eef6ff;
+    border-color: rgba(2, 132, 199, 0.35);
+  }
+  .qd-script-list .script-item.active {
+    background: #e0f2fe;
+    border-color: #0284c7;
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.12);
+  }
+  .qd-right-col {
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    border: 1px solid rgba(59, 130, 246, 0.22);
+    border-radius: 16px;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+    overflow: hidden;
+  }
+  .qd-cal-col {
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 16px;
+    padding: 14px 16px;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+    overflow-y: auto;
+  }
+  .qd-editor-bar {
+    display: flex;
+    flex-direction: column;
+    padding: 10px 14px;
+    background: #f0f7ff;
+    border-bottom: 1px solid rgba(59, 130, 246, 0.16);
+    gap: 8px;
+  }
+  .qd-editor-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .qd-editor-cues-row {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: nowrap;
+  }
+  .script-title-input {
+    background: #ffffff;
+    border: 1px solid rgba(59, 130, 246, 0.28);
+    border-radius: 8px;
+    color: #0f172a;
+    font-weight: 600;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .script-title-input:focus {
+    border-color: #0284c7;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+  }
+
+  /* ==========================================================================
+     TOP SIMULATION STAGE (MOCK MACBOOK SCREEN + NOTCH + PITCH DECK + HUD)
+     ========================================================================== */
+  .stage-wrapper {
+    padding: 0 20px 14px;
+    background: radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.08), transparent 60%);
+  }
+
+  .top-app-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 4px;
+    max-width: 1440px;
+    margin: 0 auto;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .brand-logo {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #10b981, #0ea5e9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 15px;
+    color: #04130d;
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.35);
+  }
+
+  .brand-title {
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: -0.02em;
+  }
+
+  .brand-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: var(--emerald-soft);
+    color: var(--emerald);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+  }
+
+  .top-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 13px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border-strong);
+    background: var(--bg-card);
+    color: var(--text-main);
+    transition: all 0.15s ease;
+  }
+  .btn:hover {
+    background: var(--bg-elevated);
+    border-color: rgba(255, 255, 255, 0.28);
+  }
+  .btn-primary {
+    background: var(--emerald);
+    color: #03150e;
+    border-color: #10b981;
+    font-weight: 600;
+  }
+  .btn-primary:hover {
+    background: #34d399;
+    border-color: #34d399;
+  }
+  .btn-stealth-test.active {
+    background: var(--amber);
+    color: #1a1002;
+    border-color: var(--amber);
+    font-weight: 600;
+  }
+  .btn-voice.active {
+    background: var(--rose);
+    color: #fff;
+    border-color: var(--rose);
+    animation: pulse-ring 1.6s infinite;
+  }
+
+  @keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.55); }
+    70% { box-shadow: 0 0 0 8px rgba(244, 63, 94, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
+  }
+
+  /* Simulated Laptop Screen Viewport */
+  .stage-container {
+    position: relative;
+    max-width: 1440px;
+    height: 430px;
+    margin: 0 auto;
+    border-radius: 16px;
+    background:
+      radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.14), transparent 52%),
+      linear-gradient(180deg, #0d111a 0%, #07090f 100%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow:
+      0 30px 80px -20px rgba(0, 0, 0, 0.85),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    overflow: hidden;
+  }
+
+  /* macOS Top Menu Bar Strip */
+  .Stage-menubar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 28px;
+    background: rgba(8, 10, 15, 0.65);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.65);
+    z-index: 80;
+    pointer-events: none;
+  }
+
+  /* MacBook Physical Webcam Notch Simulation */
+  .macbook-notch {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 184px;
+    height: 28px;
+    background: #020305;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: none;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.8);
+  }
+
+  .camera-lens {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #38bdf8 0%, #1e3a8a 35%, #04070e 75%);
+    border: 1px solid #1e293b;
+    box-shadow: inset 0 0 3px rgba(56, 189, 248, 0.5);
+  }
+
+  .camera-led {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 8px #10b981, 0 0 14px #10b981;
+  }
+
+  .notch-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: #475569;
+    letter-spacing: 0.06em;
+  }
+
+  /* Simulated Background Presentation Slide Deck (What Zoom Viewers See) */
+  .slide-deck-sim {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 38px 48px 20px;
+    background:
+      radial-gradient(circle at 85% 20%, rgba(56, 189, 248, 0.09), transparent 40%),
+      radial-gradient(circle at 15% 80%, rgba(16, 185, 129, 0.07), transparent 45%);
+  }
+
+  .slide-header-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .audience-mode-banner {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: rgba(245, 158, 11, 0.16);
+    border: 1px solid var(--amber);
+    color: #fcd34d;
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+  body.audience-view-active .audience-mode-banner {
+    display: inline-flex;
+  }
+
+  .slide-body-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: center;
+    margin: auto 0;
+    padding-top: 24px;
+  }
+
+  .slide-kicker {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--cyan);
+    margin-bottom: 8px;
+  }
+
+  .slide-heading {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.2;
+    margin-bottom: 12px;
+    color: #f8fafc;
+  }
+
+  .slide-subtitle {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.55;
+  }
+
+  .slide-metrics-cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+
+  .metric-card {
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 16px;
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+  }
+  .metric-card:hover {
+    border-color: var(--cyan);
+    transform: translateY(-2px);
+  }
+  .metric-val {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--emerald);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .metric-lbl {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* Bottom Simulated Zoom Screen-Share Toolbar */
+  .zoom-bar-sim {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .zoom-share-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(16, 185, 129, 0.14);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    color: #6ee7b7;
+    padding: 4px 11px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 500;
+  }
+
+  .slide-nav-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ==========================================================================
+     THE INVISIBLE TELEPROMPTER HUD OVERLAY (LINEAR / RAYCAST GLASSMORPHISM)
+     ========================================================================== */
+  .teleprompter-hud {
+    position: absolute;
+    top: 28px; /* Docked flush directly under the 28px MacBook Notch */
+    left: 50%;
+    transform: translateX(-50%);
+    width: var(--hud-width);
+    height: 232px;
+    background:
+      radial-gradient(120% 90% at 50% 0%, rgba(56, 189, 248, 0.10) 0%, rgba(16, 185, 129, 0.03) 45%, transparent 100%),
+      rgba(11, 14, 22, var(--hud-opacity));
+    backdrop-filter: blur(28px) saturate(190%);
+    -webkit-backdrop-filter: blur(28px) saturate(190%);
+    border: 1px solid rgba(255, 255, 255, 0.13);
+    border-top: 1px solid rgba(255, 255, 255, 0.22);
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    box-shadow:
+      0 28px 70px -12px rgba(0, 0, 0, 0.88),
+      0 0 0 1px rgba(0, 0, 0, 0.6),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      0 0 40px -10px rgba(56, 189, 248, 0.18);
+    z-index: 90;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: opacity 0.22s ease, transform 0.22s ease, border-color 0.2s ease;
+  }
+
+  /* When testing what the Zoom/Meet audience sees, the HUD vanishes completely! */
+  body.audience-view-active .teleprompter-hud {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transform: translateX(-50%) scale(0.97);
+  }
+
+  /* Click-Through Mode lets mouse clicks pass right through to the slide deck behind it,
+     EXCEPT the top 30px micro header bar so you can always click Play/Pause, Slide ◀/▶, or ✕ Close! */
+  .teleprompter-hud.click-through-locked {
+    pointer-events: none;
+  }
+  .teleprompter-hud.click-through-locked .hud-header {
+    pointer-events: auto !important;
+  }
+  .teleprompter-hud.hud-closed {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transform: translateX(-50%) translateY(-16px) scale(0.96);
+  }
+
+  .hud-header-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    color: #f8fafc;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 5px;
+    cursor: pointer;
+    line-height: 1.2;
+    transition: all 0.14s ease;
+  }
+  .hud-header-btn:hover {
+    background: var(--cyan);
+    border-color: var(--cyan);
+    color: #03111a;
+  }
+  .hud-close-btn {
+    background: #ef4444;
+    border: 1px solid #f87171;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    line-height: 1.25;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.45);
+    transition: all 0.14s ease;
+    flex-shrink: 0;
+  }
+  .hud-close-btn:hover {
+    background: #dc2626;
+    transform: scale(1.06);
+  }
+
+  /* Interactive Mode (When Click-Through is OFF) */
+  .teleprompter-hud:not(.click-through-locked) {
+    pointer-events: auto;
+    height: 260px;
+    border: 1.5px solid rgba(56, 189, 248, 0.75);
+    box-shadow:
+      0 28px 70px rgba(0, 0, 0, 0.9),
+      0 0 0 3px rgba(56, 189, 248, 0.20),
+      0 0 35px rgba(56, 189, 248, 0.25);
+  }
+
+  .hud-interactive-bar {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 12px;
+    background: rgba(56, 189, 248, 0.13);
+    border-bottom: 1px solid rgba(56, 189, 248, 0.26);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: #bae6fd;
+    cursor: grab;
+  }
+  .teleprompter-hud:not(.click-through-locked) .hud-interactive-bar {
+    display: flex;
+  }
+
+  .hud-mini-btns {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .hud-mini-btn {
+    background: rgba(15, 19, 28, 0.85);
+    border: 1px solid rgba(56, 189, 248, 0.45);
+    color: #f8fafc;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  .hud-mini-btn:hover {
+    background: var(--cyan);
+    color: #04131d;
+  }
+
+  .teleprompter-hud:not(.click-through-locked) .script-line {
+    cursor: pointer;
+    border-radius: 6px;
+    padding: 2px 6px;
+    margin-left: -6px;
+  }
+  .teleprompter-hud:not(.click-through-locked) .script-line:hover {
+    background: rgba(56, 189, 248, 0.12);
+    opacity: 0.92;
+  }
+
+  .hud-resize-handle {
+    display: none;
+    position: absolute;
+    right: 4px;
+    bottom: 3px;
+    width: 16px;
+    height: 16px;
+    cursor: nwse-resize;
+    color: var(--cyan);
+    font-size: 11px;
+    line-height: 16px;
+    text-align: center;
+    z-index: 20;
+    user-select: none;
+  }
+  .teleprompter-hud:not(.click-through-locked) .hud-resize-handle {
+    display: block;
+  }
+
+  /* HUD Micro Status Header (Privacy Shield + Slide Pill + Controls + Close ✕) */
+  .hud-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 7px 14px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, rgba(0, 0, 0, 0.35) 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 11px;
+    color: var(--text-muted);
+    cursor: grab;
+    pointer-events: auto;
+    gap: 8px;
+    white-space: nowrap;
+  }
+
+  .hud-stealth-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: #34d399;
+    font-weight: 600;
+    font-size: 10.5px;
+    letter-spacing: -0.01em;
+    text-shadow: 0 0 12px rgba(16, 185, 129, 0.45);
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .privacy-shield-icon {
+    width: 12px;
+    height: 12px;
+    fill: #10b981;
+    filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.85));
+    flex-shrink: 0;
+  }
+
+  .hud-meta-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+    margin-right: 2px;
+  }
+
+  .hud-slide-pill {
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(56, 189, 248, 0.14);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    color: #7dd3fc;
+    font-weight: 600;
+    font-size: 10.5px;
+    letter-spacing: 0.01em;
+  }
+
+  /* Subtle Audio Waveform Indicator in Micro Status Bar */
+  .hud-waveform {
+    display: inline-flex;
+    align-items: center;
+    gap: 2.5px;
+    height: 14px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .wave-bar {
+    width: 2px;
+    background: linear-gradient(180deg, #38bdf8, #10b981);
+    border-radius: 999px;
+    height: 4px;
+    transition: height 0.15s ease;
+    box-shadow: 0 0 6px rgba(56, 189, 248, 0.5);
+  }
+  .wave-bar:nth-child(1) { height: 5px; }
+  .wave-bar:nth-child(2) { height: 10px; }
+  .wave-bar:nth-child(3) { height: 7px; }
+  .wave-bar:nth-child(4) { height: 11px; }
+  .wave-bar:nth-child(5) { height: 6px; }
+
+  .hud-waveform.active .wave-bar:nth-child(1) { animation: eq-bounce 0.7s infinite ease-in-out 0.0s; }
+  .hud-waveform.active .wave-bar:nth-child(2) { animation: eq-bounce 0.6s infinite ease-in-out 0.15s; }
+  .hud-waveform.active .wave-bar:nth-child(3) { animation: eq-bounce 0.8s infinite ease-in-out 0.3s; }
+  .hud-waveform.active .wave-bar:nth-child(4) { animation: eq-bounce 0.55s infinite ease-in-out 0.1s; }
+  .hud-waveform.active .wave-bar:nth-child(5) { animation: eq-bounce 0.75s infinite ease-in-out 0.25s; }
+
+  @keyframes eq-bounce {
+    0%, 100% { height: 3px; opacity: 0.65; }
+    50% { height: 12px; opacity: 1; }
+  }
+
+  /* Eye-Line Reading Viewport */
+  .hud-viewport {
+    position: relative;
+    flex: 1;
+    overflow: hidden;
+    padding: 0 26px;
+  }
+
+  /* Fixed Eye-Line Target Band with Glowing Cyan Chevrons */
+  .eyeline-focus-band {
+    position: absolute;
+    top: 40px;
+    left: 0;
+    right: 0;
+    height: 66px;
+    background:
+      radial-gradient(50% 100% at 50% 50%, rgba(56, 189, 248, 0.11) 0%, transparent 100%),
+      linear-gradient(90deg, rgba(56, 189, 248, 0.14) 0%, rgba(56, 189, 248, 0.02) 20%, rgba(56, 189, 248, 0.02) 80%, rgba(56, 189, 248, 0.14) 100%);
+    border-top: 1px solid rgba(56, 189, 248, 0.25);
+    border-bottom: 1px solid rgba(56, 189, 248, 0.25);
+    pointer-events: none;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 8px;
+  }
+
+  .eyeline-chevron {
+    color: #38bdf8;
+    font-size: 15px;
+    font-weight: 700;
+    text-shadow:
+      0 0 8px rgba(56, 189, 248, 0.95),
+      0 0 18px rgba(56, 189, 248, 0.7);
+    line-height: 1;
+  }
+
+  /* Top & Bottom Smooth Frosted Fade Masks */
+  .hud-fade-top,
+  .hud-fade-bottom {
+    position: absolute;
+    left: 0;
+    right: 0;
+    pointer-events: none;
+    z-index: 3;
+  }
+  .hud-fade-top {
+    top: 0;
+    height: 36px;
+    background: linear-gradient(180deg, rgba(11, 14, 22, 0.92) 0%, transparent 100%);
+  }
+  .hud-fade-bottom {
+    bottom: 0;
+    height: 58px;
+    background: linear-gradient(0deg, rgba(11, 14, 22, 0.96) 0%, transparent 100%);
+  }
+
+  /* Scrolling Script Container */
+  .hud-scroll-track {
+    position: relative;
+    padding-top: 8px;
+    padding-bottom: 145px;
+    will-change: transform;
+  }
+
+  .script-line {
+    font-size: var(--hud-font-size);
+    line-height: 1.44;
+    font-weight: 500;
+    color: var(--hud-text-color);
+    letter-spacing: -0.015em;
+    margin-bottom: 10px;
+    transition: opacity 0.22s ease, transform 0.22s ease, filter 0.22s ease;
+    opacity: 0.34;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .script-line.near-eyeline {
+    opacity: 0.56;
+  }
+
+  .script-line.slide-marker-line {
+    opacity: 0.85;
+    margin-bottom: 5px;
+  }
+
+  .script-line.active-eyeline {
+    opacity: 1 !important;
+    font-weight: 600;
+    color: var(--hud-text-color);
+    text-shadow:
+      0 0 22px rgba(255, 255, 255, 0.28),
+      0 2px 10px rgba(0, 0, 0, 0.9);
+  }
+
+  .script-line.past-line {
+    opacity: 0.20;
+  }
+
+  /* Spoken Word Tracking in Voice Mode */
+  .script-word {
+    transition: color 0.12s ease, background 0.12s ease;
+    border-radius: 3px;
+    padding: 0 1px;
+  }
+  .script-word.spoken {
+    color: #94a3b8;
+  }
+  .script-word.current-word {
+    color: #03150e;
+    background: var(--emerald);
+    font-weight: 700;
+  }
+
+  /* Inline Semantic Cues inside HUD */
+  .cue-highlight {
+    color: var(--hud-accent-color);
+    background: rgba(56, 189, 248, 0.14);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-weight: 700;
+  }
+
+  .cue-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 6px;
+    margin: 4px 4px 4px 0;
+    vertical-align: middle;
+  }
+
+  .cue-slide {
+    background: rgba(56, 189, 248, 0.18);
+    border: 1px solid rgba(56, 189, 248, 0.45);
+    color: #7dd3fc;
+    display: flex;
+    width: fit-content;
+    margin: 8px 0;
+  }
+
+  .cue-pause {
+    background: rgba(245, 158, 11, 0.2);
+    border: 1px solid rgba(245, 158, 11, 0.45);
+    color: #fcd34d;
+  }
+
+  .cue-delivery {
+    background: rgba(168, 85, 247, 0.2);
+    border: 1px solid rgba(168, 85, 247, 0.45);
+    color: #d8b4fe;
+  }
+
+  /* Pause Countdown Toast inside HUD */
+  .pause-countdown-banner {
+    position: absolute;
+    bottom: 26px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(245, 158, 11, 0.95);
+    color: #1c1102;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 999px;
+    z-index: 10;
+    display: none;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  }
+  .pause-countdown-banner.visible {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* HUD Micro Footer */
+  .hud-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 12px;
+    background: rgba(0, 0, 0, 0.45);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+
+  .progress-bar-track {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.08);
+  }
+  .progress-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--emerald), var(--cyan));
+    transition: width 0.1s linear;
+  }
+
+  /* ==========================================================================
+     3-COLUMN SCRIPT STUDIO & CALIBRATION WORKSPACE
+     ========================================================================== */
+  .studio-workspace {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0 20px 32px;
+    display: grid;
+    grid-template-columns: 270px 1fr 330px;
+    gap: 16px;
+  }
+
+  .panel {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+  }
+
+  /* Left Column: Script Templates & Upload */
+  .script-list {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .script-item {
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .script-item:hover {
+    background: var(--bg-card);
+  }
+  .script-item.active {
+    background: var(--bg-card);
+    border-color: rgba(56, 189, 248, 0.4);
+  }
+  .script-item-info {
+    min-width: 0;
+    flex: 1;
+  }
+  .script-item-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .script-item-meta {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .script-item-del-btn {
+    background: rgba(225, 29, 72, 0.1);
+    border: 1px solid rgba(225, 29, 72, 0.25);
+    color: #e11d48;
+    font-size: 11px;
+    font-weight: 700;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.14s ease;
+  }
+  .script-item-del-btn:hover {
+    background: #e11d48;
+    border-color: #e11d48;
+    color: #ffffff;
+  }
+
+  .upload-box {
+    margin: 4px 0;
+    padding: 11px 12px;
+    border-radius: 10px;
+    background: #f0f7ff;
+    border: 1.5px dashed rgba(2, 132, 199, 0.38);
+    text-align: center;
+    cursor: pointer;
+    font-size: 12px;
+    color: #0369a1;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .upload-box:hover {
+    border-color: #0284c7;
+    background: #e0f2fe;
+  }
+
+  .hotkey-card {
+    margin: auto 0 0;
+    padding: 10px 12px;
+    background: #f0f7ff;
+    border-radius: 10px;
+    border: 1px solid rgba(59, 130, 246, 0.18);
+  }
+  .hotkey-title {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #0369a1;
+    margin-bottom: 6px;
+  }
+  .hotkey-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    padding: 3px 0;
+    color: #334155;
+  }
+  kbd {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 5px;
+    background: #ffffff;
+    border: 1px solid rgba(37, 99, 235, 0.24);
+    color: #0f172a;
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  }
+
+  /* Center Column: Script Editor & Cue Insertion */
+  .editor-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .cue-buttons {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .chip-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 7px;
+    border: 1px solid rgba(37, 99, 235, 0.22);
+    background: #ffffff;
+    color: #1e293b;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    transition: all 0.12s ease;
+  }
+  .chip-btn:hover {
+    border-color: #0284c7;
+    background: #e0f2fe;
+    color: #0369a1;
+  }
+  .chip-btn.active {
+    border-color: #0284c7;
+    background: #0284c7;
+    color: #ffffff;
+    font-weight: 700;
+  }
+
+  .script-textarea {
+    width: 100%;
+    flex: 1;
+    min-height: 250px;
+    background: #ffffff;
+    border: none;
+    color: #0f172a;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 14px;
+    line-height: 1.68;
+    padding: 16px 18px;
+    resize: vertical;
+    outline: none;
+    user-select: text;
+  }
+
+  .editor-footer {
+    padding: 9px 16px;
+    border-top: 1px solid rgba(59, 130, 246, 0.16);
+    display: flex;
+    justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #475569;
+    background: #f0f7ff;
+  }
+
+  /* Right Column: Live Calibration & Scrolling Engine Controls */
+  .controls-body {
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .control-label-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #334155;
+  }
+
+  .control-val {
+    font-family: 'JetBrains Mono', monospace;
+    color: #0284c7;
+    font-weight: 700;
+  }
+
+  input[type="range"] {
+    width: 100%;
+    accent-color: #0284c7;
+    cursor: pointer;
+  }
+
+  .segmented-control {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+    background: #e6f1fe;
+    padding: 4px;
+    border-radius: 9px;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+  }
+
+  .seg-btn {
+    padding: 6px 10px;
+    border-radius: 7px;
+    border: none;
+    background: transparent;
+    color: #475569;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .seg-btn.active {
+    background: #ffffff;
+    color: #0284c7;
+    font-weight: 700;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+  }
+
+  .theme-swatches {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .swatch-btn {
+    padding: 6px 8px;
+    border-radius: 7px;
+    border: 1px solid rgba(37, 99, 235, 0.22);
+    background: #ffffff;
+    color: #1e293b;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+  }
+  .swatch-btn.active {
+    border-color: #0284c7;
+    background: #e0f2fe;
+    color: #0369a1;
+    font-weight: 700;
+  }
+
+  .voice-status-box {
+    padding: 8px 11px;
+    border-radius: 9px;
+    background: #f0f7ff;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    font-size: 11px;
+    color: #334155;
+    line-height: 1.45;
+  }
+
+  /* Pre-Flight Stealth & HDMI Safety Modal */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(10px);
+    z-index: 999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-backdrop.open {
+    display: flex;
+  }
+  .modal-card {
+    width: 100%;
+    max-width: 560px;
+    background: #f4f9ff;
+    border: 1.5px solid rgba(59, 130, 246, 0.28);
+    border-radius: 18px;
+    box-shadow: 0 25px 70px rgba(15, 23, 42, 0.22);
+    overflow: hidden;
+  }
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    background: #e6f2ff;
+    border-bottom: 1px solid rgba(59, 130, 246, 0.18);
+    font-weight: 700;
+    color: #0f172a;
+    font-size: 14px;
+  }
+  .modal-body {
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .diag-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 11px 14px;
+    border-radius: 10px;
+    background: #ffffff;
+    border: 1px solid rgba(59, 130, 246, 0.18);
+  }
+  .diag-title {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 3px;
+  }
+  .diag-desc {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+  .diag-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .diag-pass {
+    background: var(--emerald-soft);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.35);
+  }
+  .diag-warn {
+    background: var(--amber-soft);
+    color: #fcd34d;
+    border: 1px solid rgba(245, 158, 11, 0.4);
+  }
+  .script-title-input {
+    background: var(--bg-deep);
+    border: 1px solid var(--border-strong);
+    color: var(--text-main);
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 4px 9px;
+    border-radius: 6px;
+    width: 220px;
+    outline: none;
+  }
+  .script-title-input:focus {
+    border-color: var(--cyan);
+  }
+</style>
+</head>
+<body>
+
+  <!-- TOP SIMULATION STAGE: MACBOOK NOTCH + ZOOM SCREEN SHARE + FLOATING STEALTH HUD -->
+  <div class="stage-wrapper">
+    <header class="top-app-bar">
+      <div class="brand">
+        <div class="brand-logo">G</div>
+        <span class="brand-title">GhostCue</span>
+        <span class="brand-badge">macOS Notch Stealth Prototype · v1.0</span>
+      </div>
+    </header>
+
+    <div class="stage-container" id="stageContainer">
+      <!-- Simulated macOS Menu Bar -->
+      <div class="Stage-menubar">
+        <span> &nbsp; <strong>Keynote</strong> &nbsp; File &nbsp; Edit &nbsp; Play &nbsp; Window</span>
+        <span>🟢 Zoom Screen Share &nbsp; · &nbsp; Wi-Fi &nbsp; 100% &nbsp; Thu 9:41 AM</span>
+      </div>
+
+      <!-- Physical MacBook Pro Notch -->
+      <div class="macbook-notch">
+        <div class="camera-lens"></div>
+        <div class="camera-led"></div>
+        <span class="notch-label">FACETIME HD</span>
+      </div>
+
+      <!-- THE INVISIBLE TELEPROMPTER HUD OVERLAY (DOCKED UNDER WEBCAM) -->
+      <div class="teleprompter-hud click-through-locked" id="teleprompterHud">
+        <div class="hud-header" id="hudDragHandle" title="Always-clickable top bar: 1-Click Mode Switcher, Prev/Next Slide, Quick Drawer, or ✕ Close">
+          <div class="hud-stealth-indicator">
+            <svg class="privacy-shield-icon" viewBox="0 0 24 24">
+              <path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm-1.06 13.54L7.4 12l1.41-1.41 2.12 2.12 4.24-4.24 1.41 1.41-5.64 5.66z"/>
+            </svg>
+            <span id="hudHeaderTitle">Stealth</span>
+          </div>
+
+          <!-- Direction 5: Built-in 3-State Segmented Mode Pill right inside the Notch HUD -->
+          <div class="hud-mode-pill-group" id="hudModePillGroup">
+            <button class="hud-seg-mode-btn active-pause" id="hudSegPauseBtn" title="Pause Teleprompter (Shortcut: Option+Space)">⏸ Pause</button>
+            <button class="hud-seg-mode-btn" id="hudSegWpmBtn" title="Auto-Scroll at Constant WPM Speed">▶ <span id="hudPacingBadge">105 WPM</span></button>
+            <button class="hud-seg-mode-btn" id="hudSegVoiceBtn" title="1-Click Voice-Activated Scrolling (Scrolls automatically when you speak)">🎙️ Voice Flow</button>
+          </div>
+
+          <div class="hud-meta-group">
+            <button class="hud-header-btn" id="hudHeaderPlayBtn" style="display:none" title="Play / Pause Speech Notes">▶ Play</button>
+            <button class="hud-header-btn" id="hudHeaderPrevSlideBtn" title="Previous Slide Notes (Option+Left)">◀</button>
+            <span class="hud-slide-pill" id="hudSlideBadge">Slide 1/3</span>
+            <button class="hud-header-btn" id="hudHeaderNextSlideBtn" title="Next Slide Notes (Option+Right)">▶</button>
+            <button class="hud-header-btn" id="hudHeaderLockBtn" title="Toggle Click-Through ON vs Interactive Mode OFF (Shortcut: Option+L)">🔒</button>
+            <button class="hud-header-btn" id="hudHeaderStudioBtn" title="Toggle Quick Drawer to Upload or Edit Scripts">📂</button>
+            <button class="hud-close-btn" id="hudHeaderCloseBtn" title="Close Speech Note Overlay (Option+H to reopen)">✕</button>
+          </div>
+        </div>
+
+        <div class="hud-interactive-bar">
+          <span>✋ Drag Header · Scroll Trackpad · Click Line</span>
+          <div class="hud-mini-btns">
+            <button class="hud-mini-btn" id="hudMiniPlayBtn" title="Play/Pause">▶/⏸</button>
+            <button class="hud-mini-btn" id="hudSnapNotchBtn" title="Snap back under Webcam Notch">🧲 Dock to Notch</button>
+          </div>
+        </div>
+
+        <div class="hud-viewport">
+          <div class="hud-fade-top"></div>
+          <!-- Eye-Line Target Band in top 35% of window -->
+          <div class="eyeline-focus-band">
+            <span class="eyeline-chevron">▸</span>
+            <span class="eyeline-chevron">◂</span>
+          </div>
+          <div class="hud-scroll-track" id="hudScrollTrack"></div>
+          <div class="pause-countdown-banner" id="pauseBanner">⏸ PAUSING: <span id="pauseTimerText">2.0s</span></div>
+          <div class="hud-fade-bottom"></div>
+        </div>
+
+        <div class="hud-footer">
+          <span id="hudModeStatus">Mode: Constant WPM · Click-Through Active</span>
+          <span id="hudTimeStatus">Est. 1m 15s left</span>
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" id="hudProgressBar"></div>
+          </div>
+        </div>
+        <div class="hud-resize-handle" id="hudResizeHandle" title="Drag to resize teleprompter">◢</div>
+      </div>
+
+      <!-- Underlying Presentation Slide Deck (What Zoom/Meet Viewers Actually See) -->
+      <div class="slide-deck-sim">
+        <div class="slide-header-meta">
+          <span id="deckNameMeta">KEYNOTE LIVE DECK · SERIES A BOARD PITCH.KEY</span>
+          <div class="audience-mode-banner">
+            ✨ AUDIENCE SCREEN-SHARE VIEW — Teleprompter is 100% invisible to Zoom/Meet viewers!
+          </div>
+          <span id="deckSlideCounter">SLIDE 1 OF 4</span>
+        </div>
+
+        <div class="slide-body-grid">
+          <div>
+            <div class="slide-kicker" id="slideKicker">01 · EXECUTIVE SUMMARY</div>
+            <h1 class="slide-heading" id="slideHeading">Enterprise Net Retention Reached 128% in Q3</h1>
+            <p class="slide-subtitle" id="slideSubtitle">
+              Click any metric card on the right—even if it sits directly behind the teleprompter—to verify that Click-Through Mode passes mouse events seamlessly to your presentation.
+            </p>
+          </div>
+
+          <div class="slide-metrics-cards" id="slideCardsContainer">
+            <div class="metric-card" onclick="flashCard(this)">
+              <div class="metric-val" id="metric1Val">128%</div>
+              <div class="metric-lbl" id="metric1Lbl">Net Dollar Retention (+14% YoY)</div>
+            </div>
+            <div class="metric-card" onclick="flashCard(this)">
+              <div class="metric-val" id="metric2Val">40%</div>
+              <div class="metric-lbl" id="metric2Lbl">Faster Enterprise Onboarding</div>
+            </div>
+            <div class="metric-card" onclick="flashCard(this)">
+              <div class="metric-val" id="metric3Val">$4.2M</div>
+              <div class="metric-lbl" id="metric3Lbl">New Expansion ARR Added</div>
+            </div>
+            <div class="metric-card" onclick="flashCard(this)">
+              <div class="metric-val" id="metric4Val">99.98%</div>
+              <div class="metric-lbl" id="metric4Lbl">Edge Uptime Across 14 Regions</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="zoom-bar-sim">
+          <div class="zoom-share-pill">
+            <span>🟢</span> You are sharing your screen on Zoom (Window Display Affinity: WDA_EXCLUDEFROMCAPTURE)
+          </div>
+          <div class="slide-nav-controls">
+            <button class="btn" id="prevSlideBtn">← Prev Slide (Syncs Script)</button>
+            <button class="btn" id="nextSlideBtn">Next Slide (Syncs Script) →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DIRECTION 5: FLOATING NOTCH-FIRST QUICK DRAWER (EXECUTIVE LIGHT-BLUE WORKSPACE) -->
+  <main class="quick-drawer-shell" id="quickDrawerShell">
+    <header class="qd-header">
+      <div class="qd-header-top-row">
+        <div class="qd-brand">
+          <div class="qd-brand-logo">G</div>
+          <div>
+            <div class="qd-title">GhostCue Studio Drawer</div>
+            <div class="qd-subtitle">Invisible Webcam Teleprompter · Script &amp; Calibration Suite</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="qd-status-pill">🛡️ Screen-Share Invisible (Stealth Active)</span>
+          <button class="qd-btn" id="presentNowBtn" style="background:#e0f2fe;border-color:#0284c7;color:#0369a1;font-weight:700;" title="Hide Quick Drawer & Present with Only the Floating Notch HUD">
+            🚀 Hide Drawer
+          </button>
+        </div>
+      </div>
+
+      <div class="qd-header-toolbar">
+        <div class="qd-toolbar-group">
+          <button class="qd-btn qd-btn-primary" id="playPauseBtn" title="Shortcut: Option+Space">
+            <span id="playIcon">▶</span> <span id="playText">Start</span>
+          </button>
+          <button class="qd-btn" id="voiceSimBtn" title="Toggle Live Microphone Voice-Activated Scrolling">
+            🎙️ Voice Track
+          </button>
+          <button class="qd-btn" id="resetBtn" title="Reset to Top">↺ Reset</button>
+        </div>
+
+        <div class="qd-toolbar-group">
+          <button class="qd-btn" id="lockHudBtn" title="Shortcut: Option+L — Toggle Click-Through vs Interactive Mode">
+            🔒 Click-Through: ON
+          </button>
+          <button class="qd-btn" id="preflightBtn" title="Run Pre-Flight Check for Capture Affinity, HDMI Mirroring & Mic">
+            🛡️ Stealth Check
+          </button>
+          <button class="qd-btn" id="stealthTestBtn" title="Shortcut: S — Toggle Audience Screen-Share Preview">
+            👁️ Audience Test
+          </button>
+          <button class="qd-btn" id="showOverlayBtn" title="Shortcut: Option+H — Show Floating Speech Note">
+            👁️ HUD: Visible
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="qd-grid">
+      <!-- Column 1: Script Library, Upload, Sample Extractors & Global Hotkeys -->
+      <div class="qd-left-col">
+        <div class="qd-col-header">
+          <span class="qd-col-title">1. Scripts</span>
+          <div style="display:flex;gap:4px;flex-shrink:0;">
+            <button class="chip-btn" style="padding:3px 7px;font-size:10px;white-space:nowrap;" id="newScriptBtn" title="Create a new blank script">+ New</button>
+            <button class="chip-btn" style="padding:3px 7px;font-size:10px;white-space:nowrap;" id="deleteScriptBtn" title="Delete selected script">🗑️</button>
+            <button class="chip-btn" style="padding:3px 7px;font-size:10px;white-space:nowrap;color:#e11d48;border-color:rgba(225,29,72,0.28);background:#fff1f2;" id="clearAllScriptsBtn" title="Delete all scripts and clear library">Clear All</button>
+          </div>
+        </div>
+
+        <div class="qd-script-list" id="scriptList"></div>
+
+        <label class="upload-box" for="fileUploadInput">
+          📥 Import <strong>.PDF, .DOCX, .DOC, .PPTX</strong>
+          <div style="font-size:10.5px;color:#475569;margin-top:3px;">Auto-extracts pages &amp; speaker notes</div>
+          <input type="file" id="fileUploadInput" accept=".pdf,.doc,.docx,.pptx,.txt,.md,.rtf" style="display:none" />
+        </label>
+
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;">
+          <button class="chip-btn" style="padding:5px 2px;font-size:9.5px;text-align:center;white-space:nowrap;" id="demoPdfBtn" title="Test built-in PDF multi-page script extractor">📄 .PDF</button>
+          <button class="chip-btn" style="padding:5px 2px;font-size:9.5px;text-align:center;white-space:nowrap;" id="demoDocxBtn" title="Test built-in Word (.docx) script extractor">📝 .DOCX</button>
+          <button class="chip-btn" style="padding:5px 2px;font-size:9.5px;text-align:center;white-space:nowrap;" id="demoPptxBtn" title="Test built-in PowerPoint (.pptx) speaker notes extractor">📊 .PPTX</button>
+          <button class="chip-btn" style="padding:5px 2px;font-size:9.5px;text-align:center;white-space:nowrap;" id="exportScriptBtn" title="Download current script as .md">📤 .MD</button>
+        </div>
+
+        <div class="hotkey-card">
+          <div class="hotkey-title">Global Hotkeys</div>
+          <div class="hotkey-row"><span>Play / Pause</span> <kbd>⌥ Space</kbd></div>
+          <div class="hotkey-row"><span>Prev / Next Slide</span> <kbd>⌥ ← / →</kbd></div>
+          <div class="hotkey-row"><span>Speed ±5 WPM</span> <kbd>⌥ ↑ / ↓</kbd></div>
+          <div class="hotkey-row"><span>Hide / Show HUD</span> <kbd>⌥ H</kbd></div>
+          <div class="hotkey-row"><span>Click-Through</span> <kbd>⌥ L</kbd></div>
+        </div>
+      </div>
+
+      <!-- Column 2: Full Script Editor + All Cue Insertion Buttons -->
+      <div class="qd-right-col">
+        <div class="qd-editor-bar">
+          <div class="qd-editor-title-row">
+            <span class="qd-col-title">2. Script Editor</span>
+            <input type="text" class="script-title-input" id="scriptTitleInput" value="Series A Board & Investor Pitch" style="flex:1;font-size:12.5px;padding:5px 10px;" title="Rename Script Title" />
+          </div>
+          <div class="qd-editor-cues-row">
+            <span style="font-size:10px;font-weight:700;color:#475569;">Cues:</span>
+            <button class="chip-btn" style="padding:3px 6px;font-size:9px;white-space:nowrap;" onclick="insertNextSlideCue()">+ [SLIDE N]</button>
+            <button class="chip-btn" style="padding:3px 6px;font-size:9px;white-space:nowrap;" onclick="insertCue(' [PAUSE 2s] ')">+ [PAUSE 2s]</button>
+            <button class="chip-btn" style="padding:3px 6px;font-size:9px;white-space:nowrap;" onclick="insertCue(' [SLOW DOWN] ')">+ [SLOW DOWN]</button>
+            <button class="chip-btn" style="padding:3px 6px;font-size:9px;white-space:nowrap;" onclick="insertHighlightCue()">+ **Highlight**</button>
+          </div>
+        </div>
+
+        <textarea class="script-textarea" id="scriptEditor" spellcheck="false" style="min-height:190px;padding:12px 16px;font-size:13.5px;"></textarea>
+
+        <div class="editor-footer" style="padding:9px 16px;font-size:11px;white-space:nowrap;gap:10px;">
+          <span id="wordCountStat">154 words · 4 slides</span>
+          <span id="saveStatusBadge" style="color:#059669;font-weight:700;">✓ Synced to HUD</span>
+          <span id="durationStat">1m 28s @ 105 WPM</span>
+          <span id="lineWidthStat" style="display:none;"></span>
+        </div>
+      </div>
+
+      <!-- Column 3: Full Calibration & Scrolling Engine Controls (Always Visible!) -->
+      <div class="qd-cal-col">
+        <div class="qd-col-header">
+          <span class="qd-col-title">3. Engine &amp; Calibration</span>
+        </div>
+
+        <div class="control-group" style="gap:5px;">
+          <div class="segmented-control">
+            <button class="seg-btn active" id="modeWpmBtn" onclick="setScrollMode('wpm')">Constant WPM</button>
+            <button class="seg-btn" id="modeVoiceBtn" onclick="setScrollMode('voice')">🎙️ Voice-Sync</button>
+          </div>
+        </div>
+
+        <div class="voice-status-box" id="voiceStatusBox">
+          <strong>Deterministic WPM Mode:</strong> Scrolls smoothly at your target pace.
+        </div>
+
+        <div id="micLevelMeterWrap" style="display:none;background:#ecfdf5;border:1px solid rgba(5,150,105,0.35);border-radius:9px;padding:8px 10px;font-size:11px;color:#065f46;font-weight:600;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+            <span id="micLevelStatusText">🎙️ Mic Listening</span>
+            <span id="micDbBadge" style="font-family:'JetBrains Mono',monospace;font-size:10px;">0%</span>
+          </div>
+          <div style="height:6px;background:rgba(5,150,105,0.15);border-radius:999px;overflow:hidden;">
+            <div id="micLevelBarFill" style="height:100%;width:0%;background:linear-gradient(90deg,#10b981,#0284c7);transition:width 0.08s linear;"></div>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <div class="control-label-row"><span>Slide Coordination</span></div>
+          <div class="segmented-control">
+            <button class="seg-btn active" style="padding:5px 6px;font-size:11px;" id="slideSyncContBtn" onclick="setSlideBoundaryMode(false)">⏩ Continuous</button>
+            <button class="seg-btn" style="padding:5px 6px;font-size:11px;" id="slideSyncPauseBtn" onclick="setSlideBoundaryMode(true)">⏸ Pause [SLIDE]</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <div class="control-label-row">
+            <span>Speed (Pace)</span>
+            <span class="control-val" id="wpmValLabel">105 WPM</span>
+          </div>
+          <input type="range" id="wpmSlider" min="40" max="180" step="5" value="105" />
+          <div style="display:flex;gap:5px;" id="quickWpmGroup">
+            <button class="chip-btn" data-wpm="80" style="flex:1;padding:4px 6px;font-size:10.5px;" onclick="setQuickWpm(80)">🐢 80</button>
+            <button class="chip-btn active" data-wpm="105" style="flex:1;padding:4px 6px;font-size:10.5px;" onclick="setQuickWpm(105)">🎯 105</button>
+            <button class="chip-btn" data-wpm="130" style="flex:1;padding:4px 6px;font-size:10.5px;" onclick="setQuickWpm(130)">⚡ 130</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <div class="control-label-row">
+            <span>Font Size</span>
+            <span class="control-val" id="fontValLabel">20px</span>
+          </div>
+          <input type="range" id="fontSlider" min="15" max="28" step="1" value="20" />
+        </div>
+
+        <div class="control-group">
+          <div class="control-label-row">
+            <span>HUD Width</span>
+            <span class="control-val" id="widthValLabel">550px</span>
+          </div>
+          <input type="range" id="widthSlider" min="480" max="580" step="10" value="550" />
+        </div>
+
+        <div class="control-group">
+          <div class="control-label-row">
+            <span>Backdrop Opacity</span>
+            <span class="control-val" id="opacityValLabel">84%</span>
+          </div>
+          <input type="range" id="opacitySlider" min="30" max="98" step="2" value="84" />
+        </div>
+
+        <div class="control-group">
+          <div class="control-label-row"><span>Eyeglass Anti-Glare Profile</span></div>
+          <div class="theme-swatches">
+            <button class="swatch-btn active" onclick="setTheme('#ffffff', '#38bdf8', this)">White</button>
+            <button class="swatch-btn" onclick="setTheme('#fde68a', '#f59e0b', this)">Amber</button>
+            <button class="swatch-btn" onclick="setTheme('#a7f3d0', '#10b981', this)">Green</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- PRE-FLIGHT STEALTH & HDMI SAFETY DIAGNOSTIC MODAL -->
+  <div class="modal-backdrop" id="preflightModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span>🛡️ Pre-Flight Stealth & Display Diagnostic</span>
+        <button class="chip-btn" id="closePreflightBtn">✕ Close</button>
+      </div>
+      <div class="modal-body">
+        <div class="diag-row">
+          <div>
+            <div class="diag-title">1. OS Window Capture Protection</div>
+            <div class="diag-desc">macOS <code>NSWindowSharingNone</code> / Windows <code>WDA_EXCLUDEFROMCAPTURE</code> hides the overlay from Zoom, Meet, Teams, and OBS streams.</div>
+          </div>
+          <span class="diag-badge diag-pass" id="diagCaptureStatus">✓ VERIFIED</span>
+        </div>
+        <div class="diag-row">
+          <div>
+            <div class="diag-title">2. External Display & HDMI Mirror Guard</div>
+            <div class="diag-desc" id="diagDisplayDesc">Checking whether displays are in Extended Desktop mode vs. Hardware Mirror mode...</div>
+          </div>
+          <span class="diag-badge diag-pass" id="diagDisplayStatus">✓ SAFE (SINGLE/EXTENDED)</span>
+        </div>
+        <div class="diag-row">
+          <div>
+            <div class="diag-title">3. Mouse Click-Through Event Passthrough</div>
+            <div class="diag-desc">Prevents your cursor from clicking "empty air" on screen shares by forwarding clicks to underlying slides.</div>
+          </div>
+          <span class="diag-badge diag-pass" id="diagMouseStatus">✓ LOCKED ON</span>
+        </div>
+        <div class="diag-row">
+          <div>
+            <div class="diag-title">4. On-Device Voice & VAD Audio Pipeline</div>
+            <div class="diag-desc" id="diagAudioDesc">Web Audio API Voice Activity Detection + resilient continuous speech alignment ready.</div>
+          </div>
+          <span class="diag-badge diag-pass" id="diagAudioStatus">✓ READY</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-top:6px;">
+          <button class="chip-btn" id="simulateMirrorRiskBtn">⚠️ Simulate HDMI Mirroring Alert</button>
+          <button class="btn btn-primary" id="runSelfTestScreenBtn">👁️ Toggle Audience View Test</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script src="pdf.min.js"></script>
+<script src="pdf.worker.min.js"></script>
+<script>
+  // Check if running inside Electron/Native transparent overlay mode or Studio control mode
+  const urlMode = new URLSearchParams(window.location.search).get('mode');
+  if (urlMode === 'overlay') {
+    document.body.classList.add('overlay-only-mode');
+  } else if (urlMode === 'studio') {
+    document.body.classList.add('studio-only-mode');
+  }
+
+  // Sample Slide Deck Content synced to [SLIDE N] markers
+  const SLIDE_DECK = [
+    {
+      kicker: '01 · EXECUTIVE SUMMARY',
+      heading: 'Enterprise Net Retention Reached 128% in Q3',
+      subtitle: 'Click any metric card on the right—even if it sits directly behind the teleprompter—to verify that Click-Through Mode passes mouse events seamlessly to your presentation.',
+      metrics: [
+        ['128%', 'Net Dollar Retention (+14% YoY)'],
+        ['40%', 'Faster Enterprise Onboarding'],
+        ['$4.2M', 'New Expansion ARR Added'],
+        ['99.98%', 'Edge Uptime Across 14 Regions']
+      ]
+    },
+    {
+      kicker: '02 · THE PROBLEM WITH LEGACY WORKFLOWS',
+      heading: 'Why Distributed Teams Lose 6.4 Hours Every Week',
+      subtitle: 'Legacy context switching fragments customer data across 5 disconnected tools, costing mid-market engineering orgs $1.8M annually.',
+      metrics: [
+        ['6.4 hrs', 'Lost Per Rep Weekly'],
+        ['5 Tools', 'Fragmented Across Workflows'],
+        ['32%', 'Drop in Deal Velocity'],
+        ['$1.8M', 'Annual Productivity Leakage']
+      ]
+    },
+    {
+      kicker: '03 · PRODUCT ARCHITECTURE & MOAT',
+      heading: 'Zero-Latency Local Inference + Edge Sync Engine',
+      subtitle: 'Our hybrid architecture keeps sensitive enterprise transcripts 100% on-device while syncing structured insights in under 45 milliseconds.',
+      metrics: [
+        ['< 45ms', 'P99 Edge Sync Latency'],
+        ['100%', 'Zero-Retention Privacy Compliance'],
+        ['SOC2 II', 'Certified Enterprise Security'],
+        ['14x', 'Lower Cloud Compute Cost']
+      ]
+    },
+    {
+      kicker: '04 · SERIES A ROADMAP & THE ASK',
+      heading: 'Raising $12M to Scale Enterprise GTM & AI Agents',
+      subtitle: '18-month runway to triple ARR from $4.2M to $14M with 78% gross margins and net-negative churn.',
+      metrics: [
+        ['$12M', 'Series A Target Round'],
+        ['$14M', 'Projected Q4 Next-Year ARR'],
+        ['78%', 'Blended Software Gross Margin'],
+        ['4.8x', 'LTV / CAC Efficiency Ratio']
+      ]
+    }
+  ];
+
+  // Built-in Pitch & Presentation Scripts for Founders, PMs & Execs
+  const SCRIPTS = [
+    {
+      id: 'series-a',
+      title: 'Series A Board & Investor Pitch',
+      category: '4 Slides · Founder Pitch',
+      content: `[SLIDE 1]
+Good morning everyone. Thank you for taking the time to join our Series A briefing today.
+In Q3, we hit a major inflection point: **128% net dollar retention** across our enterprise cohort, while cutting onboarding time by **40%**.
+[SLIDE 2]
+Let's look at why customers are pulling us in so aggressively.
+Today, distributed teams lose **6.4 hours every single week** jumping between five disconnected workflow tools.
+[SLOW DOWN] That fragmentation costs mid-market organizations over **1.8 million dollars** a year in lost deal velocity.
+[SLIDE 3]
+Here is how our architecture solves this without compromising security.
+Everything runs locally at the edge in under **45 milliseconds**, with **100% zero-retention privacy** and full SOC2 Type II compliance.
+[SLIDE 4]
+That brings us to our Series A roadmap.
+We are raising **12 million dollars** to scale our enterprise go-to-market team and take ARR from **4.2 million to 14 million** over the next 18 months.
+I'd love to open the floor for your questions.`
+    },
+    {
+      id: 'product-demo',
+      title: 'Live Product Launch Keynote',
+      category: 'PM Demo · 3 Sections',
+      content: `[SLIDE 1]
+Welcome to our Fall Product Keynote. Today I am thrilled to show you what our team has been building for the last six months.
+Every presenter knows the tension between **maintaining natural eye contact** and remembering exact technical metrics.
+[SLIDE 2]
+Watch what happens when I advance this slide.
+Notice how my eyes stay locked right under the camera lens while **GhostCue** automatically aligns my talking points with Slide 2.
+[SLOW DOWN] Even though I am sharing my entire desktop on Zoom right now, **you cannot see my teleprompter**.
+[SLIDE 3]
+Let's switch into **Voice-Synced Mode** so you can see how the script follows my natural speaking cadence and pauses whenever I improvise.`
+    },
+    {
+      id: 'exec-qbr',
+      title: 'Executive QBR & Stakeholder Sync',
+      category: 'Leadership · Crisp Metrics',
+      content: `[SLIDE 1]
+Thanks for joining the Q3 Quarterly Business Review. I'll keep our opening framing under two minutes so we can spend 80% of our time on strategic decisions.
+Three headline takeaways: First, **enterprise expansion exceeded plan by 18%**.
+[SLIDE 2]
+Second, our self-serve activation funnel improved by **40%** after shipping the streamlined onboarding flow in August.
+[SLIDE 3]
+Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EMEA, where pipeline grew **2.4x** faster than headcount. Let's review the two hiring options on Slide 4.`
+    }
+  ];
+
+  // State
+  let currentScriptId = SCRIPTS[0].id;
+  let currentSlideIndex = 0;
+  let isPlaying = false;
+  let scrollMode = 'wpm'; // 'wpm' | 'voice'
+  let scrollY = 0;
+  let wpm = 105;
+  let lastFrameTime = null;
+  let isPausingCue = false;
+  let pauseRemaining = 0;
+  let triggeredPauses = new Set();
+  let clickThroughLocked = true;
+  let spokenWordIndex = 0;
+  let voiceSimInterval = null;
+  let recognition = null;
+
+  // DOM Elements
+  const scriptListEl = document.getElementById('scriptList');
+  const scriptEditorEl = document.getElementById('scriptEditor');
+  const hudScrollTrack = document.getElementById('hudScrollTrack');
+  const playPauseBtn = document.getElementById('playPauseBtn');
+  const playIcon = document.getElementById('playIcon');
+  const playText = document.getElementById('playText');
+  const hudSlideBadge = document.getElementById('hudSlideBadge');
+  const hudPacingBadge = document.getElementById('hudPacingBadge');
+  const hudProgressBar = document.getElementById('hudProgressBar');
+  const hudTimeStatus = document.getElementById('hudTimeStatus');
+  const hudModeStatus = document.getElementById('hudModeStatus');
+  const pauseBanner = document.getElementById('pauseBanner');
+  const pauseTimerText = document.getElementById('pauseTimerText');
+  const teleprompterHud = document.getElementById('teleprompterHud');
+
+  const scriptTitleInput = document.getElementById('scriptTitleInput');
+  const saveStatusBadge = document.getElementById('saveStatusBadge');
+
+  // LocalStorage Persistence Engine
+  const STORAGE_KEY = 'ghostcue_studio_state_v1';
+
+  function saveStateToStorage() {
+    if (document.body.classList.contains('overlay-only-mode')) return;
+    try {
+      const current = SCRIPTS.find(s => s.id === currentScriptId);
+      if (current) {
+        current.content = scriptEditorEl.value;
+        if (scriptTitleInput) current.title = scriptTitleInput.value;
+      }
+      const state = {
+        scripts: SCRIPTS,
+        currentScriptId,
+        wpm,
+        fontSize: document.getElementById('fontSlider').value,
+        hudWidth: document.getElementById('widthSlider').value,
+        hudOpacity: document.getElementById('opacitySlider').value,
+        hudTextColor: getComputedStyle(document.documentElement).getPropertyValue('--hud-text-color').trim() || '#ffffff',
+        hudAccentColor: getComputedStyle(document.documentElement).getPropertyValue('--hud-accent-color').trim() || '#38bdf8',
+        pauseAtSlideEnd
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      if (saveStatusBadge) {
+        saveStatusBadge.textContent = '✓ Synced to HUD';
+      }
+    } catch (e) {}
+  }
+
+  function loadStateFromStorage() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return false;
+      const state = JSON.parse(raw);
+      if (Array.isArray(state.scripts)) {
+        SCRIPTS.length = 0;
+        state.scripts.forEach(s => {
+          if (s && typeof s.content === 'string') {
+            s.content = s.content.replace(/\n\[PAUSE\s+2s\]\s*(?=\n\[SLIDE)/gi, '');
+          }
+          if (s && s.title !== 'New Presentation Script') {
+            SCRIPTS.push(s);
+          }
+        });
+      }
+      if (state.wpm) {
+        wpm = state.wpm;
+        document.getElementById('wpmSlider').value = wpm;
+        document.getElementById('wpmValLabel').textContent = wpm + ' WPM';
+        syncQuickWpmActiveState();
+      }
+      if (state.fontSize) {
+        document.documentElement.style.setProperty('--hud-font-size', state.fontSize + 'px');
+        document.getElementById('fontSlider').value = state.fontSize;
+        document.getElementById('fontValLabel').textContent = state.fontSize + 'px';
+      }
+      if (state.hudWidth) {
+        const clampedW = Math.max(540, parseInt(state.hudWidth, 10) || 550);
+        document.documentElement.style.setProperty('--hud-width', clampedW + 'px');
+        document.getElementById('widthSlider').value = clampedW;
+        document.getElementById('widthValLabel').textContent = clampedW + 'px';
+      }
+      if (state.hudOpacity) {
+        document.documentElement.style.setProperty('--hud-opacity', (state.hudOpacity / 100).toFixed(2));
+        document.getElementById('opacitySlider').value = state.hudOpacity;
+        document.getElementById('opacityValLabel').textContent = state.hudOpacity + '%';
+      }
+      if (state.hudTextColor) {
+        document.documentElement.style.setProperty('--hud-text-color', state.hudTextColor);
+      }
+      if (state.hudAccentColor) {
+        document.documentElement.style.setProperty('--hud-accent-color', state.hudAccentColor);
+      }
+      if (typeof state.pauseAtSlideEnd === 'boolean') {
+        pauseAtSlideEnd = state.pauseAtSlideEnd;
+        const pauseBtn = document.getElementById('slideSyncPauseBtn');
+        const contBtn = document.getElementById('slideSyncContBtn');
+        if (pauseBtn) pauseBtn.classList.toggle('active', pauseAtSlideEnd);
+        if (contBtn) contBtn.classList.toggle('active', !pauseAtSlideEnd);
+      }
+      if (state.currentScriptId && SCRIPTS.some(s => s.id === state.currentScriptId)) {
+        currentScriptId = state.currentScriptId;
+      } else {
+        currentScriptId = SCRIPTS.length > 0 ? SCRIPTS[0].id : null;
+      }
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Render Script Sidebar with Per-Script ✕ Delete Button (Allows 0 scripts / completely empty library!)
+  function applyEmptyLibraryState() {
+    currentScriptId = null;
+    scriptEditorEl.value = '';
+    if (scriptTitleInput) scriptTitleInput.value = '';
+    resetPrompter();
+    parseAndRenderHud();
+    renderScriptLibrary();
+    saveStateToStorage();
+    broadcastState('SCRIPT_UPDATE', { content: '' });
+  }
+
+  function deleteScriptById(id) {
+    if (!id && SCRIPTS.length === 0) {
+      applyEmptyLibraryState();
+      return;
+    }
+    const idx = SCRIPTS.findIndex(s => s.id === id);
+    if (idx !== -1) {
+      SCRIPTS.splice(idx, 1);
+    }
+    if (SCRIPTS.length === 0) {
+      applyEmptyLibraryState();
+      return;
+    }
+    const nextId = SCRIPTS.some(s => s.id === currentScriptId) ? currentScriptId : SCRIPTS[0].id;
+    selectScript(nextId);
+  }
+
+  function escapeHtml(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function getMaxScroll() {
+    const vp = document.querySelector('.hud-viewport');
+    const vpH = (vp && vp.clientHeight > 60) ? vp.clientHeight : 165;
+    return Math.max(0, hudScrollTrack.scrollHeight - Math.max(110, vpH - 25));
+  }
+
+  function renderScriptLibrary() {
+    scriptListEl.innerHTML = '';
+    if (SCRIPTS.length === 0) {
+      const emptyEl = document.createElement('div');
+      emptyEl.style.cssText = 'padding:16px 12px;text-align:center;font-size:11.5px;color:var(--text-dim);border:1px dashed var(--border);border-radius:8px;';
+      emptyEl.textContent = 'No scripts in library. Upload a file below or click + New.';
+      scriptListEl.appendChild(emptyEl);
+      return;
+    }
+    SCRIPTS.forEach(s => {
+      const div = document.createElement('div');
+      div.className = 'script-item' + (s.id === currentScriptId ? ' active' : '');
+      div.innerHTML = `
+        <div class="script-item-info">
+          <div class="script-item-title">${escapeHtml(s.title)}</div>
+          <div class="script-item-meta">${escapeHtml(s.category)}</div>
+        </div>
+        <button class="script-item-del-btn" title="Delete this script">✕</button>
+      `;
+      div.onclick = () => selectScript(s.id);
+      const delBtn = div.querySelector('.script-item-del-btn');
+      if (delBtn) {
+        delBtn.onclick = (e) => {
+          e.stopPropagation();
+          deleteScriptById(s.id);
+        };
+      }
+      scriptListEl.appendChild(div);
+    });
+  }
+
+  function selectScript(id) {
+    if (!id || SCRIPTS.length === 0) {
+      applyEmptyLibraryState();
+      return;
+    }
+    currentScriptId = id;
+    const found = SCRIPTS.find(s => s.id === id) || SCRIPTS[0];
+    if (found) {
+      currentScriptId = found.id;
+      scriptEditorEl.value = found.content;
+      if (scriptTitleInput) scriptTitleInput.value = found.title;
+      resetPrompter();
+      parseAndRenderHud();
+      renderScriptLibrary();
+      saveStateToStorage();
+      setOverlayVisible(true);
+      console.log('__GHOSTCUE_IPC__:SHOW_OVERLAY');
+      broadcastState('OVERLAY_VISIBILITY', { visible: true });
+      broadcastState('SCRIPT_UPDATE', { content: found.content });
+    }
+  }
+
+  // Helper to clear slide/pause triggers below a rewound scrollY position
+  function pruneTriggersAfterScrollRewind(newScrollY) {
+    const targetOffset = newScrollY + 52;
+    hudScrollTrack.querySelectorAll('.slide-marker-line').forEach(marker => {
+      const sNum = parseInt(marker.dataset.slide || '1', 10);
+      if (marker.offsetTop > newScrollY + 35) {
+        triggeredSlideBoundaries.delete(sNum);
+      }
+    });
+    hudScrollTrack.querySelectorAll('.script-line[data-pause-id]').forEach(line => {
+      if (line.offsetTop > targetOffset - 10) {
+        triggeredPauses.delete(line.dataset.pauseId);
+      }
+    });
+  }
+
+  // Parse Script & Render Inside Notch HUD
+  function parseAndRenderHud() {
+    // Normalize inline [SLIDE N] tags onto their own line so mid-line insertions always work
+    const normalizedRaw = scriptEditorEl.value
+      .replace(/([^\n])\s*(\[SLIDE\s*\d*(?:[:\s-][^\]]*)?\])/gi, '$1\n$2')
+      .replace(/(\[SLIDE\s*\d*(?:[:\s-][^\]]*)?\])\s*([^\n])/gi, '$1\n$2');
+    const lines = normalizedRaw.split('\n').filter(l => l.trim().length > 0);
+    hudScrollTrack.innerHTML = '';
+
+    let wordCounter = 0;
+    let slideCount = 0;
+
+    lines.forEach((line, lineIdx) => {
+      const trimmed = line.trim();
+
+      // Check if standalone [SLIDE N] line
+      const slideMatch = trimmed.match(/^\[SLIDE\s*(\d+)?(?:[:\s-]+(.*))?\]$/i);
+      if (slideMatch) {
+        slideCount++;
+        const slideNum = slideMatch[1] ? parseInt(slideMatch[1], 10) : slideCount;
+        const div = document.createElement('div');
+        div.className = 'script-line slide-marker-line';
+        div.dataset.slide = slideCount; // Sequential 1..N index so non-sequential [SLIDE 1], [SLIDE 5] still work with Next/Prev
+        div.dataset.slideLabel = slideNum;
+        div.innerHTML = `<span class="cue-pill cue-slide">⏭ SLIDE ${slideNum} ${slideMatch[2] ? '· ' + escapeHtml(slideMatch[2]) : ''}</span>`;
+        hudScrollTrack.appendChild(div);
+        return;
+      }
+
+      const div = document.createElement('div');
+      div.className = 'script-line';
+      div.dataset.lineIdx = lineIdx;
+
+      // Check for one or more [PAUSE Ns] tags on the line and sum their total seconds
+      const pauseMatches = [...trimmed.matchAll(/\[PAUSE\s+(\d+(?:\.\d+)?)s?\]/gi)];
+      if (pauseMatches.length > 0) {
+        const totalPauseSec = pauseMatches.reduce((sum, m) => sum + (parseFloat(m[1]) || 0), 0);
+        if (totalPauseSec > 0) {
+          div.dataset.pauseSeconds = totalPauseSec;
+          div.dataset.pauseId = 'pause-' + lineIdx;
+        }
+      }
+
+      // Escape HTML entities (< 45ms, CAC > LTV) before formatting inline cue tokens
+      let html = escapeHtml(trimmed)
+        .replace(/\[PAUSE\s+(\d+(?:\.\d+)?)s?\]/gi, '<span class="cue-pill cue-pause">⏸ PAUSE $1s</span>')
+        .replace(/\[SLOW DOWN\]/gi, '<span class="cue-pill cue-delivery">🐢 SLOW DOWN</span>')
+        .replace(/\[NEXT SLIDE\]/gi, '<span class="cue-pill cue-slide">⏭ NEXT SLIDE</span>')
+        .replace(/\*\*(.+?)\*\*/g, '<span class="cue-highlight">$1</span>');
+
+      // Wrap plain text words in .script-word spans so Voice-Sync can highlight them
+      const temp = document.createElement('div');
+      temp.innerHTML = html;
+
+      function wrapWordsInNode(node) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          const parts = node.textContent.split(/(\s+)/);
+          const frag = document.createDocumentFragment();
+          parts.forEach(part => {
+            if (/\S/.test(part)) {
+              const span = document.createElement('span');
+              span.className = 'script-word';
+              span.dataset.wordIdx = wordCounter++;
+              span.textContent = part;
+              frag.appendChild(span);
+            } else {
+              frag.appendChild(document.createTextNode(part));
+            }
+          });
+          node.parentNode.replaceChild(frag, node);
+        } else if (node.nodeType === Node.ELEMENT_NODE && !node.classList.contains('cue-pill')) {
+          Array.from(node.childNodes).forEach(wrapWordsInNode);
+        }
+      }
+      Array.from(temp.childNodes).forEach(wrapWordsInNode);
+
+      div.innerHTML = temp.innerHTML;
+      // When Click-Through is OFF, clicking any line jumps directly to it
+      div.addEventListener('click', (e) => {
+        if (clickThroughLocked) return;
+        e.stopPropagation();
+        scrollY = Math.max(0, div.offsetTop - 20);
+        pruneTriggersAfterScrollRewind(scrollY);
+        hudScrollTrack.style.transform = `translateY(${-scrollY}px)`;
+        const firstWord = div.querySelector('.script-word');
+        if (firstWord && firstWord.dataset.wordIdx !== undefined) {
+          spokenWordIndex = parseInt(firstWord.dataset.wordIdx, 10);
+        }
+        updateActiveEyeline();
+        broadcastState('SCROLL_SYNC', { scrollY, spokenWordIndex });
+      });
+      hudScrollTrack.appendChild(div);
+    });
+
+    // Clamp scrollY if script was shortened while scrolled down
+    const maxScrollAfterEdit = getMaxScroll();
+    if (scrollY > maxScrollAfterEdit) {
+      scrollY = Math.max(0, maxScrollAfterEdit);
+      hudScrollTrack.style.transform = `translateY(${-scrollY}px)`;
+    }
+
+    // Update Editor Footer Metrics & Exact Slide Count from Current Script
+    const actualSlideCount = Math.max(1, slideCount);
+    if (currentSlideIndex >= actualSlideCount) {
+      currentSlideIndex = 0;
+    }
+    hudSlideBadge.textContent = `Slide ${currentSlideIndex + 1}/${actualSlideCount}`;
+    document.getElementById('deckSlideCounter').textContent = `SLIDE ${currentSlideIndex + 1} OF ${actualSlideCount}`;
+    updateWpmStatsOnly();
+  }
+
+  // Update WPM speed & time-remaining badges WITHOUT rebuilding the script DOM or switching scripts
+  function updateWpmStatsOnly() {
+    const wordCounter = hudScrollTrack.querySelectorAll('.script-word').length;
+    const actualSlideCount = Math.max(1, hudScrollTrack.querySelectorAll('.slide-marker-line').length);
+    const totalSeconds = Math.max(1, Math.round((wordCounter / wpm) * 60));
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    document.getElementById('wordCountStat').textContent = `${wordCounter} words · ${actualSlideCount} slides`;
+    document.getElementById('durationStat').textContent = `${mins}m ${String(secs).padStart(2, '0')}s @ ${wpm} WPM`;
+    updateActiveEyeline();
+  }
+
+  // Highlight the line currently sitting inside the Eye-Line Focus Band (top 35% of HUD)
+  function updateActiveEyeline() {
+    const lines = hudScrollTrack.querySelectorAll('.script-line');
+    const spokenLines = hudScrollTrack.querySelectorAll('.script-line:not(.slide-marker-line)');
+    const targetOffset = scrollY + 52; // Eye-line zone relative to scroll track
+    let closestLine = null;
+    let minDistance = Infinity;
+    let detectedSlide = null;
+
+    lines.forEach(line => {
+      if (line.dataset.slide && line.offsetTop <= targetOffset + 25) {
+        detectedSlide = parseInt(line.dataset.slide, 10);
+      }
+    });
+
+    spokenLines.forEach(line => {
+      const lineCenter = line.offsetTop + line.offsetHeight / 2;
+      const dist = Math.abs(lineCenter - targetOffset);
+      if (dist < minDistance) {
+        minDistance = dist;
+        closestLine = line;
+      }
+    });
+
+    lines.forEach(line => {
+      line.classList.remove('active-eyeline', 'near-eyeline', 'past-line');
+      if (line === closestLine) {
+        line.classList.add('active-eyeline');
+        // Trigger automatic [PAUSE Ns] if we haven't triggered this line's pause yet
+        if (
+          isPlaying &&
+          scrollMode === 'wpm' &&
+          line.dataset.pauseSeconds &&
+          !triggeredPauses.has(line.dataset.pauseId)
+        ) {
+          triggeredPauses.add(line.dataset.pauseId);
+          startPauseCountdown(parseFloat(line.dataset.pauseSeconds));
+        }
+      } else if (line.offsetTop < targetOffset - 18) {
+        line.classList.add('past-line');
+      } else if (Math.abs((line.offsetTop + line.offsetHeight / 2) - targetOffset) < 68) {
+        line.classList.add('near-eyeline');
+      }
+    });
+
+    const totalSlidesInScript = Math.max(
+      1,
+      hudScrollTrack.querySelectorAll('.slide-marker-line').length
+    );
+    if (detectedSlide && detectedSlide - 1 !== currentSlideIndex && detectedSlide <= totalSlidesInScript) {
+      setSlide(detectedSlide - 1, false);
+    }
+
+    // Update progress bar using unified getMaxScroll()
+    const maxScroll = getMaxScroll();
+    const wordsTotal = document.querySelectorAll('.script-word').length;
+    const pct = (wordsTotal === 0 || maxScroll <= 0) ? 0 : Math.min(100, Math.max(0, (scrollY / maxScroll) * 100));
+    hudProgressBar.style.width = pct + '%';
+
+    const remSec = wordsTotal === 0 ? 0 : Math.max(0, Math.round(((100 - pct) / 100) * ((wordsTotal / wpm) * 60)));
+    hudTimeStatus.textContent = `Est. ${Math.floor(remSec / 60)}m ${String(remSec % 60).padStart(2, '0')}s left · ${Math.round(pct)}%`;
+    hudPacingBadge.textContent = `${wpm} WPM`;
+  }
+
+  function startPauseCountdown(seconds) {
+    isPausingCue = true;
+    pauseRemaining = seconds;
+    pauseBanner.classList.add('visible');
+    pauseTimerText.textContent = pauseRemaining.toFixed(1) + 's';
+  }
+
+  let isVoiceSpeaking = false;
+  let pauseAtSlideEnd = false; // Default to Continuous so notes never stop by themselves unless requested
+  let triggeredSlideBoundaries = new Set();
+
+  window.setSlideBoundaryMode = function(enable) {
+    pauseAtSlideEnd = Boolean(enable);
+    const pauseBtn = document.getElementById('slideSyncPauseBtn');
+    const contBtn = document.getElementById('slideSyncContBtn');
+    if (pauseBtn) pauseBtn.classList.toggle('active', pauseAtSlideEnd);
+    if (contBtn) contBtn.classList.toggle('active', !pauseAtSlideEnd);
+    broadcastState('SLIDE_SYNC_MODE', { pauseAtSlideEnd });
+  };
+
+  // Smooth Sub-Pixel Animation Loop calibrated to True Word-Count Geometry (Unthrottled even in background)
+  function stepScrollFrame() {
+    const now = performance.now();
+    if (!lastFrameTime) lastFrameTime = now;
+    const dt = Math.min(0.1, Math.max(0, (now - lastFrameTime) / 1000));
+    if (dt < 0.004) return;
+    lastFrameTime = now;
+
+    // Studio control window does not run its own competing scroll loop
+    if (document.body.classList.contains('studio-only-mode')) return;
+
+    const shouldAdvanceByWpm = isPlaying && scrollMode === 'wpm';
+    const shouldAdvanceByLiveVoice = scrollMode === 'voice' && isVoiceSpeaking && !voiceSimInterval;
+
+    if (shouldAdvanceByWpm || shouldAdvanceByLiveVoice) {
+      if (isPausingCue && shouldAdvanceByWpm) {
+        pauseRemaining -= dt;
+        if (pauseRemaining <= 0) {
+          isPausingCue = false;
+          pauseBanner.classList.remove('visible');
+        } else {
+          pauseTimerText.textContent = pauseRemaining.toFixed(1) + 's';
+        }
+      } else {
+        const totalWords = hudScrollTrack.querySelectorAll('.script-word').length;
+        const maxScroll = getMaxScroll();
+        if (totalWords === 0 || maxScroll <= 0) {
+          togglePlay(false);
+          return;
+        }
+        // True speaking duration in seconds based on actual script word count and target WPM
+        const totalSpeakingSeconds = (totalWords / wpm) * 60;
+        let pxPerSecond = maxScroll / totalSpeakingSeconds;
+
+        // Automatically slow down by 22% on lines tagged with [SLOW DOWN] or heavy bold metrics
+        const activeLine = hudScrollTrack.querySelector('.script-line.active-eyeline');
+        if (activeLine && activeLine.querySelector('.cue-delivery, .cue-highlight')) {
+          pxPerSecond *= 0.78;
+        }
+
+        const nextScrollY = Math.min(maxScroll, scrollY + pxPerSecond * dt);
+
+        // Optional: Auto-pause when reaching the next [SLIDE N] boundary ONLY if user enabled "Pause at Each [SLIDE]"
+        if (pauseAtSlideEnd) {
+          const markers = hudScrollTrack.querySelectorAll('.slide-marker-line');
+          for (const marker of markers) {
+            const slideNum = parseInt(marker.dataset.slide || '1', 10);
+            if (slideNum > 1 && !triggeredSlideBoundaries.has(slideNum)) {
+              const boundaryY = Math.max(0, marker.offsetTop - 16);
+              if (scrollY < boundaryY && nextScrollY >= boundaryY) {
+                triggeredSlideBoundaries.add(slideNum);
+                scrollY = boundaryY;
+                hudScrollTrack.style.transform = `translateY(${-scrollY}px)`;
+                updateActiveEyeline();
+                togglePlay(false);
+                hudModeStatus.textContent = `⏸ End of Slide ${slideNum - 1} · Tap ▶ or ⌥+Right for Slide ${slideNum}`;
+                return;
+              }
+            }
+          }
+        }
+
+        scrollY = nextScrollY;
+        hudScrollTrack.style.transform = `translateY(${-scrollY}px)`;
+        if (shouldAdvanceByLiveVoice) {
+          syncSpokenWordHighlightFromScroll();
+        }
+        updateActiveEyeline();
+
+        if (shouldAdvanceByWpm && maxScroll > 20 && scrollY >= maxScroll) {
+          togglePlay(false);
+        }
+      }
+    }
+  }
+
+  function tick() {
+    stepScrollFrame();
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+  // High-priority backup interval so scrolling NEVER stops even when Google Meet / Keynote / PDF is full-screen
+  setInterval(stepScrollFrame, 30);
+
+  function syncHudSegmentedModePill() {
+    const pauseSeg = document.getElementById('hudSegPauseBtn');
+    const wpmSeg = document.getElementById('hudSegWpmBtn');
+    const voiceSeg = document.getElementById('hudSegVoiceBtn');
+    if (!pauseSeg || !wpmSeg || !voiceSeg) return;
+    pauseSeg.classList.remove('active-pause');
+    wpmSeg.classList.remove('active-wpm');
+    voiceSeg.classList.remove('active-voice');
+    if (scrollMode === 'voice') {
+      voiceSeg.classList.add('active-voice');
+    } else if (isPlaying) {
+      wpmSeg.classList.add('active-wpm');
+    } else {
+      pauseSeg.classList.add('active-pause');
+    }
+  }
+
+  function togglePlay(forceState) {
+    const nextState = typeof forceState === 'boolean' ? forceState : !isPlaying;
+    // If user clicks Play when already at the very bottom (100%), automatically restart from the top
+    if (nextState && !isPlaying) {
+      const maxScroll = getMaxScroll();
+      if (maxScroll > 20 && scrollY >= maxScroll - 4) {
+        scrollY = 0;
+        spokenWordIndex = 0;
+        isPausingCue = false;
+        triggeredPauses.clear();
+        triggeredSlideBoundaries.clear();
+        hudScrollTrack.style.transform = 'translateY(0px)';
+        setSlide(0, false);
+        updateActiveEyeline();
+      }
+    }
+    isPlaying = nextState;
+    playIcon.textContent = isPlaying ? '⏸' : '▶';
+    playText.textContent = isPlaying ? 'Pause' : 'Start';
+    const topPlayBtn = document.getElementById('hudHeaderPlayBtn');
+    if (topPlayBtn) {
+      topPlayBtn.textContent = isPlaying ? '⏸ Pause' : '▶ Play';
+      topPlayBtn.style.borderColor = isPlaying ? 'var(--emerald)' : '';
+    }
+    if (isPlaying) {
+      setOverlayVisible(true);
+      console.log('__GHOSTCUE_IPC__:SHOW_OVERLAY');
+      hudModeStatus.textContent = `Mode: ${scrollMode === 'voice' ? '🎙️ Voice-Synced' : 'Constant WPM'} · Scrolling`;
+    } else if (scrollMode === 'wpm') {
+      hudModeStatus.textContent = '⏸ Paused · Click ▶ WPM or 🎙️ Voice Flow to Start';
+    }
+    syncHudSegmentedModePill();
+    broadcastState('PLAY_STATE', { isPlaying });
+  }
+
+  function resetPrompter() {
+    togglePlay(false);
+    stopVoiceSim();
+    scrollY = 0;
+    spokenWordIndex = 0;
+    isPausingCue = false;
+    triggeredPauses.clear();
+    triggeredSlideBoundaries.clear();
+    pauseBanner.classList.remove('visible');
+    hudScrollTrack.style.transform = 'translateY(0px)';
+    document.querySelectorAll('.script-word').forEach(w => {
+      w.classList.remove('spoken', 'current-word');
+    });
+    setSlide(0, false);
+    updateActiveEyeline();
+    broadcastState('RESET');
+  }
+
+  // Slide Deck Synchronization (Uses exact number of [SLIDE N] markers in current script)
+  function setSlide(index, scrollScriptToSlide = true) {
+    const markerCount = hudScrollTrack.querySelectorAll('.slide-marker-line').length;
+    const totalSlides = Math.max(1, markerCount);
+    currentSlideIndex = Math.max(0, Math.min(totalSlides - 1, index));
+    const slide = SLIDE_DECK[currentSlideIndex % SLIDE_DECK.length];
+    document.getElementById('slideKicker').textContent = slide.kicker;
+    document.getElementById('slideHeading').textContent = slide.heading;
+    document.getElementById('slideSubtitle').textContent = slide.subtitle;
+    document.getElementById('deckSlideCounter').textContent = `SLIDE ${currentSlideIndex + 1} OF ${totalSlides}`;
+    hudSlideBadge.textContent = `Slide ${currentSlideIndex + 1}/${totalSlides}`;
+
+    slide.metrics.forEach((m, i) => {
+      document.getElementById(`metric${i + 1}Val`).textContent = m[0];
+      document.getElementById(`metric${i + 1}Lbl`).textContent = m[1];
+    });
+
+    if (scrollScriptToSlide) {
+      const marker = hudScrollTrack.querySelector(`.slide-marker-line[data-slide="${currentSlideIndex + 1}"]`);
+      if (marker) {
+        scrollY = Math.max(0, marker.offsetTop - 16);
+      } else if (currentSlideIndex === 0) {
+        scrollY = 0;
+      }
+      pruneTriggersAfterScrollRewind(scrollY);
+      hudScrollTrack.style.transform = `translateY(${-scrollY}px)`;
+      updateActiveEyeline();
+      broadcastState('SLIDE_CHANGE', { slideIndex: currentSlideIndex });
+    }
+  }
+
+  // Voice-Synced Scrolling Engine (Live Mic Voice Activity + Word Highlighting + Demo Fallback)
+  function syncSpokenWordHighlightFromScroll() {
+    const words = hudScrollTrack.querySelectorAll('.script-word');
+    if (!words.length) return;
+    const maxScroll = Math.max(1, getMaxScroll());
+    const ratio = Math.min(1, Math.max(0, scrollY / maxScroll));
+    const estIdx = Math.min(words.length - 1, Math.floor(ratio * words.length));
+    spokenWordIndex = estIdx;
+    words.forEach((w, i) => {
+      w.classList.remove('spoken', 'current-word');
+      if (i < estIdx) w.classList.add('spoken');
+      else if (i === estIdx) w.classList.add('current-word');
+    });
+  }
+
+  function advanceToWordIndex(idx) {
+    const words = document.querySelectorAll('.script-word');
+    if (!words.length) return;
+    spokenWordIndex = Math.min(words.length - 1, idx);
+
+    words.forEach((w, i) => {
+      w.classList.remove('spoken', 'current-word');
+      if (i < spokenWordIndex) w.classList.add('spoken');
+      else if (i === spokenWordIndex) w.classList.add('current-word');
+    });
+
+    const activeWord = words[spokenWordIndex];
+    if (activeWord) {
+      const line = activeWord.closest('.script-line');
+      if (line) {
+        const targetY = Math.max(0, line.offsetTop - 22);
+        scrollY += (targetY - scrollY) * 0.35;
+        hudScrollTrack.style.transform = `translateY(${-scrollY}px)`;
+        updateActiveEyeline();
+      }
+    }
+  }
+
+  function startVoiceSim() {
+    // Toggle Live Mic Voice-Synced Mode when clicked in the top bar
+    if (scrollMode === 'voice') {
+      setScrollMode('wpm');
+    } else {
+      setScrollMode('voice');
+    }
+  }
+
+  function stopVoiceSim() {
+    if (voiceSimInterval) {
+      clearTimeout(voiceSimInterval);
+      voiceSimInterval = null;
+    }
+    const btn = document.getElementById('voiceSimBtn');
+    if (btn) {
+      btn.classList.remove('active');
+      btn.textContent = '🎙️ Voice Track';
+    }
+    broadcastState('VOICE_SIM', { active: false });
+  }
+
+  function setScrollMode(mode) {
+    scrollMode = mode;
+    document.getElementById('modeWpmBtn').classList.toggle('active', mode === 'wpm');
+    document.getElementById('modeVoiceBtn').classList.toggle('active', mode === 'voice');
+    const statusBox = document.getElementById('voiceStatusBox');
+    const topVoiceBtn = document.getElementById('voiceSimBtn');
+    const micMeterWrap = document.getElementById('micLevelMeterWrap');
+    broadcastState('MODE_CHANGE', { mode });
+
+    if (mode === 'voice') {
+      togglePlay(false);
+      setOverlayVisible(true);
+      console.log('__GHOSTCUE_IPC__:SHOW_OVERLAY');
+      if (topVoiceBtn) {
+        topVoiceBtn.classList.add('active');
+        topVoiceBtn.textContent = '🎙️ Voice: ON';
+      }
+      if (micMeterWrap) micMeterWrap.style.display = 'block';
+      hudModeStatus.textContent = '🎙️ Voice Tracking ON · Speak into Mic to Scroll';
+      statusBox.innerHTML = '<strong>🎙️ Live Mic Voice Tracking Active:</strong> Speak naturally into your MacBook microphone — your script scrolls forward while you talk and pauses the moment you stop.';
+      syncHudSegmentedModePill();
+      initWebSpeechRecognition();
+    } else {
+      stopVoiceSim();
+      isVoiceSpeaking = false;
+      if (micMeterWrap) micMeterWrap.style.display = 'none';
+      if (recognition) {
+        try { recognition.stop(); } catch (e) {}
+      }
+      hudModeStatus.textContent = 'Mode: Constant WPM · Click-Through ON';
+      statusBox.innerHTML = '<strong>Deterministic WPM Mode:</strong> Scrolls smoothly at your target speaking pace and automatically pauses on <code>[PAUSE Ns]</code> cues.';
+      syncHudSegmentedModePill();
+    }
+  }
+
+  // Web Audio API Live Voice Activity Detection (VAD) & Cross-Window Voice Sync
+  let audioCtx = null;
+  let micAnalyser = null;
+  let vadActive = false;
+  let voiceHoldUntil = 0;
+  let lastBroadcastVoiceState = false;
+
+  async function initLiveAudioVad() {
+    if (audioCtx) {
+      if (audioCtx.state === 'suspended') {
+        try { await audioCtx.resume(); } catch (e) {}
+      }
+      return;
+    }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      });
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') {
+        try { await audioCtx.resume(); } catch (e) {}
+      }
+      const source = audioCtx.createMediaStreamSource(stream);
+      micAnalyser = audioCtx.createAnalyser();
+      micAnalyser.fftSize = 256;
+      micAnalyser.smoothingTimeConstant = 0.5;
+      source.connect(micAnalyser);
+      vadActive = true;
+
+      const timeData = new Uint8Array(micAnalyser.fftSize);
+      const micBarFill = document.getElementById('micLevelBarFill');
+      const micDbBadge = document.getElementById('micDbBadge');
+      const micStatusText = document.getElementById('micLevelStatusText');
+
+      function updateWaveBars() {
+        if (!vadActive) return;
+        micAnalyser.getByteTimeDomainData(timeData);
+        // Compute true RMS voice amplitude from time-domain waveform (immune to pitch/sample-rate differences)
+        let sumSquares = 0;
+        for (let i = 0; i < timeData.length; i++) {
+          const centered = (timeData[i] - 128) / 128;
+          sumSquares += centered * centered;
+        }
+        const rms = Math.sqrt(sumSquares / timeData.length);
+        const levelPct = Math.min(100, Math.round(rms * 1400));
+
+        const now = performance.now();
+        if (rms > 0.0042) {
+          // Hold speaking state for 480ms after each syllable so natural pauses between words don't stutter
+          voiceHoldUntil = now + 480;
+        }
+        const currentlySpeaking = scrollMode === 'voice' && (now < voiceHoldUntil || Boolean(window.__externalVoiceActive));
+        isVoiceSpeaking = currentlySpeaking;
+
+        if (micBarFill) micBarFill.style.width = (currentlySpeaking ? Math.max(45, levelPct) : levelPct) + '%';
+        if (micDbBadge) micDbBadge.textContent = (currentlySpeaking ? Math.max(45, levelPct) : levelPct) + '%';
+        if (micStatusText && scrollMode === 'voice') {
+          micStatusText.textContent = currentlySpeaking
+            ? '🟢 Voice Detected — Scrolling Script...'
+            : '🎙️ Listening — Speak into Mic to Scroll';
+        }
+        if (scrollMode === 'voice') {
+          hudModeStatus.textContent = currentlySpeaking
+            ? '🟢 Voice Detected · Scrolling with Your Voice'
+            : '🎙️ Voice Tracking ON · Speak into Mic to Scroll';
+        }
+
+        if (currentlySpeaking !== lastBroadcastVoiceState) {
+          lastBroadcastVoiceState = currentlySpeaking;
+          broadcastState('VOICE_SPEAKING_STATE', { speaking: currentlySpeaking });
+        }
+
+        requestAnimationFrame(updateWaveBars);
+      }
+      setInterval(updateWaveBars, 45);
+      updateWaveBars();
+    } catch (e) {
+      const micStatusText = document.getElementById('micLevelStatusText');
+      if (micStatusText) {
+        micStatusText.textContent = '⚠️ Mic Permission Needed — Check macOS Settings > Privacy > Microphone';
+      }
+    }
+  }
+
+  function initWebSpeechRecognition() {
+    initLiveAudioVad();
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRec) return;
+    try {
+      if (recognition) {
+        try { recognition.stop(); } catch (e) {}
+      }
+      recognition = new SpeechRec();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+      recognition.onerror = () => {
+        // Keep live microphone VAD active even if cloud SpeechRecognition is unavailable in Electron
+      };
+      // Auto-restart on end so long presentations (>60s) never drop voice sync
+      recognition.onend = () => {
+        if (scrollMode === 'voice' && !voiceSimInterval) {
+          try { recognition.start(); } catch (e) {}
+        }
+      };
+      recognition.onresult = (event) => {
+        const transcript = Array.from(event.results)
+          .map(r => r[0].transcript)
+          .join(' ')
+          .toLowerCase()
+          .split(/\s+/);
+        const lastSpoken = transcript[transcript.length - 1]?.replace(/[^a-z0-9]/g, '');
+        if (!lastSpoken) return;
+
+        const words = document.querySelectorAll('.script-word');
+        for (let i = spokenWordIndex; i < Math.min(words.length, spokenWordIndex + 12); i++) {
+          const cleanTarget = words[i].textContent.toLowerCase().replace(/[^a-z0-9]/g, '');
+          if (cleanTarget && (cleanTarget === lastSpoken || cleanTarget.startsWith(lastSpoken))) {
+            advanceToWordIndex(i);
+            break;
+          }
+        }
+      };
+      recognition.start();
+    } catch (e) {
+      if (!voiceSimInterval) startVoiceSim();
+    }
+  }
+
+  // Insert cue into textarea
+  window.insertCue = function(tag) {
+    const start = scriptEditorEl.selectionStart;
+    const end = scriptEditorEl.selectionEnd;
+    const text = scriptEditorEl.value;
+    scriptEditorEl.value = text.substring(0, start) + tag + text.substring(end);
+    scriptEditorEl.focus();
+    scriptEditorEl.selectionStart = scriptEditorEl.selectionEnd = start + tag.length;
+    parseAndRenderHud();
+    saveStateToStorage();
+    broadcastState('SCRIPT_UPDATE', { content: scriptEditorEl.value });
+  };
+
+  window.insertNextSlideCue = function() {
+    const matches = [...scriptEditorEl.value.matchAll(/\[SLIDE\s*(\d+)/gi)];
+    const maxSlide = matches.reduce((max, m) => Math.max(max, parseInt(m[1] || '0', 10)), 0);
+    insertCue(`\n[SLIDE ${maxSlide + 1}]\n`);
+  };
+
+  window.insertHighlightCue = function() {
+    const start = scriptEditorEl.selectionStart;
+    const end = scriptEditorEl.selectionEnd;
+    const text = scriptEditorEl.value;
+    const selected = text.substring(start, end).trim();
+    const replacement = selected ? `**${selected}**` : ` **key metric** `;
+    scriptEditorEl.value = text.substring(0, start) + replacement + text.substring(end);
+    scriptEditorEl.focus();
+    scriptEditorEl.selectionStart = scriptEditorEl.selectionEnd = start + replacement.length;
+    parseAndRenderHud();
+    saveStateToStorage();
+    broadcastState('SCRIPT_UPDATE', { content: scriptEditorEl.value });
+  };
+
+  window.setTheme = function(textColor, accentColor, btnEl) {
+    document.documentElement.style.setProperty('--hud-text-color', textColor);
+    document.documentElement.style.setProperty('--hud-accent-color', accentColor);
+    document.querySelectorAll('.swatch-btn').forEach(b => b.classList.remove('active'));
+    if (btnEl) btnEl.classList.add('active');
+    broadcastState('STYLE_CHANGE', { prop: '--hud-text-color', val: textColor });
+    broadcastState('STYLE_CHANGE', { prop: '--hud-accent-color', val: accentColor });
+  };
+
+  window.flashCard = function(cardEl) {
+    cardEl.style.borderColor = '#10b981';
+    cardEl.style.background = 'rgba(16, 185, 129, 0.16)';
+    setTimeout(() => {
+      cardEl.style.borderColor = '';
+      cardEl.style.background = '';
+    }, 350);
+  };
+
+  // Event Listeners
+  playPauseBtn.onclick = () => {
+    if (scrollMode === 'voice') setScrollMode('wpm');
+    togglePlay();
+  };
+  document.getElementById('resetBtn').onclick = resetPrompter;
+  document.getElementById('voiceSimBtn').onclick = startVoiceSim;
+
+  document.getElementById('stealthTestBtn').onclick = function() {
+    const active = document.body.classList.toggle('audience-view-active');
+    this.classList.toggle('active', active);
+    this.textContent = active
+      ? '✨ Viewing Audience Screen Share (Click to Restore HUD)'
+      : '👁️ Preview Audience Screen Share (Stealth Test)';
+    broadcastState('AUDIENCE_PREVIEW_CHANGE', { active });
+  };
+
+  function setClickThroughMode(locked, shouldBroadcast = true) {
+    clickThroughLocked = Boolean(locked);
+    teleprompterHud.classList.toggle('click-through-locked', clickThroughLocked);
+    const lockBtn = document.getElementById('lockHudBtn');
+    if (lockBtn) {
+      lockBtn.textContent = clickThroughLocked ? '🔒 Click-Through: ON' : '🔓 Click-Through: OFF (Interactive)';
+      lockBtn.style.borderColor = clickThroughLocked ? '' : 'var(--cyan)';
+      lockBtn.style.color = clickThroughLocked ? '' : 'var(--cyan)';
+    }
+    const headerLockBtn = document.getElementById('hudHeaderLockBtn');
+    if (headerLockBtn) {
+      headerLockBtn.textContent = clickThroughLocked ? '🔒' : '🔓';
+      headerLockBtn.style.borderColor = clickThroughLocked ? '' : 'var(--cyan)';
+      headerLockBtn.style.color = clickThroughLocked ? '' : 'var(--cyan)';
+    }
+    hudModeStatus.textContent = clickThroughLocked
+      ? `Mode: ${scrollMode === 'voice' ? 'Voice-Synced' : 'Constant WPM'} · Click-Through ON`
+      : '🔓 Interactive Mode · Drag, Scroll or Click Any Line';
+    console.log('__GHOSTCUE_IPC__:SET_CLICK_THROUGH:' + (clickThroughLocked ? 'true' : 'false'));
+    if (shouldBroadcast) {
+      broadcastState('CLICK_THROUGH_CHANGE', { locked: clickThroughLocked });
+    }
+  }
+
+  document.getElementById('lockHudBtn').onclick = function() {
+    setClickThroughMode(!clickThroughLocked, true);
+  };
+  const hudHeaderLockBtn = document.getElementById('hudHeaderLockBtn');
+  if (hudHeaderLockBtn) {
+    hudHeaderLockBtn.onclick = function(e) {
+      e.stopPropagation();
+      setClickThroughMode(!clickThroughLocked, true);
+    };
+  }
+
+  // Interactive Mode: 1) Mouse Wheel / Two-Finger Trackpad Manual Scroll inside HUD
+  const hudViewport = document.querySelector('.hud-viewport');
+  hudViewport.addEventListener('wheel', (e) => {
+    if (clickThroughLocked) return;
+    e.preventDefault();
+    const maxScroll = getMaxScroll();
+    scrollY = Math.max(0, Math.min(maxScroll, scrollY + e.deltaY * 0.65));
+    pruneTriggersAfterScrollRewind(scrollY);
+    hudScrollTrack.style.transform = `translateY(${-scrollY}px)`;
+    updateActiveEyeline();
+    broadcastState('SCROLL_SYNC', { scrollY, spokenWordIndex });
+  }, { passive: false });
+
+  // Interactive Mode: 2) Drag HUD by Header or Interactive Bar to Reposition Anywhere on Screen
+  const hudDragHandle = document.getElementById('hudDragHandle');
+  const hudInteractiveBar = document.querySelector('.hud-interactive-bar');
+  const stageContainer = document.getElementById('stageContainer');
+  let isDraggingHud = false;
+  let dragStartX = 0;
+  let dragStartY = 0;
+  let dragLastScreenX = 0;
+  let dragLastScreenY = 0;
+  let hudStartLeft = 0;
+  let hudStartTop = 0;
+
+  function startHudDrag(e) {
+    if (clickThroughLocked) return;
+    if (e.target.closest('button')) return;
+    isDraggingHud = true;
+    dragLastScreenX = e.screenX;
+    dragLastScreenY = e.screenY;
+    if (document.body.classList.contains('overlay-only-mode')) {
+      console.log('__GHOSTCUE_IPC__:START_DRAG_OVERLAY');
+    } else {
+      const stageRect = stageContainer.getBoundingClientRect();
+      const hudRect = teleprompterHud.getBoundingClientRect();
+      hudStartLeft = hudRect.left - stageRect.left;
+      hudStartTop = hudRect.top - stageRect.top;
+      teleprompterHud.style.transform = 'none';
+      teleprompterHud.style.left = hudStartLeft + 'px';
+      teleprompterHud.style.top = hudStartTop + 'px';
+      teleprompterHud.style.transition = 'none';
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+    }
+    hudDragHandle.style.cursor = 'grabbing';
+    e.preventDefault();
+  }
+
+  hudDragHandle.addEventListener('mousedown', startHudDrag);
+  hudInteractiveBar.addEventListener('mousedown', startHudDrag);
+
+  // Interactive Mode: 3) Resize HUD from Bottom-Right Corner
+  const hudResizeHandle = document.getElementById('hudResizeHandle');
+  let isResizingHud = false;
+  let resizeStartX = 0;
+  let resizeStartY = 0;
+  let startWidth = 470;
+  let startHeight = 232;
+
+  hudResizeHandle.addEventListener('mousedown', (e) => {
+    if (clickThroughLocked) return;
+    isResizingHud = true;
+    resizeStartX = e.screenX;
+    resizeStartY = e.screenY;
+    startWidth = teleprompterHud.offsetWidth;
+    startHeight = teleprompterHud.offsetHeight;
+    teleprompterHud.style.transition = 'none';
+    e.stopPropagation();
+    e.preventDefault();
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (isDraggingHud) {
+      if (document.body.classList.contains('overlay-only-mode')) {
+        const dx = Math.round(e.screenX - dragLastScreenX);
+        const dy = Math.round(e.screenY - dragLastScreenY);
+        if (dx !== 0 || dy !== 0) {
+          dragLastScreenX = e.screenX;
+          dragLastScreenY = e.screenY;
+          console.log(`__GHOSTCUE_IPC__:MOVE_OVERLAY:${dx}:${dy}`);
+        }
+      } else {
+        const stageRect = stageContainer.getBoundingClientRect();
+        const newLeft = Math.max(8, Math.min(stageRect.width - teleprompterHud.offsetWidth - 8, hudStartLeft + (e.clientX - dragStartX)));
+        const newTop = Math.max(0, Math.min(stageRect.height - teleprompterHud.offsetHeight - 8, hudStartTop + (e.clientY - dragStartY)));
+        teleprompterHud.style.left = newLeft + 'px';
+        teleprompterHud.style.top = newTop + 'px';
+      }
+    } else if (isResizingHud) {
+      const newW = Math.max(380, Math.min(580, startWidth + (e.screenX - resizeStartX)));
+      const newH = Math.max(200, Math.min(340, startHeight + (e.screenY - resizeStartY)));
+      document.documentElement.style.setProperty('--hud-width', newW + 'px');
+      teleprompterHud.style.height = newH + 'px';
+      document.getElementById('widthSlider').value = Math.min(560, Math.round(newW));
+      document.getElementById('widthValLabel').textContent = Math.round(newW) + 'px';
+      console.log(`__GHOSTCUE_IPC__:RESIZE_OVERLAY:${Math.round(newW + 30)}:${Math.round(newH + 55)}`);
+      broadcastState('STYLE_CHANGE', { prop: '--hud-width', val: Math.round(newW) + 'px' });
+    }
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (isDraggingHud || isResizingHud) {
+      if (isDraggingHud && document.body.classList.contains('overlay-only-mode')) {
+        console.log('__GHOSTCUE_IPC__:STOP_DRAG_OVERLAY');
+      }
+      isDraggingHud = false;
+      isResizingHud = false;
+      hudDragHandle.style.cursor = 'grab';
+      teleprompterHud.style.transition = '';
+    }
+  });
+
+  // Mini buttons inside Interactive Bar & Always-Clickable Top Header Bar
+  document.getElementById('hudMiniPlayBtn').onclick = (e) => {
+    e.stopPropagation();
+    if (scrollMode === 'voice') setScrollMode('wpm');
+    togglePlay();
+  };
+  document.getElementById('hudSnapNotchBtn').onclick = (e) => {
+    e.stopPropagation();
+    teleprompterHud.style.left = '';
+    teleprompterHud.style.top = '';
+    teleprompterHud.style.transform = '';
+    console.log('__GHOSTCUE_IPC__:SNAP_NOTCH');
+  };
+
+  // Top Header Direct Controls (3-State Mode Pill: Pause / WPM / Voice Flow, Slide ◀/▶, Quick Drawer 📂, and ✕ Close)
+  document.getElementById('hudHeaderPlayBtn').onclick = (e) => {
+    e.stopPropagation();
+    if (scrollMode === 'voice') setScrollMode('wpm');
+    togglePlay();
+  };
+  const hudSegPauseBtn = document.getElementById('hudSegPauseBtn');
+  if (hudSegPauseBtn) {
+    hudSegPauseBtn.onclick = (e) => {
+      e.stopPropagation();
+      if (scrollMode === 'voice') setScrollMode('wpm');
+      togglePlay(false);
+    };
+  }
+  const hudSegWpmBtn = document.getElementById('hudSegWpmBtn');
+  if (hudSegWpmBtn) {
+    hudSegWpmBtn.onclick = (e) => {
+      e.stopPropagation();
+      if (scrollMode === 'voice') setScrollMode('wpm');
+      togglePlay(true);
+    };
+  }
+  const hudSegVoiceBtn = document.getElementById('hudSegVoiceBtn');
+  if (hudSegVoiceBtn) {
+    hudSegVoiceBtn.onclick = (e) => {
+      e.stopPropagation();
+      setScrollMode('voice');
+    };
+  }
+  const qdMoreBtn = document.getElementById('qdMoreBtn');
+  const qdMorePopover = document.getElementById('qdMorePopover');
+  if (qdMoreBtn && qdMorePopover) {
+    qdMoreBtn.onclick = (e) => {
+      e.stopPropagation();
+      qdMorePopover.classList.toggle('open');
+    };
+  }
+  document.getElementById('hudHeaderPrevSlideBtn').onclick = (e) => {
+    e.stopPropagation();
+    setSlide(currentSlideIndex - 1, true);
+  };
+  document.getElementById('hudHeaderNextSlideBtn').onclick = (e) => {
+    e.stopPropagation();
+    triggeredSlideBoundaries.add(currentSlideIndex + 2);
+    setSlide(currentSlideIndex + 1, true);
+    if (scrollMode === 'wpm' && !isPlaying) togglePlay(true);
+  };
+  const hudHeaderStudioBtn = document.getElementById('hudHeaderStudioBtn');
+  const quickDrawerShell = document.getElementById('quickDrawerShell');
+  if (hudHeaderStudioBtn) {
+    hudHeaderStudioBtn.onclick = (e) => {
+      e.stopPropagation();
+      if (quickDrawerShell && !document.body.classList.contains('overlay-only-mode')) {
+        quickDrawerShell.classList.toggle('drawer-collapsed');
+      }
+      console.log('__GHOSTCUE_IPC__:TOGGLE_STUDIO');
+    };
+  }
+  const presentNowBtn = document.getElementById('presentNowBtn');
+  if (presentNowBtn) {
+    presentNowBtn.onclick = () => {
+      setOverlayVisible(true);
+      if (quickDrawerShell && !document.body.classList.contains('studio-only-mode')) {
+        quickDrawerShell.classList.add('drawer-collapsed');
+      }
+      console.log('__GHOSTCUE_IPC__:HIDE_STUDIO');
+    };
+  }
+  function setOverlayVisible(visible) {
+    teleprompterHud.classList.toggle('hud-closed', !visible);
+    const showBtn = document.getElementById('showOverlayBtn');
+    if (showBtn) {
+      showBtn.textContent = visible ? '👁️ HUD: Visible' : '👁️ Show HUD';
+      showBtn.style.borderColor = visible ? '' : '#059669';
+      showBtn.style.color = visible ? '' : '#059669';
+    }
+  }
+
+  document.getElementById('hudHeaderCloseBtn').onclick = (e) => {
+    e.stopPropagation();
+    togglePlay(false);
+    setOverlayVisible(false);
+    console.log('__GHOSTCUE_IPC__:HIDE_OVERLAY');
+    broadcastState('OVERLAY_VISIBILITY', { visible: false });
+  };
+  document.getElementById('showOverlayBtn').onclick = () => {
+    setOverlayVisible(true);
+    console.log('__GHOSTCUE_IPC__:SHOW_OVERLAY');
+    broadcastState('OVERLAY_VISIBILITY', { visible: true });
+  };
+
+  // Electron Click-Through Header Hover Bridge: lets you click ✕, ▶/⏸, and ◀/▶ anytime!
+  hudDragHandle.addEventListener('mouseenter', () => {
+    console.log('__GHOSTCUE_IPC__:HEADER_ENTER');
+  });
+  hudDragHandle.addEventListener('mouseleave', () => {
+    if (clickThroughLocked && !isDraggingHud) {
+      console.log('__GHOSTCUE_IPC__:HEADER_LEAVE');
+    }
+  });
+
+  document.getElementById('prevSlideBtn').onclick = () => setSlide(currentSlideIndex - 1, true);
+  document.getElementById('nextSlideBtn').onclick = () => setSlide(currentSlideIndex + 1, true);
+
+  document.getElementById('newScriptBtn').onclick = () => {
+    const id = 'custom-' + Date.now();
+    SCRIPTS.unshift({
+      id,
+      title: 'Custom Presentation Script',
+      category: 'Custom · Draft',
+      content: `[SLIDE 1]\nStart typing or paste your presentation notes here.\nUse **double asterisks** to highlight key numbers and [PAUSE 2s] to pace your delivery.`
+    });
+    selectScript(id);
+  };
+
+  // Universal PKZIP Central Directory + Local Header Reader (Handles Bit 3 Streaming Data Descriptors from Google Slides/Docs, Canva, Keynote, & Office)
+  async function readZipEntriesFromArrayBuffer(buffer, filterFn) {
+    const bytes = new Uint8Array(buffer);
+    const view = new DataView(buffer);
+    const decoder = new TextDecoder('utf-8');
+    const files = {};
+
+    async function decodeEntryBytes(compression, compressedData) {
+      if (compression === 0) {
+        return decoder.decode(compressedData);
+      } else if (compression === 8 && typeof DecompressionStream !== 'undefined') {
+        try {
+          const ds = new DecompressionStream('deflate-raw');
+          const writer = ds.writable.getWriter();
+          writer.write(compressedData);
+          writer.close();
+          const outBuf = await new Response(ds.readable).arrayBuffer();
+          return decoder.decode(outBuf);
+        } catch (e) {
+          return '';
+        }
+      }
+      return '';
+    }
+
+    // 1. Primary: Locate End of Central Directory (0x06054b50) so Bit-3 streaming ZIPs work 100% of the time
+    let eocdOffset = -1;
+    const minEocd = Math.max(0, bytes.length - 65557);
+    for (let i = bytes.length - 22; i >= minEocd; i--) {
+      if (view.getUint32(i, true) === 0x06054b50) {
+        eocdOffset = i;
+        break;
+      }
+    }
+
+    if (eocdOffset !== -1) {
+      const totalEntries = view.getUint16(eocdOffset + 10, true);
+      let cdOffset = view.getUint32(eocdOffset + 16, true);
+      for (let idx = 0; idx < totalEntries && cdOffset + 46 <= bytes.length; idx++) {
+        if (view.getUint32(cdOffset, true) !== 0x02014b50) break;
+        const compression = view.getUint16(cdOffset + 10, true);
+        const compressedSize = view.getUint32(cdOffset + 20, true);
+        const fileNameLen = view.getUint16(cdOffset + 28, true);
+        const extraLen = view.getUint16(cdOffset + 30, true);
+        const commentLen = view.getUint16(cdOffset + 32, true);
+        const localHeaderOffset = view.getUint32(cdOffset + 42, true);
+        const fileName = decoder.decode(bytes.subarray(cdOffset + 46, cdOffset + 46 + fileNameLen));
+
+        if (filterFn(fileName) && localHeaderOffset + 30 <= bytes.length) {
+          const lNameLen = view.getUint16(localHeaderOffset + 26, true);
+          const lExtraLen = view.getUint16(localHeaderOffset + 28, true);
+          const dataStart = localHeaderOffset + 30 + lNameLen + lExtraLen;
+          const compressedData = bytes.subarray(dataStart, dataStart + compressedSize);
+          const text = await decodeEntryBytes(compression, compressedData);
+          if (text) files[fileName] = text;
+        }
+        cdOffset += 46 + fileNameLen + extraLen + commentLen;
+      }
+    }
+
+    // 2. Fallback: Sequential Local File Headers (0x04034b50) for header-only in-memory archives
+    if (Object.keys(files).length === 0) {
+      let offset = 0;
+      while (offset + 30 <= bytes.length) {
+        const sig = view.getUint32(offset, true);
+        if (sig !== 0x04034b50) break;
+        const compression = view.getUint16(offset + 8, true);
+        const compressedSize = view.getUint32(offset + 18, true);
+        const fileNameLen = view.getUint16(offset + 26, true);
+        const extraLen = view.getUint16(offset + 28, true);
+        const fileName = decoder.decode(bytes.subarray(offset + 30, offset + 30 + fileNameLen));
+        const dataStart = offset + 30 + fileNameLen + extraLen;
+        if (compressedSize === 0 && fileNameLen > 0) break;
+        const compressedData = bytes.subarray(dataStart, dataStart + compressedSize);
+
+        if (filterFn(fileName)) {
+          const text = await decodeEntryBytes(compression, compressedData);
+          if (text) files[fileName] = text;
+        }
+        offset = dataStart + compressedSize;
+      }
+    }
+
+    return files;
+  }
+
+  // Zero-Dependency Native .PPTX ZIP Speaker Notes Extractor (Uses Central Directory + Web DecompressionStream)
+  async function extractPptxNotesFromArrayBuffer(buffer) {
+    const files = await readZipEntriesFromArrayBuffer(
+      buffer,
+      (name) => name.startsWith('ppt/notesSlides/notesSlide') || name.startsWith('ppt/slides/slide')
+    );
+
+    // Parse XML <a:t> text runs per slide
+    const slideNumbers = new Set();
+    Object.keys(files).forEach(k => {
+      const m = k.match(/(?:notesSlide|slide)(\d+)\.xml$/);
+      if (m) slideNumbers.add(parseInt(m[1], 10));
+    });
+
+    const sortedNums = Array.from(slideNumbers).sort((a, b) => a - b);
+    if (sortedNums.length === 0) {
+      throw new Error('No slides or speaker notes found in PPTX archive');
+    }
+
+    const extractTextFromXml = (xml) => {
+      if (!xml) return '';
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(xml, 'application/xml');
+      const allEls = Array.from(doc.getElementsByTagName('*'));
+      const paras = allEls.filter(el => el.localName === 'p');
+      return paras
+        .map(p => Array.from(p.getElementsByTagName('*')).filter(el => el.localName === 't').map(t => t.textContent).join(''))
+        .map(line => line.trim())
+        .filter(line => line.length > 0 && !/^\d+$/.test(line) && !/^click to add notes$/i.test(line))
+        .join('\n');
+    };
+
+    const sections = sortedNums.map(num => {
+      const notesXml = files[`ppt/notesSlides/notesSlide${num}.xml`];
+      const slideXml = files[`ppt/slides/slide${num}.xml`];
+      const notesText = extractTextFromXml(notesXml) || extractTextFromXml(slideXml) || `Slide ${num} discussion points.`;
+      return `[SLIDE ${num}]\n${notesText}`;
+    });
+
+    return {
+      slideCount: sortedNums.length,
+      scriptText: sections.join('\n')
+    };
+  }
+
+  // Build an in-memory standard ZIP .pptx archive to test & prove the PPTX extractor with 1 click
+  function buildSamplePptxArrayBuffer() {
+    const encoder = new TextEncoder();
+    const entries = [
+      {
+        name: 'ppt/notesSlides/notesSlide1.xml',
+        content: `<p:notes xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><a:p><a:r><a:t>Welcome to our Q4 Product Strategy Deck, imported directly from PowerPoint Speaker Notes.</a:t></a:r></a:p><a:p><a:r><a:t>Our primary goal today is locking in **enterprise self-serve expansion** and cutting deployment latency by **55%**.</a:t></a:r></a:p></p:notes>`
+      },
+      {
+        name: 'ppt/notesSlides/notesSlide2.xml',
+        content: `<p:notes xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><a:p><a:r><a:t>[SLOW DOWN] On Slide 2, notice how customer acquisition cost dropped by **34%** after launching automated onboarding.</a:t></a:r></a:p></p:notes>`
+      },
+      {
+        name: 'ppt/notesSlides/notesSlide3.xml',
+        content: `<p:notes xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><a:p><a:r><a:t>Finally on Slide 3, we are allocating **$2.4M** to expand our EMEA solutions engineering team in Q1.</a:t></a:r></a:p></p:notes>`
+      }
+    ];
+
+    const chunks = [];
+    entries.forEach(entry => {
+      const nameBytes = encoder.encode(entry.name);
+      const dataBytes = encoder.encode(entry.content);
+      const header = new Uint8Array(30 + nameBytes.length);
+      const view = new DataView(header.buffer);
+      view.setUint32(0, 0x04034b50, true); // ZIP local header
+      view.setUint16(4, 20, true);         // Version needed
+      view.setUint16(8, 0, true);          // Compression = 0 (Stored)
+      view.setUint32(18, dataBytes.length, true); // Compressed size
+      view.setUint32(22, dataBytes.length, true); // Uncompressed size
+      view.setUint16(26, nameBytes.length, true); // File name length
+      header.set(nameBytes, 30);
+      chunks.push(header, dataBytes);
+    });
+
+    const totalLen = chunks.reduce((sum, c) => sum + c.length, 0);
+    const out = new Uint8Array(totalLen);
+    let pos = 0;
+    chunks.forEach(c => {
+      out.set(c, pos);
+      pos += c.length;
+    });
+    return out.buffer;
+  }
+
+  document.getElementById('demoPptxBtn').onclick = async () => {
+    const sampleBuf = buildSamplePptxArrayBuffer();
+    const parsed = await extractPptxNotesFromArrayBuffer(sampleBuf);
+    const id = 'pptx-' + Date.now();
+    SCRIPTS.unshift({
+      id,
+      title: 'Q4_Product_Strategy.pptx (Notes)',
+      category: `${parsed.slideCount} Slides · PPTX Extracted`,
+      content: parsed.scriptText
+    });
+    selectScript(id);
+  };
+
+  // Native .DOCX (Word OpenXML ZIP) Extractor (Uses Central Directory + Local Header Reader)
+  async function extractDocxTextFromArrayBuffer(buffer) {
+    const files = await readZipEntriesFromArrayBuffer(
+      buffer,
+      (name) => name === 'word/document.xml'
+    );
+    const wordXml = files['word/document.xml'] || '';
+
+    if (!wordXml) {
+      throw new Error('Could not find word/document.xml in .docx file');
+    }
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(wordXml, 'application/xml');
+    const allEls = Array.from(doc.getElementsByTagName('*'));
+    const paras = allEls.filter(el => el.localName === 'p');
+    const lines = [];
+    let slideCounter = 0;
+
+    paras.forEach(p => {
+      const pChildren = Array.from(p.getElementsByTagName('*'));
+      const styleEl = pChildren.find(el => el.localName === 'pStyle');
+      const styleVal = styleEl ? (styleEl.getAttribute('w:val') || styleEl.getAttribute('val') || '') : '';
+      const text = pChildren.filter(el => el.localName === 't').map(t => t.textContent).join('').trim();
+      if (!text) return;
+
+      const explicitSlide = text.match(/^(?:\[?SLIDE\s*(\d+)\]?|Slide\s*(\d+)\s*[:.-]?)(.*)$/i);
+      if (explicitSlide) {
+        slideCounter++;
+        const num = explicitSlide[1] || explicitSlide[2] || slideCounter;
+        lines.push(`[SLIDE ${num}]`);
+        if (explicitSlide[3] && explicitSlide[3].trim()) lines.push(explicitSlide[3].trim());
+      } else if (/^Heading[12]/i.test(styleVal)) {
+        slideCounter++;
+        lines.push(`[SLIDE ${slideCounter}]`);
+        lines.push(`**${text}**`);
+      } else {
+        if (slideCounter === 0) {
+          slideCounter = 1;
+          lines.push('[SLIDE 1]');
+        }
+        lines.push(text);
+      }
+    });
+
+    // If no headings were used, group every ~4 paragraphs into slide sections automatically
+    if (slideCounter <= 1 && lines.length > 6) {
+      const bodyLines = lines.filter(l => !/^\[SLIDE/i.test(l));
+      const chunked = [];
+      let s = 1;
+      for (let i = 0; i < bodyLines.length; i += 3) {
+        chunked.push(`[SLIDE ${s++}]`);
+        chunked.push(...bodyLines.slice(i, i + 3));
+      }
+      return { slideCount: s - 1, scriptText: chunked.join('\n') };
+    }
+
+    return {
+      slideCount: Math.max(1, slideCounter),
+      scriptText: lines.join('\n')
+    };
+  }
+
+  // Legacy .DOC & .RTF Text Extractor
+  function extractDocTextFromArrayBuffer(buffer) {
+    const bytes = new Uint8Array(buffer);
+    const utf8 = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+
+    // 1. Check if RTF document saved as .doc/.rtf
+    if (utf8.startsWith('{\\rtf')) {
+      const cleaned = utf8
+        .replace(/\\par\b/g, '\n')
+        .replace(/\\line\b/g, '\n')
+        .replace(/\\'[0-9a-fA-F]{2}/g, ' ')
+        .replace(/\\[a-zA-Z]+-?\d*\s?/g, '')
+        .replace(/[{}]/g, '')
+        .split('\n')
+        .map(l => l.trim())
+        .filter(l => l.length > 1);
+      return formatRawLinesIntoSlides(cleaned);
+    }
+
+    // 2. Check if HTML/XML Word document saved as .doc
+    if (/<html|<w:wordDocument|<xml/i.test(utf8)) {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = utf8;
+      const cleaned = (tmp.textContent || '')
+        .split(/\r?\n/)
+        .map(l => l.trim())
+        .filter(l => l.length > 1);
+      return formatRawLinesIntoSlides(cleaned);
+    }
+
+    // 3. Binary OLE2 .doc: extract readable ASCII and UTF-16LE text segments
+    const chunks = [];
+    // Extract ASCII runs >= 12 chars
+    const asciiMatches = utf8.match(/[A-Za-z0-9 ,.'":;!?()\-/$%&\n\r]{14,}/g) || [];
+    asciiMatches.forEach(m => {
+      const t = m.trim();
+      if (
+        t.length >= 14 &&
+        /[a-zA-Z]{4,}/.test(t) &&
+        !/Microsoft|Word\.Document|Normal\.dot|Times New Roman|Calibri|Cambria|MSWordDoc| SummaryInformation/i.test(t)
+      ) {
+        chunks.push(t);
+      }
+    });
+
+    // Also check UTF-16LE runs
+    const utf16 = new TextDecoder('utf-16le', { fatal: false }).decode(bytes);
+    const u16Matches = utf16.match(/[A-Za-z0-9 ,.'":;!?()\-/$%&\n\r]{14,}/g) || [];
+    u16Matches.forEach(m => {
+      const t = m.trim();
+      if (
+        t.length >= 14 &&
+        /[a-zA-Z]{4,}/.test(t) &&
+        !/Microsoft|Word\.Document|Normal\.dot|Times New Roman|Calibri|Cambria/i.test(t)
+      ) {
+        chunks.push(t);
+      }
+    });
+
+    const lines = chunks
+      .join('\n')
+      .split(/\r?\n/)
+      .map(l => l.trim())
+      .filter(l => l.length > 2);
+
+    return formatRawLinesIntoSlides(lines.length ? lines : ['Imported .doc script ready for editing.']);
+  }
+
+  function formatRawLinesIntoSlides(rawLines) {
+    const out = [];
+    let slideCount = 0;
+    const hasExplicitSlides = rawLines.some(l => /^\[?SLIDE\s*\d+/i.test(l));
+
+    if (hasExplicitSlides) {
+      rawLines.forEach(l => {
+        if (/^\[?SLIDE\s*(\d+)/i.test(l)) {
+          slideCount++;
+          const m = l.match(/(\d+)/);
+          out.push(`[SLIDE ${m ? m[1] : slideCount}]`);
+        } else {
+          out.push(l);
+        }
+      });
+    } else {
+      for (let i = 0; i < rawLines.length; i += 3) {
+        slideCount++;
+        out.push(`[SLIDE ${slideCount}]`);
+        out.push(...rawLines.slice(i, i + 3));
+      }
+    }
+    return { slideCount: Math.max(1, slideCount), scriptText: out.join('\n') };
+  }
+
+  // Native Multi-Page .PDF Text Extractor (Uses bundled PDF.js + Pure-JS Stream Fallback)
+  async function extractPdfTextFromArrayBuffer(buffer) {
+    // 1. Primary: Mozilla PDF.js multi-page layout-aware extraction
+    if (window.pdfjsLib) {
+      try {
+        const loadingTask = window.pdfjsLib.getDocument({
+          data: new Uint8Array(buffer.slice(0)),
+          disableWorker: true
+        });
+        const pdf = await Promise.race([
+          loadingTask.promise,
+          new Promise((_, rej) => setTimeout(() => rej(new Error('PDF worker timeout')), 2500))
+        ]);
+        const pageSections = [];
+
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+          const page = await pdf.getPage(pageNum);
+          const content = await page.getTextContent();
+          const linesByY = [];
+          let currentLine = [];
+          let lastY = null;
+
+          content.items.forEach(item => {
+            const str = (item.str || '').trim();
+            if (!str) return;
+            const y = item.transform ? Math.round(item.transform[5]) : 0;
+            if (lastY !== null && Math.abs(y - lastY) > 6) {
+              if (currentLine.length) linesByY.push(currentLine.join(' '));
+              currentLine = [str];
+            } else {
+              currentLine.push(str);
+            }
+            lastY = y;
+          });
+          if (currentLine.length) linesByY.push(currentLine.join(' '));
+
+          const pageText = linesByY.filter(l => l.trim().length > 0).join('\n');
+          if (pageText) {
+            pageSections.push(`[SLIDE ${pageNum}]\n${pageText}`);
+          }
+        }
+
+        if (pageSections.length > 0) {
+          return {
+            slideCount: pageSections.length,
+            scriptText: pageSections.join('\n')
+          };
+        }
+      } catch (e) {}
+    }
+
+    // 2. Fallback: Pure-JS PDF BT..ET (Tj / TJ) text stream parser
+    const raw = new TextDecoder('latin1').decode(new Uint8Array(buffer));
+    const pages = [];
+    const btBlocks = raw.match(/BT[\s\S]*?ET/g) || [];
+    btBlocks.forEach((block, idx) => {
+      const runs = [];
+      const tjMatches = block.matchAll(/\(([^()\\]*(?:\\.[^()\\]*)*)\)\s*Tj/g);
+      for (const m of tjMatches) {
+        runs.push(m[1].replace(/\\([()\\])/g, '$1'));
+      }
+      const tjArrMatches = block.matchAll(/\[([\s\S]*?)\]\s*TJ/g);
+      for (const m of tjArrMatches) {
+        const inner = m[1].matchAll(/\(([^()\\]*(?:\\.[^()\\]*)*)\)/g);
+        const line = Array.from(inner).map(x => x[1].replace(/\\([()\\])/g, '$1')).join('');
+        if (line.trim()) runs.push(line.trim());
+      }
+      if (runs.length) {
+        pages.push(`[SLIDE ${pages.length + 1}]\n${runs.join('\n')}`);
+      }
+    });
+
+    if (pages.length === 0) {
+      throw new Error('No extractable text found in PDF (scanned image PDFs require OCR).');
+    }
+
+    return {
+      slideCount: pages.length,
+      scriptText: pages.join('\n')
+    };
+  }
+
+  // Build in-memory sample .DOCX and .PDF files for 1-click verification
+  function buildSampleDocxArrayBuffer() {
+    const encoder = new TextEncoder();
+    const xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+        <w:body>
+          <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Executive Case Study: Market Entry Strategy</w:t></w:r></w:p>
+          <w:p><w:r><w:t>Good morning panel. Our Word (.docx) case brief outlines how we capture **24% market share** within 12 months.</w:t></w:r></w:p>
+          <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Unit Economics &amp; Margin Expansion</w:t></w:r></w:p>
+          <w:p><w:r><w:t>[SLOW DOWN] By shifting to direct dermatology distribution, gross margin expands from **58% to 74%**.</w:t></w:r></w:p>
+          <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Go-To-Market Timeline &amp; ROI</w:t></w:r></w:p>
+          <w:p><w:r><w:t>We break even in Month 7 with a projected **3.8x return on marketing spend**.</w:t></w:r></w:p>
+        </w:body>
+      </w:document>`;
+    const nameBytes = encoder.encode('word/document.xml');
+    const dataBytes = encoder.encode(xml);
+    const header = new Uint8Array(30 + nameBytes.length);
+    const view = new DataView(header.buffer);
+    view.setUint32(0, 0x04034b50, true);
+    view.setUint16(4, 20, true);
+    view.setUint16(8, 0, true);
+    view.setUint32(18, dataBytes.length, true);
+    view.setUint32(22, dataBytes.length, true);
+    view.setUint16(26, nameBytes.length, true);
+    header.set(nameBytes, 30);
+    const out = new Uint8Array(header.length + dataBytes.length);
+    out.set(header, 0);
+    out.set(dataBytes, header.length);
+    return out.buffer;
+  }
+
+  function buildSamplePdfArrayBuffer() {
+    const pdfStr = `%PDF-1.4
+1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj
+2 0 obj << /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >> endobj
+3 0 obj << /Type /Page /Parent 2 0 R /Contents 5 0 R >> endobj
+4 0 obj << /Type /Page /Parent 2 0 R /Contents 6 0 R >> endobj
+5 0 obj << /Length 168 >> stream
+BT
+(Case Study Pitch Deck - Page 1 Overview) Tj
+(We identified a **$140M addressable gap** in clinical skincare distribution across Tier-1 metros.) Tj
+ET
+endstream endobj
+6 0 obj << /Length 162 >> stream
+BT
+(Page 2 - Strategic Recommendation & Financials) Tj
+([SLOW DOWN] Our 3-pillar rollout delivers **42% repeat purchase rates** by Q4.) Tj
+ET
+endstream endobj
+%%EOF`;
+    return new TextEncoder().encode(pdfStr).buffer;
+  }
+
+  document.getElementById('demoDocxBtn').onclick = async () => {
+    const sampleBuf = buildSampleDocxArrayBuffer();
+    const parsed = await extractDocxTextFromArrayBuffer(sampleBuf);
+    const id = 'docx-' + Date.now();
+    SCRIPTS.unshift({
+      id,
+      title: 'Case_Study_Brief.docx',
+      category: `${parsed.slideCount} Slides · Word .DOCX`,
+      content: parsed.scriptText
+    });
+    selectScript(id);
+  };
+
+  document.getElementById('demoPdfBtn').onclick = async () => {
+    const sampleBuf = buildSamplePdfArrayBuffer();
+    const parsed = await extractPdfTextFromArrayBuffer(sampleBuf);
+    const id = 'pdf-' + Date.now();
+    SCRIPTS.unshift({
+      id,
+      title: 'Pitch_Presentation_Deck.pdf',
+      category: `${parsed.slideCount} Pages · .PDF Extracted`,
+      content: parsed.scriptText
+    });
+    selectScript(id);
+  };
+
+  document.getElementById('fileUploadInput').onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    e.target.value = '';
+    const lower = file.name.toLowerCase();
+    const cleanTitle = file.name.replace(/\.[^.]+$/, '');
+
+    try {
+      if (lower.endsWith('.pptx')) {
+        const buf = await file.arrayBuffer();
+        const parsed = await extractPptxNotesFromArrayBuffer(buf);
+        const id = 'pptx-' + Date.now();
+        SCRIPTS.unshift({
+          id,
+          title: cleanTitle,
+          category: `${parsed.slideCount} Slides · PPTX Notes`,
+          content: parsed.scriptText
+        });
+        selectScript(id);
+        return;
+      }
+
+      if (lower.endsWith('.pdf')) {
+        const buf = await file.arrayBuffer();
+        const parsed = await extractPdfTextFromArrayBuffer(buf);
+        const id = 'pdf-' + Date.now();
+        SCRIPTS.unshift({
+          id,
+          title: cleanTitle,
+          category: `${parsed.slideCount} Pages · PDF Script`,
+          content: parsed.scriptText
+        });
+        selectScript(id);
+        return;
+      }
+
+      if (lower.endsWith('.docx')) {
+        const buf = await file.arrayBuffer();
+        const parsed = await extractDocxTextFromArrayBuffer(buf);
+        const id = 'docx-' + Date.now();
+        SCRIPTS.unshift({
+          id,
+          title: cleanTitle,
+          category: `${parsed.slideCount} Slides · Word DOCX`,
+          content: parsed.scriptText
+        });
+        selectScript(id);
+        return;
+      }
+
+      if (lower.endsWith('.doc') || lower.endsWith('.rtf')) {
+        const buf = await file.arrayBuffer();
+        const parsed = extractDocTextFromArrayBuffer(buf);
+        const id = 'doc-' + Date.now();
+        SCRIPTS.unshift({
+          id,
+          title: cleanTitle,
+          category: `${parsed.slideCount} Slides · Word DOC`,
+          content: parsed.scriptText
+        });
+        selectScript(id);
+        return;
+      }
+    } catch (err) {
+      alert('Could not extract text from ' + file.name + ': ' + err.message);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const id = 'upload-' + Date.now();
+      SCRIPTS.unshift({
+        id,
+        title: cleanTitle,
+        category: 'Uploaded Script',
+        content: ev.target.result
+      });
+      selectScript(id);
+    };
+    reader.readAsText(file);
+  };
+
+  // Delete & Export & Title Rename Handlers
+  if (scriptTitleInput) {
+    scriptTitleInput.addEventListener('input', () => {
+      const found = SCRIPTS.find(s => s.id === currentScriptId);
+      if (found) {
+        found.title = scriptTitleInput.value || 'Untitled Script';
+        renderScriptLibrary();
+        saveStateToStorage();
+      }
+    });
+  }
+
+  document.getElementById('deleteScriptBtn').onclick = () => {
+    deleteScriptById(currentScriptId);
+  };
+
+  const clearAllScriptsBtn = document.getElementById('clearAllScriptsBtn');
+  if (clearAllScriptsBtn) {
+    clearAllScriptsBtn.onclick = () => {
+      SCRIPTS.length = 0;
+      applyEmptyLibraryState();
+    };
+  }
+
+  scriptEditorEl.addEventListener('input', () => {
+    // If user starts typing when library is empty (0 scripts), automatically create a script entry for them
+    if (SCRIPTS.length === 0 && scriptEditorEl.value.trim().length > 0) {
+      const autoId = 'custom-' + Date.now();
+      const autoTitle = (scriptTitleInput && scriptTitleInput.value.trim()) ? scriptTitleInput.value.trim() : 'Untitled Script';
+      SCRIPTS.push({
+        id: autoId,
+        title: autoTitle,
+        category: 'Custom · Draft',
+        content: scriptEditorEl.value
+      });
+      currentScriptId = autoId;
+      if (scriptTitleInput && !scriptTitleInput.value.trim()) scriptTitleInput.value = autoTitle;
+      renderScriptLibrary();
+    }
+    parseAndRenderHud();
+    saveStateToStorage();
+    broadcastState('SCRIPT_UPDATE', { content: scriptEditorEl.value });
+  });
+
+  document.getElementById('exportScriptBtn').onclick = () => {
+    const current = SCRIPTS.find(s => s.id === currentScriptId);
+    const filename = ((current ? current.title : 'script').toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'script') + '.md';
+    const blob = new Blob([scriptEditorEl.value], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Pre-Flight Stealth & HDMI Mirroring Guard Modal
+  const preflightModal = document.getElementById('preflightModal');
+  let simulatedMirrorWarning = false;
+
+  function updatePreflightDiagnostics() {
+    const isExtended = window.screen && window.screen.isExtended;
+    const dispStatus = document.getElementById('diagDisplayStatus');
+    const dispDesc = document.getElementById('diagDisplayDesc');
+    const mouseStatus = document.getElementById('diagMouseStatus');
+
+    if (simulatedMirrorWarning) {
+      dispStatus.className = 'diag-badge diag-warn';
+      dispStatus.textContent = '⚠️ HDMI MIRROR DETECTED';
+      dispDesc.innerHTML = '<strong>Hardware Mirroring Active:</strong> Projector/HDMI splitter is duplicating your primary screen. GhostCue has auto-shielded the HUD until you switch macOS Display Settings to <em>"Extended Display"</em>.';
+    } else {
+      dispStatus.className = 'diag-badge diag-pass';
+      dispStatus.textContent = isExtended ? '✓ EXTENDED DESKTOP' : '✓ SINGLE DISPLAY SAFE';
+      dispDesc.textContent = 'No hardware screen mirroring detected. Safe from HDMI scanout leaks.';
+    }
+
+    mouseStatus.className = clickThroughLocked ? 'diag-badge diag-pass' : 'diag-badge diag-warn';
+    mouseStatus.textContent = clickThroughLocked ? '✓ LOCKED ON' : '🔓 INTERACTIVE MODE';
+  }
+
+  document.getElementById('preflightBtn').onclick = () => {
+    updatePreflightDiagnostics();
+    preflightModal.classList.add('open');
+  };
+  document.getElementById('closePreflightBtn').onclick = () => {
+    preflightModal.classList.remove('open');
+  };
+  document.getElementById('simulateMirrorRiskBtn').onclick = function() {
+    simulatedMirrorWarning = !simulatedMirrorWarning;
+    document.body.classList.toggle('audience-view-active', simulatedMirrorWarning);
+    this.textContent = simulatedMirrorWarning
+      ? '✓ Restore Extended Display Mode'
+      : '⚠️ Simulate HDMI Mirroring Alert';
+    updatePreflightDiagnostics();
+    broadcastState('AUDIENCE_PREVIEW_CHANGE', { active: simulatedMirrorWarning });
+  };
+  document.getElementById('runSelfTestScreenBtn').onclick = () => {
+    preflightModal.classList.remove('open');
+    document.getElementById('stealthTestBtn').click();
+  };
+
+  function syncQuickWpmActiveState() {
+    document.querySelectorAll('#quickWpmGroup .chip-btn').forEach(btn => {
+      btn.classList.toggle('active', parseInt(btn.dataset.wpm, 10) === wpm);
+    });
+  }
+
+  window.setQuickWpm = function(val) {
+    wpm = Math.max(40, Math.min(180, parseInt(val, 10) || 105));
+    document.getElementById('wpmSlider').value = wpm;
+    document.getElementById('wpmValLabel').textContent = wpm + ' WPM';
+    syncQuickWpmActiveState();
+    updateWpmStatsOnly();
+    saveStateToStorage();
+    broadcastState('WPM_CHANGE', { wpm });
+  };
+
+  // Sliders
+  document.getElementById('wpmSlider').oninput = function() {
+    wpm = parseInt(this.value, 10);
+    document.getElementById('wpmValLabel').textContent = wpm + ' WPM';
+    syncQuickWpmActiveState();
+    updateWpmStatsOnly();
+    saveStateToStorage();
+    broadcastState('WPM_CHANGE', { wpm });
+  };
+  document.getElementById('fontSlider').oninput = function() {
+    document.documentElement.style.setProperty('--hud-font-size', this.value + 'px');
+    document.getElementById('fontValLabel').textContent = this.value + 'px';
+    saveStateToStorage();
+    broadcastState('STYLE_CHANGE', { prop: '--hud-font-size', val: this.value + 'px' });
+  };
+  document.getElementById('widthSlider').oninput = function() {
+    document.documentElement.style.setProperty('--hud-width', this.value + 'px');
+    document.getElementById('widthValLabel').textContent = this.value + 'px';
+    saveStateToStorage();
+    broadcastState('STYLE_CHANGE', { prop: '--hud-width', val: this.value + 'px' });
+  };
+  document.getElementById('opacitySlider').oninput = function() {
+    const op = (this.value / 100).toFixed(2);
+    document.documentElement.style.setProperty('--hud-opacity', op);
+    document.getElementById('opacityValLabel').textContent = this.value + '%';
+    saveStateToStorage();
+    broadcastState('STYLE_CHANGE', { prop: '--hud-opacity', val: op });
+  };
+
+  // Global Keyboard Shortcuts (Ignored when typing inside any input or textarea, including #scriptTitleInput)
+  window.addEventListener('keydown', (e) => {
+    const activeEl = document.activeElement;
+    const tag = activeEl && activeEl.tagName ? activeEl.tagName.toUpperCase() : '';
+    if (activeEl === scriptEditorEl || activeEl === scriptTitleInput || tag === 'INPUT' || tag === 'TEXTAREA') return;
+    if (e.code === 'Space') {
+      e.preventDefault();
+      if (scrollMode === 'voice') setScrollMode('wpm');
+      togglePlay();
+    } else if (e.code === 'ArrowRight') {
+      e.preventDefault();
+      triggeredSlideBoundaries.add(currentSlideIndex + 2);
+      setSlide(currentSlideIndex + 1, true);
+      if (scrollMode === 'wpm' && !isPlaying) togglePlay(true);
+    } else if (e.code === 'ArrowLeft') {
+      e.preventDefault();
+      setSlide(currentSlideIndex - 1, true);
+    } else if (e.code === 'ArrowUp') {
+      e.preventDefault();
+      window.setQuickWpm(Math.min(180, wpm + 5));
+    } else if (e.code === 'ArrowDown') {
+      e.preventDefault();
+      window.setQuickWpm(Math.max(40, wpm - 5));
+    } else if (e.key.toLowerCase() === 's') {
+      document.getElementById('stealthTestBtn').click();
+    } else if (e.key.toLowerCase() === 'l') {
+      document.getElementById('lockHudBtn').click();
+    }
+  });
+
+  // Cross-Window Real-Time Sync (Syncs Studio Window <-> Floating Electron Overlay Window)
+  const syncChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('ghostcue_sync') : null;
+  let isReceivingSync = false;
+  let lastProcessedCmdId = null;
+
+  function applySyncCommand(type, payload = {}, cmdId = null) {
+    if (cmdId && cmdId === lastProcessedCmdId) return;
+    if (cmdId) lastProcessedCmdId = cmdId;
+    isReceivingSync = true;
+    if (type === 'SCRIPT_UPDATE') {
+      scriptEditorEl.value = payload.content;
+      setOverlayVisible(true);
+      parseAndRenderHud();
+    } else if (type === 'PLAY_STATE') {
+      togglePlay(payload.isPlaying);
+    } else if (type === 'RESET') {
+      resetPrompter();
+    } else if (type === 'SLIDE_CHANGE') {
+      setSlide(payload.slideIndex, true);
+    } else if (type === 'WPM_CHANGE') {
+      window.setQuickWpm(payload.wpm);
+    } else if (type === 'STYLE_CHANGE') {
+      document.documentElement.style.setProperty(payload.prop, payload.val);
+    } else if (type === 'MODE_CHANGE') {
+      setScrollMode(payload.mode);
+    } else if (type === 'VOICE_SIM') {
+      if (payload.active && !voiceSimInterval) startVoiceSim();
+      else if (!payload.active && voiceSimInterval) stopVoiceSim();
+    } else if (type === 'SLIDE_SYNC_MODE') {
+      window.setSlideBoundaryMode(payload.pauseAtSlideEnd);
+    } else if (type === 'OVERLAY_VISIBILITY') {
+      setOverlayVisible(payload.visible);
+    } else if (type === 'CLICK_THROUGH_CHANGE') {
+      setClickThroughMode(payload.locked, false);
+    } else if (type === 'SCROLL_SYNC') {
+      scrollY = payload.scrollY || 0;
+      if (typeof payload.spokenWordIndex === 'number') spokenWordIndex = payload.spokenWordIndex;
+      pruneTriggersAfterScrollRewind(scrollY);
+      hudScrollTrack.style.transform = `translateY(${-scrollY}px)`;
+      updateActiveEyeline();
+    } else if (type === 'AUDIENCE_PREVIEW_CHANGE') {
+      document.body.classList.toggle('audience-view-active', Boolean(payload.active));
+    } else if (type === 'VOICE_SPEAKING_STATE') {
+      window.__externalVoiceActive = Boolean(payload.speaking);
+      isVoiceSpeaking = Boolean(payload.speaking);
+      hudModeStatus.textContent = isVoiceSpeaking
+        ? '🟢 Voice Detected · Scrolling with Your Voice'
+        : '🎙️ Voice Tracking ON · Speak into Mic to Scroll';
+    }
+    isReceivingSync = false;
+  }
+
+  function broadcastState(type, payload = {}) {
+    if (isReceivingSync) return;
+    const cmdId = Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+    lastProcessedCmdId = cmdId;
+    if (syncChannel) {
+      try { syncChannel.postMessage({ type, payload, cmdId }); } catch (e) {}
+    }
+    try {
+      localStorage.setItem('ghostcue_live_cmd_v1', JSON.stringify({ type, payload, cmdId }));
+    } catch (e) {}
+  }
+
+  if (syncChannel) {
+    syncChannel.onmessage = (ev) => {
+      const { type, payload, cmdId } = ev.data || {};
+      applySyncCommand(type, payload, cmdId);
+    };
+  }
+
+  // Fallback Storage Sync across windows (100% reliable across file:// Electron windows)
+  window.addEventListener('storage', (ev) => {
+    if (ev.key === 'ghostcue_live_cmd_v1' && ev.newValue) {
+      try {
+        const { type, payload, cmdId } = JSON.parse(ev.newValue);
+        applySyncCommand(type, payload, cmdId);
+      } catch (e) {}
+    } else if (ev.key === STORAGE_KEY) {
+      loadStateFromStorage();
+      const found = SCRIPTS.find(s => s.id === currentScriptId);
+      if (found && scriptEditorEl.value !== found.content) {
+        scriptEditorEl.value = found.content;
+        parseAndRenderHud();
+      } else {
+        updateWpmStatsOnly();
+      }
+    }
+  });
+
+  // Initialize from LocalStorage or Default Seed
+  loadStateFromStorage();
+  selectScript(currentScriptId);
+  window.scrollTo(0, 0);
+</script>
+</body>
+</html>

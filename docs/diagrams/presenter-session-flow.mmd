@@ -1,0 +1,20 @@
+flowchart TD
+    A([Launch GhostCue]) --> B[Open Studio window]
+    B --> C{Script source}
+    C -->|Type / paste| D[Edit script with cues]
+    C -->|Import PDF / DOCX / PPTX| D
+    C -->|Pick from library| D
+    D --> E[Run Pre-Flight check]
+    E --> F{Mirroring or capture risk?}
+    F -->|Yes| G[Fix display setup / overlay auto-hides]
+    G --> E
+    F -->|No| H[Choose scroll mode]
+    H -->|Constant WPM| I[Set target WPM]
+    H -->|Voice-Sync| J[Enable mic tracking]
+    I --> K[Present Now: Studio hides, HUD docks under notch]
+    J --> K
+    K --> L[Share screen on Zoom / Meet / Teams]
+    L --> M[Read script, control via global shortcuts]
+    M --> N{Done?}
+    N -->|No| M
+    N -->|Yes| O([Cmd/Ctrl+Shift+Q or close])

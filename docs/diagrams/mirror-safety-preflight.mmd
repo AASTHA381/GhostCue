@@ -1,0 +1,10 @@
+flowchart TD
+    A[Display change or startup] --> B[screen.getAllDisplays]
+    B --> C{More than 1 display?}
+    C -->|No| D[Overlay opacity 1.0]
+    C -->|Yes| E{Two displays share same x,y origin?}
+    E -->|No| D
+    E -->|Yes| F[Hardware mirror detected]
+    F --> G[Overlay opacity 0.0]
+    F --> H[Studio shows mirroring warning in Pre-Flight]
+    D --> I[Pre-Flight shows safe status]

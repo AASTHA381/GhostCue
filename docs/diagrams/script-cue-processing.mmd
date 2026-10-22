@@ -1,0 +1,18 @@
+flowchart TD
+    A[Raw script text] --> B[Split into lines]
+    B --> C[Escape HTML entities]
+    C --> D{Line contains cue?}
+    D -->|"[SLIDE N]"| E[Start new slide section]
+    D -->|"[PAUSE Ns]"| F[Sum pause seconds, render pause pill]
+    D -->|"[SLOW DOWN]"| G[Render delivery pill, slow scroll about 22%]
+    D -->|"**bold**"| H[Highlight key metric]
+    D -->|None| I[Plain line]
+    E --> J[Render HUD line]
+    F --> J
+    G --> J
+    H --> J
+    I --> J
+    J --> K{Scroll loop reaches line}
+    K -->|Has pause| L[Auto-pause N seconds once, then resume]
+    K -->|Slide boundary and Pause-at-slide ON| M[Pause until user resumes]
+    K -->|Otherwise| N[Continue scrolling]

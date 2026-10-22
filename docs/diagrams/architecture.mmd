@@ -1,0 +1,15 @@
+flowchart LR
+    subgraph Electron
+        Main[main.js<br/>main process]
+        Studio[Studio BrowserWindow<br/>teleprompter-studio.html]
+        HUD[Overlay BrowserWindow<br/>content-protected, click-through]
+        Main --- Studio
+        Main --- HUD
+    end
+    Shortcuts[Global shortcuts] --> Main
+    Main -->|sendKeyToOverlay| HUD
+    Studio <-->|localStorage ghostcue_live_cmd_v1| HUD
+    Helper[macos-speech-helper<br/>Swift, on-device] -->|stdout voice level| Main
+    Displays[Electron screen API] --> Main
+    PDFJS[pdf.min.js] --> Studio
+    Studio --> Store[(localStorage<br/>script library)]

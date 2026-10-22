@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Mic as Microphone
+    participant Helper as macos-speech-helper (Swift)
+    participant Main as Electron main.js
+    participant HUD as Overlay HUD
+    participant Studio as Studio window
+
+    Main->>Helper: spawn() on darwin
+    Mic->>Helper: audio input
+    Helper-->>Main: stdout __VOICE_LEVEL__:pct / __VOICE_ACTIVE__
+    Main->>HUD: executeJavaScript (if scrollMode is voice)
+    HUD->>HUD: isVoiceSpeaking = true, scroll script
+    Main->>Studio: update mic level bar and badge
+    Note over HUD,Studio: 520 ms silence timer resets state to Listening
+    Main->>Helper: kill() on will-quit
