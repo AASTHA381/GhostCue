@@ -1680,7 +1680,7 @@
 
           <!-- Direction 5: Built-in 3-State Segmented Mode Pill right inside the Notch HUD -->
           <div class="hud-mode-pill-group" id="hudModePillGroup">
-            <button class="hud-seg-mode-btn active-pause" id="hudSegPauseBtn" title="Pause Teleprompter (Shortcut: Option+Space)">⏸ Pause</button>
+            <button class="hud-seg-mode-btn active-pause" id="hudSegPauseBtn" title="Resume Teleprompter (Shortcut: Option+Space)">▶ Play</button>
             <button class="hud-seg-mode-btn" id="hudSegWpmBtn" title="Auto-Scroll at Constant WPM Speed">▶ <span id="hudPacingBadge">105 WPM</span></button>
             <button class="hud-seg-mode-btn" id="hudSegVoiceBtn" title="1-Click Voice-Activated Scrolling (Scrolls automatically when you speak)">🎙️ Voice Flow</button>
           </div>
@@ -2661,6 +2661,10 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
     pauseSeg.classList.remove('active-pause');
     wpmSeg.classList.remove('active-wpm');
     voiceSeg.classList.remove('active-voice');
+    // Label shows the action the button will perform so it always acts as a Play/Pause toggle
+    const canPause = isPlaying || scrollMode === 'voice';
+    pauseSeg.textContent = canPause ? '⏸ Pause' : '▶ Play';
+    pauseSeg.title = canPause ? 'Pause Teleprompter (Shortcut: Option+Space)' : 'Resume Teleprompter (Shortcut: Option+Space)';
     if (scrollMode === 'voice') {
       voiceSeg.classList.add('active-voice');
     } else if (isPlaying) {
@@ -2699,7 +2703,7 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
       console.log('__GHOSTCUE_IPC__:SHOW_OVERLAY');
       hudModeStatus.textContent = `Mode: ${scrollMode === 'voice' ? '🎙️ Voice-Synced' : 'Constant WPM'} · Scrolling`;
     } else if (scrollMode === 'wpm') {
-      hudModeStatus.textContent = '⏸ Paused · Click ▶ WPM or 🎙️ Voice Flow to Start';
+      hudModeStatus.textContent = '⏸ Paused · Click ▶ Play or 🎙️ Voice Flow to Start';
     }
     syncHudSegmentedModePill();
     broadcastState('PLAY_STATE', { isPlaying });
@@ -3223,16 +3227,24 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
   if (hudSegPauseBtn) {
     hudSegPauseBtn.onclick = (e) => {
       e.stopPropagation();
-      if (scrollMode === 'voice') setScrollMode('wpm');
-      togglePlay(false);
+      if (scrollMode === 'voice') {
+        setScrollMode('wpm');
+        togglePlay(false);
+      } else {
+        togglePlay();
+      }
     };
   }
   const hudSegWpmBtn = document.getElementById('hudSegWpmBtn');
   if (hudSegWpmBtn) {
     hudSegWpmBtn.onclick = (e) => {
       e.stopPropagation();
-      if (scrollMode === 'voice') setScrollMode('wpm');
-      togglePlay(true);
+      if (scrollMode === 'voice') {
+        setScrollMode('wpm');
+        togglePlay(true);
+      } else {
+        togglePlay();
+      }
     };
   }
   const hudSegVoiceBtn = document.getElementById('hudSegVoiceBtn');
