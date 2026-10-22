@@ -37,6 +37,16 @@ if (!gotTheLock) {
   });
 }
 
+// Keeps the HUD from being dragged/moved off every screen where it could never be grabbed again
+function keepOverlayReachable(x, y, w, h) {
+  const wa = screen.getDisplayNearestPoint({ x: Math.round(x + w / 2), y: Math.round(y + h / 2) }).workArea;
+  const minVisible = 140;
+  return {
+    x: Math.round(Math.max(wa.x - w + minVisible, Math.min(wa.x + wa.width - minVisible, x))),
+    y: Math.round(Math.max(0, Math.min(wa.y + wa.height - 60, y)))
+  };
+}
+
 // Check if displays are in Hardware Mirror Mode (overlapping origin bounds across multiple displays)
 function checkHardwareMirroringRisk() {
   const displays = screen.getAllDisplays();
@@ -67,6 +77,10 @@ function startNativeMacOsSpeechHelper() {
   if (process.platform !== 'darwin' || !fs.existsSync(helperBin)) return;
   try {
     speechProcess = spawn(helperBin);
+    // A missing/unsigned/crashing helper must degrade to the browser VAD instead of throwing in the main process
+    speechProcess.on('error', () => { speechProcess = null; });
+    speechProcess.on('exit', () => { speechProcess = null; });
+    speechProcess.stdout.on('error', () => {});
     speechProcess.stdout.on('data', (data) => {
       const rawLines = data.toString().trim().split(/\r?\n/);
       if (!overlayWindow || overlayWindow.isDestroyed()) return;
@@ -231,6 +245,7 @@ async function createWindows() {
   let dragTimer = null;
   let dragOffsetX = 0;
   let dragOffsetY = 0;
+  let dragStartedAt = 0;
 
   function stopNativeOverlayDrag() {
     if (dragTimer) {
@@ -287,13 +302,21 @@ async function createWindows() {
       const [winX, winY] = overlayWindow.getPosition();
       dragOffsetX = cursor.x - winX;
       dragOffsetY = cursor.y - winY;
+      dragStartedAt = Date.now();
       dragTimer = setInterval(() => {
         if (!overlayWindow || overlayWindow.isDestroyed()) {
           stopNativeOverlayDrag();
           return;
         }
+        // Failsafe: a lost mouse-up must never leave the HUD glued to the cursor
+        if (Date.now() - dragStartedAt > 20000) {
+          stopNativeOverlayDrag();
+          return;
+        }
         const pt = screen.getCursorScreenPoint();
-        overlayWindow.setPosition(Math.round(pt.x - dragOffsetX), Math.max(0, Math.round(pt.y - dragOffsetY)));
+        const [w, h] = overlayWindow.getSize();
+        const pos = keepOverlayReachable(Math.round(pt.x - dragOffsetX), Math.round(pt.y - dragOffsetY), w, h);
+        overlayWindow.setPosition(pos.x, pos.y);
       }, 16);
     } else if (message === '__GHOSTCUE_IPC__:STOP_DRAG_OVERLAY') {
       stopNativeOverlayDrag();
@@ -302,13 +325,21 @@ async function createWindows() {
         const parts = message.split(':');
         const dx = parseInt(parts[2] || '0', 10);
         const dy = parseInt(parts[3] || '0', 10);
+        if (!Number.isFinite(dx) || !Number.isFinite(dy)) return;
         const [x, y] = overlayWindow.getPosition();
-        overlayWindow.setPosition(x + dx, Math.max(0, y + dy));
+        const [w, h] = overlayWindow.getSize();
+        const pos = keepOverlayReachable(x + dx, y + dy, w, h);
+        overlayWindow.setPosition(pos.x, pos.y);
       }
     } else if (message.startsWith('__GHOSTCUE_IPC__:RESIZE_OVERLAY:')) {
       const parts = message.split(':');
-      const newW = Math.max(420, parseInt(parts[2] || '600', 10));
-      const newH = Math.max(260, parseInt(parts[3] || '360', 10));
+      const reqW = parseInt(parts[2] || '600', 10);
+      const reqH = parseInt(parts[3] || '360', 10);
+      if (!Number.isFinite(reqW) || !Number.isFinite(reqH)) return;
+      const [curX, curY] = overlayWindow.getPosition();
+      const wa = screen.getDisplayNearestPoint({ x: curX, y: curY }).workArea;
+      const newW = Math.min(wa.width, Math.max(420, reqW));
+      const newH = Math.min(wa.height, Math.max(260, reqH));
       overlayWindow.setSize(newW, newH);
     } else if (message === '__GHOSTCUE_IPC__:SNAP_NOTCH') {
       stopNativeOverlayDrag();

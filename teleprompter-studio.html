@@ -2130,6 +2130,9 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
   let isPlaying = false;
   let scrollMode = 'wpm'; // 'wpm' | 'voice'
   let scrollY = 0;
+  let scriptWordCount = 0; // cached so the 60Hz scroll loop never re-queries every word node
+  let scriptSlideCount = 0;
+  let lastEyelineUpdate = 0;
   let wpm = 105;
   let lastFrameTime = null;
   let isPausingCue = false;
@@ -2204,27 +2207,34 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
           }
         });
       }
-      if (state.wpm) {
-        wpm = state.wpm;
+      // Persisted values can be corrupt or hand-edited; clamp every one to its control's real range
+      const clampTo = (val, min, max, fallback) => {
+        const n = parseFloat(val);
+        return Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : fallback;
+      };
+      if (state.wpm !== undefined) {
+        wpm = Math.round(clampTo(state.wpm, 40, 180, 105));
         document.getElementById('wpmSlider').value = wpm;
         document.getElementById('wpmValLabel').textContent = wpm + ' WPM';
         syncQuickWpmActiveState();
       }
-      if (state.fontSize) {
-        document.documentElement.style.setProperty('--hud-font-size', state.fontSize + 'px');
-        document.getElementById('fontSlider').value = state.fontSize;
-        document.getElementById('fontValLabel').textContent = state.fontSize + 'px';
+      if (state.fontSize !== undefined) {
+        const fs = Math.round(clampTo(state.fontSize, 15, 28, 20));
+        document.documentElement.style.setProperty('--hud-font-size', fs + 'px');
+        document.getElementById('fontSlider').value = fs;
+        document.getElementById('fontValLabel').textContent = fs + 'px';
       }
-      if (state.hudWidth) {
-        const clampedW = Math.max(540, parseInt(state.hudWidth, 10) || 550);
+      if (state.hudWidth !== undefined) {
+        const clampedW = Math.round(clampTo(state.hudWidth, 540, 580, 550));
         document.documentElement.style.setProperty('--hud-width', clampedW + 'px');
         document.getElementById('widthSlider').value = clampedW;
         document.getElementById('widthValLabel').textContent = clampedW + 'px';
       }
-      if (state.hudOpacity) {
-        document.documentElement.style.setProperty('--hud-opacity', (state.hudOpacity / 100).toFixed(2));
-        document.getElementById('opacitySlider').value = state.hudOpacity;
-        document.getElementById('opacityValLabel').textContent = state.hudOpacity + '%';
+      if (state.hudOpacity !== undefined) {
+        const op = Math.round(clampTo(state.hudOpacity, 30, 98, 84));
+        document.documentElement.style.setProperty('--hud-opacity', (op / 100).toFixed(2));
+        document.getElementById('opacitySlider').value = op;
+        document.getElementById('opacityValLabel').textContent = op + '%';
       }
       if (state.hudTextColor) {
         document.documentElement.style.setProperty('--hud-text-color', state.hudTextColor);
@@ -2457,6 +2467,9 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
     });
 
     // Clamp scrollY if script was shortened while scrolled down
+    scriptWordCount = wordCounter;
+    scriptSlideCount = slideCount;
+    eyelineLineCache = null;
     const maxScrollAfterEdit = getMaxScroll();
     if (scrollY > maxScrollAfterEdit) {
       scrollY = Math.max(0, maxScrollAfterEdit);
@@ -2486,61 +2499,125 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
   }
 
   // Highlight the line currently sitting inside the Eye-Line Focus Band (top 35% of HUD)
-  function updateActiveEyeline() {
-    const lines = hudScrollTrack.querySelectorAll('.script-line');
-    const spokenLines = hudScrollTrack.querySelectorAll('.script-line:not(.slide-marker-line)');
-    const targetOffset = scrollY + 52; // Eye-line zone relative to scroll track
-    let closestLine = null;
-    let minDistance = Infinity;
+  // Per-line eye-line styling (and the automatic [PAUSE Ns] trigger for the active line)
+  function applyEyelineClasses(line, closestLine, targetOffset) {
+    line.classList.remove('active-eyeline', 'near-eyeline', 'past-line');
+    if (line === closestLine) {
+      line.classList.add('active-eyeline');
+      // Trigger automatic [PAUSE Ns] if we haven't triggered this line's pause yet
+      if (
+        isPlaying &&
+        scrollMode === 'wpm' &&
+        line.dataset.pauseSeconds &&
+        !triggeredPauses.has(line.dataset.pauseId)
+      ) {
+        triggeredPauses.add(line.dataset.pauseId);
+        startPauseCountdown(parseFloat(line.dataset.pauseSeconds));
+      }
+    } else if (line.offsetTop < targetOffset - 18) {
+      line.classList.add('past-line');
+    } else if (Math.abs((line.offsetTop + line.offsetHeight / 2) - targetOffset) < 68) {
+      line.classList.add('near-eyeline');
+    }
+  }
+
+  // Huge scripts: touch only the lines near the eye-line (binary search) instead of every line on every update.
+  // Returns undefined when the position is not continuous with the last pass (a jump), so the caller does a full pass.
+  let eyelineLineCache = null;
+  let eyelineSlideCache = null;
+  let eyelinePrevRange = [0, -1];
+  function updateEyelineIncremental() {
+    if (!eyelineLineCache || eyelinePrevRange[1] < 0) return undefined;
+    const lines = eyelineLineCache;
+    if (!lines.length) return undefined;
+    const targetOffset = scrollY + 52;
+
+    let lo = 0, hi = lines.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (lines[mid].offsetTop + lines[mid].offsetHeight / 2 < targetOffset) lo = mid + 1;
+      else hi = mid;
+    }
+    if (lo < eyelinePrevRange[0] + 20 - 40 || lo > eyelinePrevRange[1] - 20 + 40) return undefined;
+
+    let closestLine = null, minDistance = Infinity;
+    for (let i = Math.max(0, lo - 3); i <= Math.min(lines.length - 1, lo + 3); i++) {
+      if (lines[i].classList.contains('slide-marker-line')) continue;
+      const dist = Math.abs(lines[i].offsetTop + lines[i].offsetHeight / 2 - targetOffset);
+      if (dist < minDistance) { minDistance = dist; closestLine = lines[i]; }
+    }
+
+    const start = Math.max(0, Math.min(lo - 40, eyelinePrevRange[0]));
+    const end = Math.min(lines.length - 1, Math.max(lo + 40, eyelinePrevRange[1]));
+    for (let i = start; i <= end; i++) applyEyelineClasses(lines[i], closestLine, targetOffset);
+    eyelinePrevRange = [Math.max(0, lo - 40), Math.min(lines.length - 1, lo + 40)];
+
     let detectedSlide = null;
+    let sLo = 0, sHi = eyelineSlideCache.length - 1;
+    while (sLo <= sHi) {
+      const mid = (sLo + sHi) >> 1;
+      if (eyelineSlideCache[mid].offsetTop <= targetOffset + 25) { detectedSlide = parseInt(eyelineSlideCache[mid].dataset.slide, 10); sLo = mid + 1; }
+      else sHi = mid - 1;
+    }
+    return detectedSlide;
+  }
 
-    lines.forEach(line => {
-      if (line.dataset.slide && line.offsetTop <= targetOffset + 25) {
-        detectedSlide = parseInt(line.dataset.slide, 10);
+  function updateActiveEyeline(fromScrollLoop) {
+    let detectedSlide = null;
+    let needFullPass = true;
+    if (fromScrollLoop && scriptWordCount > 8000) {
+      const nowTs = performance.now();
+      if (nowTs - lastEyelineUpdate < 100) return;
+      lastEyelineUpdate = nowTs;
+      const inc = updateEyelineIncremental();
+      if (inc !== undefined) {
+        detectedSlide = inc;
+        needFullPass = false;
       }
-    });
+    }
+    if (needFullPass) {
+      const lines = hudScrollTrack.querySelectorAll('.script-line');
+      const spokenLines = hudScrollTrack.querySelectorAll('.script-line:not(.slide-marker-line)');
+      const targetOffset = scrollY + 52; // Eye-line zone relative to scroll track
+      let closestLine = null;
+      let minDistance = Infinity;
 
-    spokenLines.forEach(line => {
-      const lineCenter = line.offsetTop + line.offsetHeight / 2;
-      const dist = Math.abs(lineCenter - targetOffset);
-      if (dist < minDistance) {
-        minDistance = dist;
-        closestLine = line;
-      }
-    });
-
-    lines.forEach(line => {
-      line.classList.remove('active-eyeline', 'near-eyeline', 'past-line');
-      if (line === closestLine) {
-        line.classList.add('active-eyeline');
-        // Trigger automatic [PAUSE Ns] if we haven't triggered this line's pause yet
-        if (
-          isPlaying &&
-          scrollMode === 'wpm' &&
-          line.dataset.pauseSeconds &&
-          !triggeredPauses.has(line.dataset.pauseId)
-        ) {
-          triggeredPauses.add(line.dataset.pauseId);
-          startPauseCountdown(parseFloat(line.dataset.pauseSeconds));
+      lines.forEach(line => {
+        if (line.dataset.slide && line.offsetTop <= targetOffset + 25) {
+          detectedSlide = parseInt(line.dataset.slide, 10);
         }
-      } else if (line.offsetTop < targetOffset - 18) {
-        line.classList.add('past-line');
-      } else if (Math.abs((line.offsetTop + line.offsetHeight / 2) - targetOffset) < 68) {
-        line.classList.add('near-eyeline');
-      }
-    });
+      });
 
-    const totalSlidesInScript = Math.max(
-      1,
-      hudScrollTrack.querySelectorAll('.slide-marker-line').length
-    );
+      spokenLines.forEach(line => {
+        const lineCenter = line.offsetTop + line.offsetHeight / 2;
+        const dist = Math.abs(lineCenter - targetOffset);
+        if (dist < minDistance) {
+          minDistance = dist;
+          closestLine = line;
+        }
+      });
+
+      lines.forEach(line => applyEyelineClasses(line, closestLine, targetOffset));
+
+      // Prime the incremental window around the line just styled so continuous scrolling can use it
+      if (scriptWordCount > 8000 && closestLine) {
+        eyelineLineCache = Array.from(lines);
+        eyelineSlideCache = eyelineLineCache.filter(l => l.dataset.slide);
+        const idx = eyelineLineCache.indexOf(closestLine);
+        eyelinePrevRange = [Math.max(0, idx - 40), Math.min(eyelineLineCache.length - 1, idx + 40)];
+      } else {
+        eyelineLineCache = null;
+      }
+    }
+
+    const totalSlidesInScript = Math.max(1, scriptSlideCount);
     if (detectedSlide && detectedSlide - 1 !== currentSlideIndex && detectedSlide <= totalSlidesInScript) {
       setSlide(detectedSlide - 1, false);
     }
 
     // Update progress bar using unified getMaxScroll()
     const maxScroll = getMaxScroll();
-    const wordsTotal = document.querySelectorAll('.script-word').length;
+    const wordsTotal = scriptWordCount;
     const pct = (wordsTotal === 0 || maxScroll <= 0) ? 0 : Math.min(100, Math.max(0, (scrollY / maxScroll) * 100));
     hudProgressBar.style.width = pct + '%';
 
@@ -2549,9 +2626,12 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
     hudPacingBadge.textContent = `${wpm} WPM`;
   }
 
+  // A typo like [PAUSE 99999s] must never freeze the prompter for hours
+  const MAX_CUE_PAUSE_SECONDS = 60;
+
   function startPauseCountdown(seconds) {
     isPausingCue = true;
-    pauseRemaining = seconds;
+    pauseRemaining = Math.min(MAX_CUE_PAUSE_SECONDS, Math.max(0, Number(seconds) || 0));
     pauseBanner.classList.add('visible');
     pauseTimerText.textContent = pauseRemaining.toFixed(1) + 's';
   }
@@ -2593,7 +2673,7 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
           pauseTimerText.textContent = pauseRemaining.toFixed(1) + 's';
         }
       } else {
-        const totalWords = hudScrollTrack.querySelectorAll('.script-word').length;
+        const totalWords = scriptWordCount;
         const maxScroll = getMaxScroll();
         if (totalWords === 0 || maxScroll <= 0) {
           togglePlay(false);
@@ -2636,7 +2716,7 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
         if (shouldAdvanceByLiveVoice) {
           syncSpokenWordHighlightFromScroll();
         }
-        updateActiveEyeline();
+        updateActiveEyeline(true);
 
         if (shouldAdvanceByWpm && maxScroll > 20 && scrollY >= maxScroll) {
           togglePlay(false);
@@ -2731,7 +2811,8 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
   function setSlide(index, scrollScriptToSlide = true) {
     const markerCount = hudScrollTrack.querySelectorAll('.slide-marker-line').length;
     const totalSlides = Math.max(1, markerCount);
-    currentSlideIndex = Math.max(0, Math.min(totalSlides - 1, index));
+    const rawIndex = Number(index);
+    currentSlideIndex = Math.max(0, Math.min(totalSlides - 1, Number.isFinite(rawIndex) ? Math.trunc(rawIndex) : 0));
     const slide = SLIDE_DECK[currentSlideIndex % SLIDE_DECK.length];
     document.getElementById('slideKicker').textContent = slide.kicker;
     document.getElementById('slideHeading').textContent = slide.heading;
@@ -2745,6 +2826,9 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
     });
 
     if (scrollScriptToSlide) {
+      // Jumping to another slide always cancels an active [PAUSE] countdown so the presenter can skip it
+      isPausingCue = false;
+      pauseBanner.classList.remove('visible');
       const marker = hudScrollTrack.querySelector(`.slide-marker-line[data-slide="${currentSlideIndex + 1}"]`);
       if (marker) {
         scrollY = Math.max(0, marker.offsetTop - 16);
@@ -2754,6 +2838,9 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
       pruneTriggersAfterScrollRewind(scrollY);
       hudScrollTrack.style.transform = `translateY(${-scrollY}px)`;
       updateActiveEyeline();
+      // An explicit jump consumes a [PAUSE] sitting on the landing line instead of re-freezing on it
+      isPausingCue = false;
+      pauseBanner.classList.remove('visible');
       broadcastState('SLIDE_CHANGE', { slideIndex: currentSlideIndex });
     }
   }
@@ -3615,9 +3702,9 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
 
     // 2. Check if HTML/XML Word document saved as .doc
     if (/<html|<w:wordDocument|<xml/i.test(utf8)) {
-      const tmp = document.createElement('div');
-      tmp.innerHTML = utf8;
-      const cleaned = (tmp.textContent || '')
+      // DOMParser builds an inert document, so embedded <img onerror> / scripts never execute
+      const parsed = new DOMParser().parseFromString(utf8, 'text/html');
+      const cleaned = (parsed.body ? parsed.body.textContent : '')
         .split(/\r?\n/)
         .map(l => l.trim())
         .filter(l => l.length > 1);
