@@ -2803,7 +2803,7 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
     stopVoiceSim();
     scrollY = 0;
     spokenWordIndex = 0;
-    phraseMatchedWords = 0;
+    resetVoiceTranscriptTracker();
     window.__voiceTargetScrollY = 0;
     isPausingCue = false;
     triggeredPauses.clear();
@@ -2852,6 +2852,7 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
       if (slideFirstWord && slideFirstWord.dataset.wordIdx !== undefined) {
         spokenWordIndex = parseInt(slideFirstWord.dataset.wordIdx, 10);
       }
+      resetVoiceTranscriptTracker();
       hudScrollTrack.style.transform = `translateY(${-scrollY}px)`;
       updateActiveEyeline();
       // An explicit jump consumes a [PAUSE] sitting on the landing line instead of re-freezing on it
@@ -2865,40 +2866,52 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
   const NUMBER_WORDS_MAP = {
     '0': 'zero', '1': 'one', '2': 'two', '3': 'three', '4': 'four', '5': 'five',
     '6': 'six', '7': 'seven', '8': 'eight', '9': 'nine', '10': 'ten',
-    '11': 'eleven', '12': 'twelve', '14': 'fourteen', '15': 'fifteen', '18': 'eighteen',
-    '20': 'twenty', '22': 'twentytwo', '30': 'thirty', '34': 'thirtyfour', '40': 'forty',
+    '11': 'eleven', '12': 'twelve', '13': 'thirteen', '14': 'fourteen', '15': 'fifteen',
+    '16': 'sixteen', '17': 'seventeen', '18': 'eighteen', '19': 'nineteen', '20': 'twenty',
+    '22': 'twentytwo', '30': 'thirty', '34': 'thirtyfour', '40': 'forty',
     '42': 'fortytwo', '45': 'fortyfive', '50': 'fifty', '58': 'fiftyeight', '60': 'sixty',
-    '74': 'seventyfour', '80': 'eighty', '90': 'ninety', '100': 'hundred', '128': 'onehundredtwentyeight'
+    '70': 'seventy', '74': 'seventyfour', '80': 'eighty', '90': 'ninety',
+    '100': 'hundred', '128': 'onehundredtwentyeight', '1000': 'thousand'
   };
 
   function normalizeTokenForMatch(raw) {
     if (!raw) return '';
-    const cleaned = String(raw).toLowerCase().replace(/%/g, '').replace(/[^a-z0-9]/g, '');
-    return cleaned;
+    return String(raw).toLowerCase().replace(/%/g, '').replace(/[^a-z0-9]/g, '');
   }
 
-  function tokensMatch(spokenTok, scriptRawText) {
+  function levenshteinDistance(a, b) {
+    if (a === b) return 0;
+    const m = a.length, n = b.length;
+    if (Math.abs(m - n) > 2) return 99;
+    const dp = Array.from({ length: m + 1 }, (_, i) => i);
+    for (let j = 1; j <= n; j++) {
+      let prev = dp[0];
+      dp[0] = j;
+      for (let i = 1; i <= m; i++) {
+        const temp = dp[i];
+        dp[i] = a[i - 1] === b[j - 1] ? prev : 1 + Math.min(prev, dp[i], dp[i - 1]);
+        prev = temp;
+      }
+    }
+    return dp[m];
+  }
+
+  function tokensMatch(spokenTok, scriptRawText, strictExact = false) {
     const s = normalizeTokenForMatch(spokenTok);
     const t = normalizeTokenForMatch(scriptRawText);
     if (!s || !t) return false;
     if (s === t) return true;
     // Match digits vs spoken number words (e.g., "40%" <-> "40" or "forty", "5" <-> "five")
-    if (NUMBER_WORDS_MAP[t] && (NUMBER_WORDS_MAP[t] === s || NUMBER_WORDS_MAP[t].includes(s))) return true;
-    if (NUMBER_WORDS_MAP[s] && (NUMBER_WORDS_MAP[s] === t || t.includes(NUMBER_WORDS_MAP[s]))) return true;
-    // Prefix/stem match for words >= 4 chars (e.g. "joining" vs "join", "organizations" vs "organization")
-    if (s.length >= 4 && t.length >= 4 && (t.startsWith(s.slice(0, 4)) || s.startsWith(t.slice(0, 4)))) {
-      const lenDiff = Math.abs(s.length - t.length);
-      if (lenDiff <= 3) return true;
+    if (NUMBER_WORDS_MAP[t] && NUMBER_WORDS_MAP[t] === s) return true;
+    if (NUMBER_WORDS_MAP[s] && NUMBER_WORDS_MAP[s] === t) return true;
+    if (strictExact) return false;
+    // Prefix/stem match only for words >= 5 chars sharing at least 5 leading chars (e.g. "onboarding" vs "onboard", "organizations" vs "organization")
+    if (s.length >= 5 && t.length >= 5 && s.slice(0, 5) === t.slice(0, 5) && Math.abs(s.length - t.length) <= 3) {
+      return true;
     }
-    // Single-character typo / ASR variation tolerance for words >= 5 chars
-    if (s.length >= 5 && t.length >= 5 && Math.abs(s.length - t.length) <= 1) {
-      let mismatches = 0;
-      const minL = Math.min(s.length, t.length);
-      for (let i = 0; i < minL; i++) {
-        if (s[i] !== t[i]) mismatches++;
-        if (mismatches > 1) break;
-      }
-      if (mismatches <= 1) return true;
+    // True Levenshtein edit distance <= 1 for words >= 6 chars (handles minor ASR inflection differences)
+    if (s.length >= 6 && t.length >= 6 && levenshteinDistance(s, t) <= 1) {
+      return true;
     }
     return false;
   }
@@ -2911,12 +2924,12 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
     const nextLine = lineIdx >= 0 && lineIdx + 1 < spokenLines.length ? spokenLines[lineIdx + 1] : null;
     const lineTargetY = Math.max(0, line.offsetTop - 36);
     const nextTargetY = nextLine ? Math.max(lineTargetY + 24, nextLine.offsetTop - 36) : getMaxScroll();
-    // Once the user passes 60% of the words on a line, smoothly bring the next line into view
-    const frac = wordsInLine > 1 ? Math.min(1, posInLine / Math.max(1, wordsInLine - 1)) : 0.5;
-    if (frac >= 0.72) {
-      return Math.min(getMaxScroll(), nextTargetY);
+    // Keep the current line centered in the eyeline until the presenter reaches the last 20% of the line
+    const frac = wordsInLine > 1 ? Math.min(1, posInLine / Math.max(1, wordsInLine - 1)) : 0;
+    if (frac >= 0.82) {
+      return Math.min(getMaxScroll(), lineTargetY + (nextTargetY - lineTargetY) * 0.65);
     }
-    return Math.min(getMaxScroll(), lineTargetY + (nextTargetY - lineTargetY) * (frac * 0.65));
+    return Math.min(getMaxScroll(), lineTargetY + (nextTargetY - lineTargetY) * (frac * 0.35));
   }
 
   function advanceToWordIndex(idx) {
@@ -2940,7 +2953,7 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
         const posInLine = Math.max(0, lineWords.indexOf(activeWord));
         const targetY = computeScrollTargetForWord(activeWord, lineWords.length, posInLine);
         window.__voiceTargetScrollY = targetY;
-        scrollY += (window.__voiceTargetScrollY - scrollY) * 0.55;
+        scrollY += (window.__voiceTargetScrollY - scrollY) * 0.45;
         hudScrollTrack.style.transform = `translateY(${-scrollY}px)`;
         updateActiveEyeline();
         broadcastState('SCROLL_SYNC', { scrollY: window.__voiceTargetScrollY, spokenWordIndex });
@@ -2949,71 +2962,129 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
   }
 
   // Matches live spoken transcript words against the upcoming script window.
-  // Random off-script words do NOT match and therefore NEVER advance the script!
+  // Tracks which transcript token index has already been consumed so repeated words or
+  // duplicate partial callbacks NEVER double-advance ahead of the presenter!
   let phraseMatchedWords = 0;
-  let lastTranscriptTokenCount = 0;
-  const COMMON_FILLER_WORDS = new Set(['the', 'a', 'an', 'to', 'of', 'in', 'and', 'is', 'it', 'on', 'for', 'with', 'that', 'this']);
+  let lastTranscriptRaw = '';
+  let prevTranscriptTokens = [];
+  let consumedTranscriptLen = 0;
+  const COMMON_FILLER_WORDS = new Set([
+    'the', 'a', 'an', 'to', 'of', 'in', 'and', 'is', 'it', 'on', 'for', 'with',
+    'that', 'this', 'at', 'by', 'from', 'or', 'as', 'be', 'are', 'was', 'we', 'our', 'you', 'your'
+  ]);
+
+  function resetVoiceTranscriptTracker() {
+    phraseMatchedWords = 0;
+    lastTranscriptRaw = '';
+    prevTranscriptTokens = [];
+    consumedTranscriptLen = 0;
+  }
 
   window.onNativeTranscript = function(transcriptText) {
     if (scrollMode !== 'voice') return;
     const words = hudScrollTrack.querySelectorAll('.script-word');
     if (!words.length) return;
 
-    const rawTokens = String(transcriptText || '')
-      .toLowerCase()
+    const cleanStr = String(transcriptText || '').trim().toLowerCase();
+    if (!cleanStr || cleanStr === lastTranscriptRaw) return;
+    lastTranscriptRaw = cleanStr;
+
+    const rawTokens = cleanStr
       .split(/\s+/)
       .map(normalizeTokenForMatch)
       .filter(Boolean);
     if (!rawTokens.length) return;
 
-    // Inspect the last 4 spoken words from the streaming transcript
-    const recentSpoken = rawTokens.slice(-4);
-    let bestMatchIdx = -1;
-
-    // 1) Try matching a 2-word phrase in the lookahead window (up to 18 words ahead) for rock-solid accuracy
-    if (recentSpoken.length >= 2) {
-      const w1 = recentSpoken[recentSpoken.length - 2];
-      const w2 = recentSpoken[recentSpoken.length - 1];
-      const maxLook = Math.min(words.length - 1, spokenWordIndex + 18);
-      for (let i = spokenWordIndex; i < maxLook; i++) {
-        if (tokensMatch(w1, words[i].textContent) && tokensMatch(w2, words[i + 1].textContent)) {
-          bestMatchIdx = i + 1;
-          break;
-        }
-      }
+    // Detect if SFSpeechRecognizer started a new session (transcript length shrank significantly)
+    if (rawTokens.length + 2 < prevTranscriptTokens.length) {
+      consumedTranscriptLen = 0;
     }
 
-    // 2) Single-word match within the immediate next 6 words (for immediate word-by-word tracking)
-    if (bestMatchIdx === -1) {
-      const lastWord = recentSpoken[recentSpoken.length - 1];
-      const isFiller = COMMON_FILLER_WORDS.has(lastWord) || lastWord.length <= 2;
-      // Filler words ("the", "to", "in") only match if they are the very next 1–2 words; content words can look 6 words ahead
-      const singleLookahead = isFiller ? 2 : 6;
-      const maxSingle = Math.min(words.length, spokenWordIndex + singleLookahead + 1);
-      for (let i = spokenWordIndex; i < maxSingle; i++) {
-        if (tokensMatch(lastWord, words[i].textContent)) {
-          bestMatchIdx = i;
-          break;
+    // Only process newly spoken tokens (or revised final token) that haven't been consumed yet
+    const startTokIdx = Math.max(0, Math.min(consumedTranscriptLen, rawTokens.length - 1));
+    const newTokens = rawTokens.slice(startTokIdx);
+    prevTranscriptTokens = rawTokens;
+
+    // If the exact same token count & last word already matched on the previous partial callback, do not re-advance!
+    if (rawTokens.length <= consumedTranscriptLen) {
+      return;
+    }
+
+    let progressed = false;
+    let lastMatchedScriptWord = '';
+
+    for (let tIdx = startTokIdx; tIdx < rawTokens.length; tIdx++) {
+      const spokenWord = rawTokens[tIdx];
+      const prevSpokenWord = tIdx > 0 ? rawTokens[tIdx - 1] : null;
+      const isFiller = COMMON_FILLER_WORDS.has(spokenWord) || spokenWord.length <= 2;
+
+      let matchedScriptIdx = -1;
+
+      // Priority 1: Exact next word (spokenWordIndex) or immediate +1 word (if presenter elided an article/preposition)
+      if (spokenWordIndex < words.length && tokensMatch(spokenWord, words[spokenWordIndex].textContent)) {
+        matchedScriptIdx = spokenWordIndex;
+      } else if (!isFiller && spokenWordIndex + 1 < words.length && tokensMatch(spokenWord, words[spokenWordIndex + 1].textContent)) {
+        matchedScriptIdx = spokenWordIndex + 1;
+      }
+
+      // Priority 2: 2-word consecutive phrase match within a bounded 8-word window (allows skipping up to a short clause)
+      // At least one of the two words must be a non-filler content word so "in the" never jumps lines!
+      if (matchedScriptIdx === -1 && prevSpokenWord && (!isFiller || !COMMON_FILLER_WORDS.has(prevSpokenWord))) {
+        const maxPhraseLook = Math.min(words.length - 1, spokenWordIndex + 8);
+        for (let i = spokenWordIndex; i < maxPhraseLook; i++) {
+          if (tokensMatch(prevSpokenWord, words[i].textContent) && tokensMatch(spokenWord, words[i + 1].textContent)) {
+            matchedScriptIdx = i + 1;
+            break;
+          }
         }
+      }
+
+      // Priority 3: Distinct content word (>= 5 chars, non-filler) within the next 3 words
+      if (matchedScriptIdx === -1 && !isFiller && spokenWord.length >= 5) {
+        const maxSingleLook = Math.min(words.length, spokenWordIndex + 4);
+        for (let i = spokenWordIndex + 2; i < maxSingleLook; i++) {
+          if (tokensMatch(spokenWord, words[i].textContent, true)) {
+            matchedScriptIdx = i;
+            break;
+          }
+        }
+      }
+
+      // Priority 4: Multi-Digit Number / Percentage Span (e.g., script has "128%" or "128", speaker says "one hundred and twenty eight" or "128")
+      if (matchedScriptIdx === -1 && spokenWordIndex < words.length) {
+        for (let look = 0; look <= 1 && (spokenWordIndex + look) < words.length; look++) {
+          const targetClean = normalizeTokenForMatch(words[spokenWordIndex + look].textContent);
+          if (/^\d+$/.test(targetClean) && NUMBER_WORDS_MAP[targetClean]) {
+            const joinedRecent = rawTokens.slice(Math.max(0, tIdx - 3), tIdx + 1).filter(w => w !== 'and').join('');
+            if (joinedRecent.includes(NUMBER_WORDS_MAP[targetClean]) || NUMBER_WORDS_MAP[targetClean].endsWith(spokenWord)) {
+              matchedScriptIdx = spokenWordIndex + look;
+              break;
+            }
+          }
+        }
+      }
+
+      if (matchedScriptIdx !== -1 && matchedScriptIdx >= spokenWordIndex) {
+        lastMatchedScriptWord = words[matchedScriptIdx].textContent;
+        phraseMatchedWords += (matchedScriptIdx - spokenWordIndex) + 1;
+        // Advance spokenWordIndex to the next unread word right after the matched word
+        const nextUnreadIdx = Math.min(words.length - 1, matchedScriptIdx + 1);
+        advanceToWordIndex(nextUnreadIdx);
+        consumedTranscriptLen = tIdx + 1;
+        progressed = true;
       }
     }
 
     const st = document.getElementById('micLevelStatusText');
-    if (bestMatchIdx !== -1 && bestMatchIdx >= spokenWordIndex) {
-      phraseMatchedWords += Math.max(1, bestMatchIdx - spokenWordIndex + (bestMatchIdx === spokenWordIndex ? 1 : 0));
-      // Highlight the next upcoming word right after the one just spoken so the reader's eye always leads
-      const leadIdx = Math.min(words.length - 1, bestMatchIdx + 1);
-      advanceToWordIndex(leadIdx);
-      const matchedText = words[bestMatchIdx].textContent;
-      hudModeStatus.textContent = `🟢 Matched "${matchedText}" · Following Your Script`;
-      if (st) st.textContent = `🟢 Matched "${matchedText}" — Advancing Script`;
+    if (progressed) {
+      hudModeStatus.textContent = `🟢 Matched "${lastMatchedScriptWord}" · Following Your Script`;
+      if (st) st.textContent = `🟢 Matched "${lastMatchedScriptWord}" — Advancing Script`;
     } else {
-      // Off-script speech detected: keep script paused at current word!
+      const lastHeard = rawTokens[rawTokens.length - 1];
       const expectedWord = words[spokenWordIndex] ? words[spokenWordIndex].textContent : '';
-      hudModeStatus.textContent = `⏸ Off-Script (Heard "${recentSpoken[recentSpoken.length - 1]}") · Say "${expectedWord}" to Continue`;
-      if (st) st.textContent = `⏸ Off-Script ("${recentSpoken[recentSpoken.length - 1]}") — Waiting for "${expectedWord}"`;
+      hudModeStatus.textContent = `⏸ Off-Script (Heard "${lastHeard}") · Say "${expectedWord}" to Continue`;
+      if (st) st.textContent = `⏸ Off-Script ("${lastHeard}") — Waiting for "${expectedWord}"`;
     }
-    lastTranscriptTokenCount = rawTokens.length;
   };
 
   window.onNativeVoicePhraseEnd = function() {
@@ -3022,12 +3093,12 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
     if (!words.length) return;
     const activeWord = words[spokenWordIndex];
     const currentLine = (activeWord && activeWord.closest('.script-line')) || hudScrollTrack.querySelector('.script-line.active-eyeline');
-    // Only snap to the next line if the presenter actually matched script words on this line and reached the second half of the line
-    if (currentLine && phraseMatchedWords >= 2) {
+    // Only snap to the next line if the presenter actually matched >= 80% of the current line (at most 1 word left on the line)
+    if (currentLine && phraseMatchedWords >= 3) {
       const lineWords = Array.from(currentLine.querySelectorAll('.script-word'));
       const posInLine = activeWord ? lineWords.indexOf(activeWord) : 0;
-      const fracDone = lineWords.length > 0 ? (posInLine + 1) / lineWords.length : 1;
-      if (fracDone >= 0.55) {
+      const wordsRemainingOnLine = lineWords.length - posInLine;
+      if (lineWords.length > 0 && (posInLine / lineWords.length >= 0.80 || wordsRemainingOnLine <= 1)) {
         const spokenLines = Array.from(hudScrollTrack.querySelectorAll('.script-line:not(.slide-marker-line)'));
         const lineIdx = spokenLines.indexOf(currentLine);
         if (lineIdx >= 0 && lineIdx + 1 < spokenLines.length) {
@@ -3086,6 +3157,7 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
 
     if (mode === 'voice') {
       togglePlay(false);
+      resetVoiceTranscriptTracker();
       window.__voiceTargetScrollY = scrollY;
       setOverlayVisible(true);
       console.log('__GHOSTCUE_IPC__:SHOW_OVERLAY');
