@@ -12,6 +12,7 @@ let studioWindow = null;
 let overlayWindow = null;
 let clickThrough = true;
 let speechProcess = null;
+let isQuittingAppGlobal = false;
 
 // Shows the Quick Drawer reliably, even after hide() or when presenting over a full-screen Space
 function showStudioWindow() {
@@ -79,17 +80,29 @@ function startNativeMacOsSpeechHelper() {
     speechProcess = spawn(helperBin);
     // A missing/unsigned/crashing helper must degrade to the browser VAD instead of throwing in the main process
     speechProcess.on('error', () => { speechProcess = null; });
-    speechProcess.on('exit', () => { speechProcess = null; });
+    speechProcess.on('exit', () => {
+      speechProcess = null;
+      if (!isQuittingAppGlobal) {
+        setTimeout(startNativeMacOsSpeechHelper, 200);
+      }
+    });
     speechProcess.stdout.on('error', () => {});
     speechProcess.stdout.on('data', (data) => {
       const rawLines = data.toString().trim().split(/\r?\n/);
       if (!overlayWindow || overlayWindow.isDestroyed()) return;
       for (const line of rawLines) {
         const trimmed = line.trim();
-        if (trimmed === '__WORD_PULSE__') {
+        if (trimmed.startsWith('__TRANSCRIPT__:')) {
+          const transcriptText = trimmed.slice('__TRANSCRIPT__:'.length);
+          const safeJson = JSON.stringify(transcriptText);
           overlayWindow.webContents.executeJavaScript(`
-            if (typeof window.onNativeVoiceWordPulse === 'function') window.onNativeVoiceWordPulse();
+            if (typeof window.onNativeTranscript === 'function') window.onNativeTranscript(${safeJson});
           `).catch(() => {});
+          if (studioWindow && !studioWindow.isDestroyed()) {
+            studioWindow.webContents.executeJavaScript(`
+              if (typeof window.onNativeTranscript === 'function') window.onNativeTranscript(${safeJson});
+            `).catch(() => {});
+          }
         } else if (trimmed === '__PHRASE_END__') {
           overlayWindow.webContents.executeJavaScript(`
             if (typeof window.onNativeVoicePhraseEnd === 'function') window.onNativeVoicePhraseEnd();
@@ -101,14 +114,13 @@ function startNativeMacOsSpeechHelper() {
               if (scrollMode !== 'voice') return;
               window.__externalVoiceActive = true;
               isVoiceSpeaking = true;
-              hudModeStatus.textContent = '🟢 Voice Detected (' + ${pct} + '%) · Scrolling with Your Voice';
               clearTimeout(window.__nativeSpeechTimer);
               window.__nativeSpeechTimer = setTimeout(() => {
                 window.__externalVoiceActive = false;
                 isVoiceSpeaking = false;
                 if (typeof window.onNativeVoicePhraseEnd === 'function') window.onNativeVoicePhraseEnd();
                 if (scrollMode === 'voice') {
-                  hudModeStatus.textContent = '🎙️ Voice Flow Paused · Speak into Mic to Scroll';
+                  hudModeStatus.textContent = '🎙️ Voice Flow Paused · Speak Script Words to Scroll';
                 }
               }, 340);
             })();
@@ -121,18 +133,17 @@ function startNativeMacOsSpeechHelper() {
                 isVoiceSpeaking = true;
                 const bar = document.getElementById('micLevelBarFill');
                 const badge = document.getElementById('micDbBadge');
-                const st = document.getElementById('micLevelStatusText');
                 if (bar) bar.style.width = '${pct}%';
                 if (badge) badge.textContent = '${pct}%';
-                if (st) st.textContent = '🟢 Voice Detected — Scrolling Script...';
                 clearTimeout(window.__studioMicTimer);
                 window.__studioMicTimer = setTimeout(() => {
                   window.__externalVoiceActive = false;
                   isVoiceSpeaking = false;
                   if (bar) bar.style.width = '4%';
                   if (badge) badge.textContent = 'SILENT';
-                  if (st && scrollMode === 'voice') st.textContent = '🎙️ Paused (Silent) — Speak to Scroll';
-                }, 380);
+                  const st = document.getElementById('micLevelStatusText');
+                  if (st && scrollMode === 'voice') st.textContent = '🎙️ Paused (Silent) — Speak Script Words to Scroll';
+                }, 340);
               })();
             `).catch(() => {});
           }
@@ -164,6 +175,7 @@ async function createWindows() {
   let isQuittingApp = false;
   app.on('before-quit', () => {
     isQuittingApp = true;
+    isQuittingAppGlobal = true;
   });
 
   studioWindow = new BrowserWindow({

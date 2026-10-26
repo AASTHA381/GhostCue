@@ -5,7 +5,7 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "compile:speech": "swiftc macos-speech-helper.swift -o macos-speech-helper",
+    "compile:speech": "swiftc macos-speech-helper.swift -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __info_plist -Xlinker speech-helper-info.plist -o macos-speech-helper",
     "dist:mac": "electron-builder --mac dmg",
     "dist:win": "electron-builder --win nsis"
   },

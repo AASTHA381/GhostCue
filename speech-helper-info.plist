@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleIdentifier</key>
+    <string>com.ghostcue.speechhelper</string>
+    <key>CFBundleName</key>
+    <string>GhostCue Speech Helper</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>GhostCue uses your microphone locally to match your spoken words to your script.</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>GhostCue performs on-device speech recognition so your script only advances when you speak the words in your script.</string>
+</dict>
+</plist>
