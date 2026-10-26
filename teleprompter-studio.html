@@ -2199,11 +2199,15 @@
           <option value="gemini">✨ Google Gemini 2.0 Flash Streaming</option>
         </select>
 
-        <div style="font-size:10.5px;font-weight:700;color:#334155;display:flex;justify-content:space-between;">
-          <span>API Key (Optional · Stored Locally Only)</span>
-          <span style="font-size:9.5px;color:#059669;">🔒 Never Committed</span>
+        <div style="font-size:10.5px;font-weight:700;color:#334155;display:flex;justify-content:space-between;align-items:center;">
+          <span>API Key (Groq <code>gsk_...</code> / OpenAI / Gemini)</span>
+          <span id="ivKeySavedStatus" style="font-size:9.5px;color:#059669;font-weight:700;">🔒 Stored Locally</span>
         </div>
-        <input type="password" id="ivApiKeyInput" class="script-title-input" placeholder="gsk_... / sk-... / AIza... (Leave blank for offline engine)" style="font-size:11px;padding:5px 8px;background:#fff;" oninput="saveInterviewSettings()" />
+        <div style="display:flex;gap:5px;align-items:center;">
+          <input type="password" id="ivApiKeyInput" class="script-title-input" placeholder="Paste gsk_... key here" style="flex:1;font-size:11px;padding:5px 8px;background:#fff;" oninput="saveInterviewSettings()" />
+          <button class="chip-btn" id="ivTestKeyBtn" onclick="testInterviewApiKey()" style="padding:5px 8px;font-size:10px;white-space:nowrap;font-weight:700;background:#eef2ff;border-color:#6366f1;color:#3730a3;" title="Verify your Groq/OpenAI/Gemini API key live">🔌 Test Key</button>
+        </div>
+        <div id="ivApiErrorBanner" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:7px;padding:6px 8px;font-size:10px;color:#991b1b;line-height:1.35;"></div>
 
         <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:7px 9px;font-size:10px;color:#1e3a8a;line-height:1.4;">
           <strong>Anti-Hallucination &amp; Honesty Guardrail:</strong> Answers strictly cite facts from your uploaded Resume. If the interviewer asks about a tool or skill not in your resume, GhostCue explicitly flags the gap and gives you an honest, pivot-focused response.
@@ -5061,13 +5065,39 @@ endstream endobj
     }
   }
 
+  function sanitizeApiKey(rawKey) {
+    // Strip accidental "Bearer " prefix, quotes, or whitespace from pasted API keys
+    return String(rawKey || '')
+      .replace(/^Bearer\s+/i, '')
+      .replace(/["'\s]+/g, '')
+      .trim();
+  }
+
   window.saveInterviewSettings = function() {
     try {
+      const cleanKey = sanitizeApiKey(ivApiKeyEl ? ivApiKeyEl.value : '');
+      if (ivApiKeyEl && cleanKey && cleanKey.startsWith('gsk_') && ivProviderEl && ivProviderEl.value === 'local') {
+        ivProviderEl.value = 'groq';
+      }
+      const keyStatusEl = document.getElementById('ivKeySavedStatus');
+      if (keyStatusEl) {
+        if (cleanKey.startsWith('gsk_')) {
+          keyStatusEl.textContent = '✓ Groq Key Active (' + cleanKey.slice(0, 7) + '…)';
+        } else if (cleanKey.startsWith('AIza')) {
+          keyStatusEl.textContent = '✓ Gemini Key Active';
+        } else if (cleanKey.startsWith('sk-')) {
+          keyStatusEl.textContent = '✓ OpenAI Key Active';
+        } else if (cleanKey.length > 8) {
+          keyStatusEl.textContent = '✓ API Key Saved (' + cleanKey.slice(0, 5) + '…)';
+        } else {
+          keyStatusEl.textContent = '🔒 Offline Mode (No Key)';
+        }
+      }
       const data = {
         resume: ivResumeEl ? ivResumeEl.value : '',
         jd: ivJdEl ? ivJdEl.value : '',
         provider: ivProviderEl ? ivProviderEl.value : 'auto',
-        apiKey: ivApiKeyEl ? ivApiKeyEl.value : ''
+        apiKey: cleanKey
       };
       localStorage.setItem(IV_STORAGE_KEY, JSON.stringify(data));
       refreshResumeJdSkillAnalysis();
@@ -5082,11 +5112,11 @@ endstream endobj
         if (ivResumeEl && data.resume) ivResumeEl.value = data.resume;
         if (ivJdEl && data.jd) ivJdEl.value = data.jd;
         if (ivProviderEl && data.provider) ivProviderEl.value = data.provider;
-        if (ivApiKeyEl && typeof data.apiKey === 'string') ivApiKeyEl.value = data.apiKey;
+        if (ivApiKeyEl && typeof data.apiKey === 'string') ivApiKeyEl.value = sanitizeApiKey(data.apiKey);
       }
       if (ivResumeEl && !ivResumeEl.value.trim()) ivResumeEl.value = DEFAULT_SAMPLE_RESUME;
       if (ivJdEl && !ivJdEl.value.trim()) ivJdEl.value = DEFAULT_SAMPLE_JD;
-      refreshResumeJdSkillAnalysis();
+      window.saveInterviewSettings();
     } catch (e) {}
   }
 
@@ -5347,26 +5377,43 @@ endstream endobj
     const endpoint = provider === 'groq'
       ? 'https://api.groq.com/openai/v1/chat/completions'
       : 'https://api.openai.com/v1/chat/completions';
-    const model = provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini';
+    const modelsToTry = provider === 'groq'
+      ? ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant']
+      : ['gpt-4o-mini'];
 
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model,
-        temperature: 0.2,
-        max_tokens: 220,
-        stream: true,
-        messages: [
-          { role: 'system', content: sysPrompt },
-          { role: 'user', content: userPrompt }
-        ]
-      })
-    });
-    if (!res.ok || !res.body) throw new Error(`${provider} API HTTP ${res.status}`);
+    let res = null;
+    let lastErrText = '';
+    for (const model of modelsToTry) {
+      res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model,
+          temperature: 0.25,
+          max_tokens: 240,
+          stream: true,
+          messages: [
+            { role: 'system', content: sysPrompt },
+            { role: 'user', content: userPrompt }
+          ]
+        })
+      });
+      if (res.ok && res.body) break;
+      try {
+        const errJson = await res.json();
+        lastErrText = errJson?.error?.message || (`HTTP ${res.status}`);
+      } catch (e) {
+        lastErrText = `HTTP ${res.status}`;
+      }
+      // If 401 Invalid API key, don't retry fallback model
+      if (res.status === 401) break;
+    }
+    if (!res || !res.ok || !res.body) {
+      throw new Error(`${provider.toUpperCase()}: ${lastErrText || 'Request failed'}`);
+    }
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder('utf-8');
@@ -5468,17 +5515,22 @@ endstream endobj
       ? `⚠️ Honest Gap Response Ready (${localMs}ms) · Speak Naturally`
       : `🎯 Grounded Answer Ready (${localMs}ms) · Speak Naturally`;
 
-    // Step 2: If user configured a Cloud LLM key (Groq / OpenAI / Gemini) and selected auto or cloud provider, stream refinement
+    // Step 2: If user configured a Cloud LLM key (Groq / OpenAI / Gemini), stream live LLM answer
     const providerPref = ivProviderEl ? ivProviderEl.value : 'auto';
-    const apiKey = (ivApiKeyEl ? ivApiKeyEl.value : '').trim();
+    const apiKey = sanitizeApiKey(ivApiKeyEl ? ivApiKeyEl.value : '');
+    const errBanner = document.getElementById('ivApiErrorBanner');
+    if (errBanner) errBanner.style.display = 'none';
+
     let activeProvider = providerPref;
-    if (providerPref === 'auto' && apiKey) {
+    if ((providerPref === 'auto' || providerPref === 'local') && apiKey) {
       if (apiKey.startsWith('gsk_')) activeProvider = 'groq';
       else if (apiKey.startsWith('AIza')) activeProvider = 'gemini';
-      else activeProvider = 'openai';
+      else if (apiKey.startsWith('sk-')) activeProvider = 'openai';
+      else activeProvider = 'groq'; // Default pasted key to Groq if user didn't pick a provider
     }
 
     if (apiKey && ['groq', 'openai', 'gemini'].includes(activeProvider)) {
+      if (ivLatencyBadge) ivLatencyBadge.textContent = `⏳ Streaming ${activeProvider.toUpperCase()}...`;
       try {
         await streamCloudLlmInterviewAnswer(q, resumeText, jdText, activeProvider, apiKey, (partialText) => {
           ivCurrentHudsonScript = partialText;
@@ -5491,8 +5543,12 @@ endstream endobj
           window.pushInterviewAnswerToHud(partialText);
         });
       } catch (err) {
-        // Keep the instant local grounded answer on screen if network/API key fails
-        if (ivLatencyBadge) ivLatencyBadge.textContent = `🛡️ Local Fallback (${localMs}ms)`;
+        // Keep the instant local grounded answer on screen and show exact API error in the Studio card
+        if (ivLatencyBadge) ivLatencyBadge.textContent = `⚠️ API Err · Using Local`;
+        if (errBanner) {
+          errBanner.style.display = 'block';
+          errBanner.textContent = `⚠️ ${err.message || err}. Showing instant offline grounded answer instead.`;
+        }
       }
     }
 
@@ -5524,6 +5580,30 @@ endstream endobj
       setTimeout(() => { askBtn.textContent = '✨ Answer Now'; }, 900);
     }
     generateInterviewAnswer(q);
+  };
+
+  window.testInterviewApiKey = async function() {
+    const testBtn = document.getElementById('ivTestKeyBtn');
+    const errBanner = document.getElementById('ivApiErrorBanner');
+    const apiKey = sanitizeApiKey(ivApiKeyEl ? ivApiKeyEl.value : '');
+    if (!apiKey) {
+      if (errBanner) {
+        errBanner.style.display = 'block';
+        errBanner.textContent = '⚠️ Paste your Groq (gsk_...), OpenAI (sk-...), or Gemini (AIza...) API key in the box above first.';
+      }
+      return;
+    }
+    window.saveInterviewSettings();
+    if (testBtn) testBtn.textContent = '⏳ Testing...';
+    if (errBanner) errBanner.style.display = 'none';
+    const currentQ = (ivQuestionEl && ivQuestionEl.value.trim()) ? ivQuestionEl.value.trim() : 'Tell me about a time you solved a tough ambiguous problem.';
+    if (ivQuestionEl) ivQuestionEl.value = currentQ;
+    await generateInterviewAnswer(currentQ);
+    if (testBtn) {
+      const ok = !errBanner || errBanner.style.display === 'none';
+      testBtn.textContent = ok ? '✓ Groq Live!' : '⚠️ Retry';
+      setTimeout(() => { testBtn.textContent = '🔌 Test Key'; }, 1800);
+    }
   };
 
   window.askPresetInterviewQuestion = function(qText) {
