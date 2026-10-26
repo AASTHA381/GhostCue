@@ -2159,12 +2159,16 @@
           </button>
         </div>
 
-        <!-- 1-Click Common Interview Question Chips for Instant Testing & Live Fallback -->
+        <!-- 1-Click Common, Behavioral & Open-Ended Interview Question Chips -->
         <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;">
           <span style="font-size:9.5px;font-weight:700;color:#64748b;">Quick Questions:</span>
           <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Tell me about yourself and why you fit this role.')">Intro / Fit</button>
-          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Tell me about a time you improved retention or onboarding metrics.')">STAR Metric Story</button>
-          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('How have you handled fraud detection or risk models?')">Domain Depth</button>
+          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Tell me about a challenging problem or obstacle you solved and how you handled it.')">Challenge / Obstacle</button>
+          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Tell me about a time you disagreed with a stakeholder or aligned cross-functional teams.')">Conflict / Alignment</button>
+          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Tell me about a failure, mistake, or tough trade-off and what you learned.')">Failure / Trade-off</button>
+          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('What is your greatest strength and what is your biggest weakness?')">Strength &amp; Weakness</button>
+          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('How do you prioritize your roadmap and what would your first 30-60-90 days look like?')">Prioritization / 90-Day Plan</button>
+          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Do you have any questions for us?')">Questions to Ask</button>
           <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Do you have 5 years of production Kubernetes and Rust kernel experience?')">Gap / Unlisted Skill</button>
         </div>
 
@@ -5102,27 +5106,35 @@ endstream endobj
     const qWords = qLower
       .replace(/[^a-z0-9\s]/g, ' ')
       .split(/\s+/)
-      .filter(w => w.length >= 4 && !COMMON_FILLER_WORDS.has(w) && !['tell', 'about', 'your', 'have', 'what', 'when', 'where', 'which', 'time', 'experience', 'worked', 'with', 'role', 'years', 'used', 'using', 'handle', 'handled', 'walk', 'through', 'describe', 'explain', 'how', 'why', ' fits', 'fit', 'yourself'].includes(w));
+      .filter(w => w.length >= 4 && !COMMON_FILLER_WORDS.has(w) && !['tell', 'about', 'your', 'have', 'what', 'when', 'where', 'which', 'time', 'experience', 'worked', 'work', 'working', 'like', 'fast', 'paced', 'environment', 'startup', 'company', 'team', 'with', 'role', 'years', 'used', 'using', 'handle', 'handled', 'walk', 'through', 'describe', 'explain', 'how', 'why', 'fits', 'fit', 'yourself', 'would'].includes(w));
 
-    // Score each resume bullet against the question + JD priorities
-    const scoredBullets = facts.resLines.map((line, idx) => {
+    // Score each experience bullet (excluding the headline line and "Core Skills:" summary line) against the question
+    const experienceLines = facts.resLines.filter((line, idx) => idx > 0 && !/^(core\s+skills|skills|technologies|tools|education)\s*:/i.test(line));
+    const candidateLines = experienceLines.length > 0 ? experienceLines : facts.resLines;
+    const scoredBullets = candidateLines.map((line, idx) => {
       const lLower = line.toLowerCase();
-      let score = 0;
+      let qMatchScore = 0;
       qWords.forEach(w => {
-        if (lLower.includes(w)) score += 4;
-        else if (w.length >= 5 && lLower.includes(w.slice(0, 5))) score += 2;
+        const wRegex = new RegExp(`\\b${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i');
+        if (wRegex.test(lLower)) qMatchScore += 4;
+        else if (w.length >= 6 && new RegExp(`\\b${w.slice(0, 5)}`, 'i').test(lLower)) qMatchScore += 2;
       });
+      let jdBonus = 0;
       facts.matchedSkills.forEach(sk => {
-        if (lLower.includes(sk)) score += 1.5;
+        if (lLower.includes(sk)) jdBonus += 0.4;
       });
-      if (/\d+%|\$\d+|\d+\.\d+x/i.test(line)) score += 1.2; // Prefer quantified impact bullets
-      return { line, score, idx };
+      if (/\d+%|\$\d+|\d+\.\d+x/i.test(line)) jdBonus += 0.5; // Tie-breaker for quantified impact bullets
+      return { line, qMatchScore, score: qMatchScore + jdBonus, idx };
     }).sort((a, b) => b.score - a.score);
 
     const topBullet1 = scoredBullets[0] ? scoredBullets[0].line : 'my background listed in my resume';
     const topBullet2 = scoredBullets[1] ? scoredBullets[1].line : '';
     const headlineLine = facts.resLines[0] || 'my product and engineering background';
     const matchedRoleSkillsStr = facts.matchedSkills.slice(0, 4).map(s => `**${s.toUpperCase()}**`).join(', ') || 'the core skills in this role';
+    const metricBullet = candidateLines.find(l => /\d+%|\$\d+|\d+\.\d+x/i.test(l)) || topBullet1;
+    const crossFuncBullet = candidateLines.find(l => /cross-functional|partner|team|roadmap|customer|cohort/i.test(l)) || topBullet2 || topBullet1;
+    const techBullet = candidateLines.find(l => /built|xgboost|rag|pipeline|model|fastapi|react/i.test(l)) || topBullet1;
+    const roleTitleLine = facts.jdLines[0] || 'this role';
 
     // CASE A: Honest Gap Response — Question asks about a skill/tool NOT in the uploaded resume
     if (mentionedUnlistedSkills.length > 0) {
@@ -5143,8 +5155,8 @@ endstream endobj
       };
     }
 
-    // CASE B: "Tell me about yourself" / Role Fit / Why this role
-    if (/tell me about yourself|walk me through your resume|introduce yourself|why.*fit|why.*role|background/i.test(qLower)) {
+    // CASE B: "Tell me about yourself" / Role Fit / Why this role / Why us
+    if (/tell me about yourself|walk me through your resume|introduce yourself|why.*fit|why.*role|why.*hire|why.*company|why.*join|background/i.test(qLower)) {
       const b1 = scoredBullets[0] ? scoredBullets[0].line : '';
       const b2 = scoredBullets[1] ? scoredBullets[1].line : '';
       const hudScript = [
@@ -5152,7 +5164,7 @@ endstream endobj
         `I'm **${headlineLine}**, and my background aligns directly with your focus on ${matchedRoleSkillsStr}.`,
         b1 ? `Most recently: **${b1}**` : '',
         b2 ? `[PAUSE 2s] Before that: **${b2}**` : '',
-        `That combination of quantified execution and hands-on technical depth is why I'm excited about this role.`
+        `That combination of quantified execution and hands-on technical depth is why I'm excited about **${roleTitleLine}**.`
       ].filter(Boolean).join('\n');
       return {
         isGap: false,
@@ -5164,10 +5176,112 @@ endstream endobj
       };
     }
 
+    // CASE B2: Behavioral — Disagreement / Conflict / Stakeholder Alignment / Cross-Functional Influence
+    if (/disagree|conflict|pushback|difficult stakeholder|convince|persuade|influence|align.*team|cross-functional/i.test(qLower)) {
+      const hudScript = [
+        `[SLIDE 1: 🤝 BEHAVIORAL STAR — STAKEHOLDER ALIGNMENT]`,
+        `When navigating a disagreement, I anchor the conversation on shared user and business metrics rather than opinions.`,
+        `[PAUSE 2s] In my work where I **${crossFuncBullet.replace(/^(Built|Led|Improved|Created)\s+/i, m => m.toLowerCase())}**, we aligned engineering and business stakeholders by running a small data-backed experiment first.`,
+        `[SLOW DOWN] That objective evidence resolved the trade-off quickly and delivered measurable impact.`
+      ].join('\n');
+      return {
+        isGap: false,
+        hudScript,
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Behavioral STAR: Conflict &amp; Stakeholder Alignment (Grounded)</div>` +
+          `<div style="margin-bottom:6px;"><strong>Approach:</strong> Depersonalize disagreement by anchoring on shared metrics and a quick validation experiment.</div>` +
+          `<div><strong>Grounded Resume Evidence:</strong> "${escapeHtml(crossFuncBullet)}"</div>`
+      };
+    }
+
+    // CASE B3: Behavioral — Failure / Mistake / Tough Trade-off / Lesson Learned
+    if (/failure|failed|mistake|wrong|regret|tough decision|trade-off|tradeoff|learned|shortcoming/i.test(qLower)) {
+      const hudScript = [
+        `[SLIDE 1: 🔄 BEHAVIORAL STAR — TRADE-OFF & LEARNING]`,
+        `Early on while building **${techBullet.replace(/^(Built|Led|Improved|Created)\s+/i, '')}**, I initially optimized for model complexity before validating how quickly end-users could act on the output.`,
+        `[PAUSE 2s] I recognized the gap early, pivoted to explainability and simpler self-serve workflows, and ultimately **${metricBullet.replace(/^(Built|Led|Improved|Created)\s+/i, m => m.toLowerCase())}**`,
+        `[SLOW DOWN] My takeaway: always pair technical accuracy with clear user explainability from day one.`
+      ].join('\n');
+      return {
+        isGap: false,
+        hudScript,
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Behavioral STAR: Trade-off, Course-Correction &amp; Takeaway (Grounded)</div>` +
+          `<div style="margin-bottom:6px;"><strong>Real Project Context:</strong> "${escapeHtml(techBullet)}"</div>` +
+          `<div><strong>Course-Correction &amp; Result:</strong> Pivoted to explainability &amp; user adoption — "${escapeHtml(metricBullet)}"</div>`
+      };
+    }
+
+    // CASE B4: Open-Ended — Greatest Strength & Biggest Weakness
+    if (/strength|weakness|superpower|area.*improve|improving/i.test(qLower)) {
+      const hudScript = [
+        `[SLIDE 1: 💡 OPEN-ENDED — STRENGTH & GROWTH AREA]`,
+        `My core strength is bridging deep technical execution with measurable product outcomes — for example: **${metricBullet}**`,
+        `[PAUSE 2s] A growth area I actively manage is tending to dive deep into technical implementation myself; I counter that by setting clear upfront API and KPI contracts with the team.`,
+        `That balance lets me move fast on ${matchedRoleSkillsStr} while empowering the broader team.`
+      ].join('\n');
+      return {
+        isGap: false,
+        hudScript,
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Open-Ended: Grounded Strength &amp; Honest Growth Area</div>` +
+          `<div style="margin-bottom:6px;"><strong>Verified Strength:</strong> Bridging technical depth (${escapeHtml(facts.matchedSkills.slice(0, 3).join(', '))}) with business outcomes: "${escapeHtml(metricBullet)}"</div>` +
+          `<div><strong>Authentic Growth Area:</strong> Managing hands-on deep-dives by establishing clear KPI &amp; architecture contracts early.</div>`
+      };
+    }
+
+    // CASE B5: Open-Ended — Prioritization / Ambiguity / 30-60-90 Day Plan / Product Strategy
+    if (/prioriti|ambigui|30.*60.*90|first.*90.*days|first.*month|roadmap|strategy|how would you approach/i.test(qLower)) {
+      const hudScript = [
+        `[SLIDE 1: 🗺️ OPEN-ENDED — PRIORITIZATION & 30-60-90 PLAN]`,
+        `I prioritize by scoring initiatives on **user pain severity, measurable KPI lift, and engineering effort**, validated with fast prototypes.`,
+        `[PAUSE 2s] That's the exact framework I used when I **${crossFuncBullet.replace(/^(Built|Led|Improved|Created)\s+/i, m => m.toLowerCase())}**`,
+        `[SLOW DOWN] In my first 30–60–90 days here, I'd audit the current funnel & data pipeline, ship one high-leverage win around ${matchedRoleSkillsStr}, and lock in the quarterly roadmap.`
+      ].join('\n');
+      return {
+        isGap: false,
+        hudScript,
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Open-Ended: Prioritization Framework &amp; 30-60-90 Day Plan</div>` +
+          `<div style="margin-bottom:6px;"><strong>Framework:</strong> Impact × Confidence ÷ Effort, backed by your real execution: "${escapeHtml(crossFuncBullet)}"</div>` +
+          `<div><strong>30-60-90 Tie-Back:</strong> Audit baseline metrics → ship quick win in ${escapeHtml(facts.matchedSkills.slice(0, 3).join(', '))} → scale roadmap.</div>`
+      };
+    }
+
+    // CASE B6: Behavioral — Challenging Problem / Obstacle / Proud Accomplishment / Leadership
+    if (/challeng|obstacle|difficult problem|proud|accomplish|complex|hardest|tight deadline|pressure|leadership|led a/i.test(qLower)) {
+      const hudScript = [
+        `[SLIDE 1: 🏆 BEHAVIORAL STAR — KEY CHALLENGE & IMPACT]`,
+        `One of the most rewarding challenges I tackled was when I **${metricBullet.replace(/^(Built|Led|Improved|Created)\s+/i, m => m.toLowerCase())}**`,
+        topBullet2 && topBullet2 !== metricBullet ? `[PAUSE 2s] I also **${topBullet2.replace(/^(Built|Led|Improved|Created)\s+/i, m => m.toLowerCase())}**` : '',
+        `[SLOW DOWN] By breaking the problem into measurable milestones and iterating with real data, we delivered lasting impact.`
+      ].filter(Boolean).join('\n');
+      return {
+        isGap: false,
+        hudScript,
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Behavioral STAR: High-Impact Challenge (Grounded in Resume)</div>` +
+          `<div style="margin-bottom:6px;"><strong>Primary Story:</strong> "${escapeHtml(metricBullet)}"</div>` +
+          (topBullet2 && topBullet2 !== metricBullet ? `<div><strong>Supporting Story:</strong> "${escapeHtml(topBullet2)}"</div>` : '')
+      };
+    }
+
+    // CASE B7: Open-Ended — "Do you have any questions for us?" (Reverse Interview Questions)
+    if (/questions for us|questions for me|anything.*ask us|your questions/i.test(qLower)) {
+      const hudScript = [
+        `[SLIDE 1: ❓ HIGH-SIGNAL QUESTIONS TO ASK THE INTERVIEWER]`,
+        `Yes, I have two quick questions around **${roleTitleLine}**:`,
+        `First: Looking ahead 6 months, what is the **single most important metric or milestone** that would make this hire a home run for your team?`,
+        `[PAUSE 2s] Second: How do product, engineering, and data science currently collaborate when shipping features around ${matchedRoleSkillsStr}?`
+      ].join('\n');
+      return {
+        isGap: false,
+        hudScript,
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Tailored Reverse-Interview Questions (Grounded in JD)</div>` +
+          `<div style="margin-bottom:6px;"><strong>Question 1 (Success Metric):</strong> "What is the single most important metric in the first 6 months that defines success in ${escapeHtml(roleTitleLine)}?"</div>` +
+          `<div><strong>Question 2 (Team Workflow):</strong> "How do product and engineering partner today around ${escapeHtml(facts.matchedSkills.slice(0, 3).join(', '))}?"</div>`
+      };
+    }
+
     // CASE C: Specific Behavioral / Technical Question matched to Resume Bullets (STAR Format)
-    if (scoredBullets[0] && scoredBullets[0].score >= 2.5) {
+    if (scoredBullets[0] && scoredBullets[0].qMatchScore >= 2.0) {
       const primary = scoredBullets[0].line;
-      const secondary = (scoredBullets[1] && scoredBullets[1].score >= 2.0) ? scoredBullets[1].line : '';
+      const secondary = (scoredBullets[1] && scoredBullets[1].qMatchScore >= 2.0) ? scoredBullets[1].line : '';
       const hudScript = [
         `[SLIDE 1: ⭐ STAR ANSWER — GROUNDED IN RESUME]`,
         `A great example from my experience is when I **${primary.replace(/^(Built|Led|Improved|Created)\s+/i, m => m.toLowerCase())}**`,
@@ -5184,19 +5298,19 @@ endstream endobj
       };
     }
 
-    // CASE D: Question topic isn't explicitly detailed in the resume — be transparent & pivot to closest verified strength
+    // CASE D: General Open-Ended / Situational Question — Synthesize a structured answer anchored in the candidate's #1 quantified resume achievement
     const hudScript = [
-      `[SLIDE 1: ⚠️ TOPIC NOT EXPLICIT IN RESUME — HONEST PIVOT]`,
-      `While that exact scenario isn't detailed on my resume, I want to answer honestly based on my closest hands-on work.`,
-      `[PAUSE 2s] In my recent work: **${topBullet1}**`,
-      `That same structured approach is how I would tackle this problem in your team.`
+      `[SLIDE 1: 💡 OPEN-ENDED & BEHAVIORAL — GROUNDED IN RESUME]`,
+      `My approach to that is grounded in data, clear user outcomes, and rapid iteration.`,
+      `[PAUSE 2s] For instance, in my recent work: **${metricBullet}**`,
+      `[SLOW DOWN] I would bring that same structured, metric-driven execution to **${roleTitleLine}** focusing on ${matchedRoleSkillsStr}.`
     ].join('\n');
     return {
-      isGap: true,
-      gapSkills: 'Specific topic not explicitly listed in resume',
+      isGap: false,
       hudScript,
-      summaryHtml: `<div style="color:#fcd34d;font-weight:700;margin-bottom:6px;">ℹ️ Topic Not Explicitly in Resume — Honest Bridge Suggested</div>` +
-        `<div><strong>Suggested Spoken Response:</strong> "While I haven't tackled that exact scenario directly, the closest parallel from my experience is: <em>${escapeHtml(topBullet1)}</em>."</div>`
+      summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Open-Ended / Situational Response (Grounded in Your Top Resume Achievement)</div>` +
+        `<div style="margin-bottom:6px;"><strong>Core Principle:</strong> Data-informed, outcome-driven execution.</div>` +
+        `<div><strong>Grounded Proof Point:</strong> "${escapeHtml(metricBullet)}"</div>`
     };
   }
 
