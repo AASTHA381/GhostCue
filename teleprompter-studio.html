@@ -2153,7 +2153,7 @@
 
         <!-- Live Question Input + Instant Trigger -->
         <div style="display:flex;gap:6px;align-items:center;">
-          <input type="text" id="ivQuestionInput" class="script-title-input" placeholder="Interviewer question appears here live (or type/paste any question & press Enter)..." style="flex:1;font-size:12px;padding:7px 10px;background:#ffffff;" />
+          <input type="text" id="ivQuestionInput" class="script-title-input" value="Tell me about yourself and why you fit this role." placeholder="Interviewer question appears here live (or type/paste any question & press Enter)..." style="flex:1;font-size:12px;padding:7px 10px;background:#ffffff;" />
           <button class="qd-btn qd-btn-primary" id="ivAskBtn" onclick="generateInterviewAnswerFromInput()" style="padding:6px 12px;font-size:11.5px;background:linear-gradient(135deg,#7c3aed,#4f46e5);">
             ✨ Answer Now
           </button>
@@ -4877,6 +4877,19 @@ endstream endobj
       updateActiveEyeline();
     } else if (type === 'AUDIENCE_PREVIEW_CHANGE') {
       document.body.classList.toggle('audience-view-active', Boolean(payload.active));
+    } else if (type === 'INTERVIEW_QA_SYNC') {
+      if (payload.hudScript) {
+        scriptEditorEl.value = payload.hudScript;
+        scrollY = 0;
+        spokenWordIndex = 0;
+        window.__voiceTargetScrollY = 0;
+        hudScrollTrack.style.transform = 'translateY(0px)';
+        setOverlayVisible(true);
+        parseAndRenderHud();
+        hudModeStatus.textContent = payload.isGap
+          ? '⚠️ Honest Gap Response Ready · Speak Naturally'
+          : '🎯 Grounded Interview Answer Ready · Speak Naturally';
+      }
     } else if (type === 'VOICE_SPEAKING_STATE') {
       // Ignore stale voice flags from the other window unless this window is also in Voice mode
       const speaking = scrollMode === 'voice' && Boolean(payload.speaking);
@@ -5385,7 +5398,18 @@ endstream endobj
 
   window.generateInterviewAnswerFromInput = function() {
     if (!ivQuestionEl) return;
-    generateInterviewAnswer(ivQuestionEl.value);
+    let q = ivQuestionEl.value.trim();
+    if (!q) {
+      // If input box was cleared, fall back to last heard transcript or a default intro question so ✨ Answer Now ALWAYS responds!
+      q = ivLastTranscript.trim() || 'Tell me about yourself and why you fit this role.';
+      ivQuestionEl.value = q;
+    }
+    const askBtn = document.getElementById('ivAskBtn');
+    if (askBtn) {
+      askBtn.textContent = '✓ Answered!';
+      setTimeout(() => { askBtn.textContent = '✨ Answer Now'; }, 900);
+    }
+    generateInterviewAnswer(q);
   };
 
   window.askPresetInterviewQuestion = function(qText) {
