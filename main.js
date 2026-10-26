@@ -99,9 +99,9 @@ function startNativeMacOsSpeechHelper() {
                 window.__externalVoiceActive = false;
                 isVoiceSpeaking = false;
                 if (scrollMode === 'voice') {
-                  hudModeStatus.textContent = '🎙️ Voice Tracking ON · Speak into Mic to Scroll';
+                  hudModeStatus.textContent = '🎙️ Voice Flow Paused · Speak into Mic to Scroll';
                 }
-              }, 520);
+              }, 380);
             })();
           `).catch(() => {});
           if (studioWindow && !studioWindow.isDestroyed()) {
@@ -120,10 +120,10 @@ function startNativeMacOsSpeechHelper() {
                 window.__studioMicTimer = setTimeout(() => {
                   window.__externalVoiceActive = false;
                   isVoiceSpeaking = false;
-                  if (bar) bar.style.width = '6%';
-                  if (badge) badge.textContent = 'READY';
-                  if (st && scrollMode === 'voice') st.textContent = '🎙️ Listening — Speak into Mic to Scroll';
-                }, 520);
+                  if (bar) bar.style.width = '4%';
+                  if (badge) badge.textContent = 'SILENT';
+                  if (st && scrollMode === 'voice') st.textContent = '🎙️ Paused (Silent) — Speak to Scroll';
+                }, 380);
               })();
             `).catch(() => {});
           }

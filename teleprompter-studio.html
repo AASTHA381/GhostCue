@@ -2985,38 +2985,60 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
       const micBarFill = document.getElementById('micLevelBarFill');
       const micDbBadge = document.getElementById('micDbBadge');
       const micStatusText = document.getElementById('micLevelStatusText');
+      let webNoiseFloor = 0.008;
+      let webVoiceStreak = 0;
 
       function updateWaveBars() {
         if (!vadActive) return;
         micAnalyser.getByteTimeDomainData(timeData);
-        // Compute true RMS voice amplitude from time-domain waveform (immune to pitch/sample-rate differences)
+        // Compute true RMS & peak voice amplitude from time-domain waveform
         let sumSquares = 0;
+        let peak = 0;
         for (let i = 0; i < timeData.length; i++) {
-          const centered = (timeData[i] - 128) / 128;
+          const centered = Math.abs((timeData[i] - 128) / 128);
           sumSquares += centered * centered;
+          if (centered > peak) peak = centered;
         }
         const rms = Math.sqrt(sumSquares / timeData.length);
-        const levelPct = Math.min(100, Math.round(rms * 1400));
+
+        // Adaptive ambient noise floor so 8-bit quantization / room hum never triggers false speech
+        if (rms < webNoiseFloor * 1.8) {
+          webNoiseFloor = Math.max(0.005, Math.min(0.02, webNoiseFloor * 0.94 + rms * 0.06));
+        } else {
+          webNoiseFloor = Math.min(0.02, webNoiseFloor * 0.995 + rms * 0.005);
+        }
+
+        const rmsThreshold = Math.max(0.018, webNoiseFloor * 2.6);
+        const peakThreshold = Math.max(0.055, webNoiseFloor * 5.0);
+        if (rms > rmsThreshold && peak > peakThreshold) {
+          webVoiceStreak = Math.min(8, webVoiceStreak + 1);
+        } else {
+          webVoiceStreak = Math.max(0, webVoiceStreak - 1);
+        }
+
+        const netRms = Math.max(0, rms - webNoiseFloor);
+        const levelPct = Math.min(100, Math.round(netRms * 950));
 
         const now = performance.now();
-        if (rms > 0.0042) {
-          // Hold speaking state for 480ms after each syllable so natural pauses between words don't stutter
-          voiceHoldUntil = now + 480;
+        if (webVoiceStreak >= 2) {
+          // Hold speaking state for 380ms after each syllable so natural pauses between words don't stutter,
+          // while stopping promptly when the speaker pauses.
+          voiceHoldUntil = now + 380;
         }
         const currentlySpeaking = scrollMode === 'voice' && (now < voiceHoldUntil || Boolean(window.__externalVoiceActive));
         isVoiceSpeaking = currentlySpeaking;
 
-        if (micBarFill) micBarFill.style.width = (currentlySpeaking ? Math.max(45, levelPct) : levelPct) + '%';
-        if (micDbBadge) micDbBadge.textContent = (currentlySpeaking ? Math.max(45, levelPct) : levelPct) + '%';
+        if (micBarFill) micBarFill.style.width = (currentlySpeaking ? Math.max(35, levelPct) : Math.min(12, levelPct)) + '%';
+        if (micDbBadge) micDbBadge.textContent = currentlySpeaking ? Math.max(25, levelPct) + '%' : 'SILENT';
         if (micStatusText && scrollMode === 'voice') {
           micStatusText.textContent = currentlySpeaking
             ? '🟢 Voice Detected — Scrolling Script...'
-            : '🎙️ Listening — Speak into Mic to Scroll';
+            : '🎙️ Paused (Silent) — Speak to Scroll';
         }
         if (scrollMode === 'voice') {
           hudModeStatus.textContent = currentlySpeaking
             ? '🟢 Voice Detected · Scrolling with Your Voice'
-            : '🎙️ Voice Tracking ON · Speak into Mic to Scroll';
+            : '🎙️ Voice Flow Paused · Speak into Mic to Scroll';
         }
 
         if (currentlySpeaking !== lastBroadcastVoiceState) {
@@ -3077,7 +3099,7 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
       };
       recognition.start();
     } catch (e) {
-      if (!voiceSimInterval) startVoiceSim();
+      // Do not exit voice mode if SpeechRecognition throws; live microphone VAD handles voice-activated scrolling
     }
   }
 

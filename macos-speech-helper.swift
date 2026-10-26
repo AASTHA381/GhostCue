@@ -6,7 +6,8 @@ import AVFoundation
 
 final class NativeMicVoiceStreamer {
     private let audioEngine = AVAudioEngine()
-    private var noiseFloor: Float = 0.0025
+    private var noiseFloor: Float = 0.0045
+    private var speechStreak: Int = 0
     private var lastPrintTime: TimeInterval = 0
 
     func start() {
@@ -46,19 +47,32 @@ final class NativeMicVoiceStreamer {
             }
             let rms = sqrt(sum / Float(frameLength))
 
-            // Adaptive ambient noise floor tracker (slowly adapts to quiet room background)
-            if rms < self.noiseFloor * 1.4 {
-                self.noiseFloor = max(0.0008, min(0.006, self.noiseFloor * 0.95 + rms * 0.05))
+            // Track ambient room noise floor when signal isn't an active loud voice spike
+            if rms < self.noiseFloor * 1.8 {
+                self.noiseFloor = max(0.002, min(0.015, self.noiseFloor * 0.94 + rms * 0.06))
+            } else {
+                // Very slow upward drift so a loud fan/AC doesn't permanently lock as speech
+                self.noiseFloor = min(0.015, self.noiseFloor * 0.995 + rms * 0.005)
             }
 
-            // Detect human voice whenever RMS exceeds adaptive noise floor + margin or 0.0045
-            let threshold = max(0.0042, self.noiseFloor * 1.85)
-            let isSpeaking = (rms > threshold) || (peak > threshold * 2.6)
+            // Require clear voice energy above ambient noise floor (typical room noise RMS ~0.004-0.006, speech RMS ~0.025-0.12)
+            let rmsThreshold = max(0.015, self.noiseFloor * 2.8)
+            let peakThreshold = max(0.055, self.noiseFloor * 6.5)
+            let frameHasVoice = (rms > rmsThreshold) && (peak > peakThreshold)
+
+            if frameHasVoice {
+                self.speechStreak = min(10, self.speechStreak + 1)
+            } else {
+                self.speechStreak = max(0, self.speechStreak - 1)
+            }
+
+            // Require at least 2 consecutive voiced buffers (~45ms) to reject clicks/pops
+            let isSpeaking = self.speechStreak >= 2
             let now = Date().timeIntervalSince1970
 
-            if isSpeaking && (now - self.lastPrintTime) > 0.09 {
+            if isSpeaking && (now - self.lastPrintTime) > 0.08 {
                 self.lastPrintTime = now
-                let pct = min(100, max(18, Int(rms * 1400)))
+                let pct = min(100, max(22, Int((rms - self.noiseFloor) * 950)))
                 print("__VOICE_LEVEL__:\(pct)")
                 fflush(stdout)
             }
