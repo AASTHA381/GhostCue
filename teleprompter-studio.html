@@ -2166,7 +2166,8 @@
           <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Tell me about a challenging problem or obstacle you solved and how you handled it.')">Challenge / Obstacle</button>
           <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Tell me about a time you disagreed with a stakeholder or aligned cross-functional teams.')">Conflict / Alignment</button>
           <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Tell me about a failure, mistake, or tough trade-off and what you learned.')">Failure / Trade-off</button>
-          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('What is your greatest strength and what is your biggest weakness?')">Strength &amp; Weakness</button>
+          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('What is your biggest weakness and how are you working to improve it?')">My Weakness</button>
+          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('What is your greatest strength?')">My Strength</button>
           <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('How do you prioritize your roadmap and what would your first 30-60-90 days look like?')">Prioritization / 90-Day Plan</button>
           <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Do you have any questions for us?')">Questions to Ask</button>
           <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Do you have 5 years of production Kubernetes and Rust kernel experience?')">Gap / Unlisted Skill</button>
@@ -4993,7 +4994,7 @@ endstream endobj
 
   let ivListening = false;
   let ivLastTranscript = '';
-  let ivLastAnsweredRawTranscript = '';
+  let ivConsumedQuestionWordCount = 0;
   let ivLastAnsweredQuestion = '';
   let ivSilenceDebounceTimer = null;
   let ivHistory = [];
@@ -5254,20 +5255,56 @@ endstream endobj
       };
     }
 
-    // CASE B4: Open-Ended — Greatest Strength & Biggest Weakness
-    if (/strength|weakness|superpower|area.*improve|improving/i.test(qLower)) {
+    // CASE B4: Open-Ended — Greatest Strength & Biggest Weakness (separates Weakness-only, Strength-only, or Both)
+    if (/strength|weakness|superpower|area.*improve|improving|biggest flaw|development area/i.test(qLower)) {
+      const asksWeakness = /weakness|improve|improving|flaw|development area|struggle/i.test(qLower);
+      const asksStrength = /strength|superpower|best at|strongest/i.test(qLower);
+
+      if (asksWeakness && !asksStrength) {
+        const hudScript = [
+          `[SLIDE 1: 💡 MY WEAKNESS & HOW I MANAGE IT — GROUNDED]`,
+          `A genuine weakness I actively manage is tending to **dive too deep into technical implementation and edge-case modeling** myself rather than delegating early.`,
+          `[PAUSE 2s] For example, when I **${techBullet.replace(/^(Built|Led|Improved|Created)\s+/i, m => m.toLowerCase())}**, I realized early on that spending extra cycles tuning the pipeline myself could bottleneck the broader team.`,
+          `[SLOW DOWN] To fix this, I now set **time-boxed architectural checkpoints and clear KPI contracts** upfront so I stay focused on high-leverage product impact.`
+        ].join('\n');
+        return {
+          isGap: false,
+          hudScript,
+          summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Authentic Weakness + Concrete Remediation (Grounded in Your Resume)</div>` +
+            `<div style="margin-bottom:6px;"><strong>1. Real Weakness:</strong> Diving too deep into hands-on technical/modeling details before delegating.</div>` +
+            `<div style="margin-bottom:6px;"><strong>2. Real Resume Context:</strong> "${escapeHtml(techBullet)}"</div>` +
+            `<div><strong>3. Actionable Fix:</strong> Time-boxed design reviews and upfront KPI/API contracts with engineering.</div>`
+        };
+      }
+
+      if (asksStrength && !asksWeakness) {
+        const hudScript = [
+          `[SLIDE 1: 💪 MY CORE STRENGTH — GROUNDED IN RESUME]`,
+          `My greatest strength is bridging **hands-on technical execution (${matchedRoleSkillsStr})** with **quantified business outcomes**.`,
+          `[PAUSE 2s] For instance, I **${metricBullet.replace(/^(Built|Led|Improved|Created)\s+/i, m => m.toLowerCase())}**`,
+          `[SLOW DOWN] Because I can both build the technical prototype and own the business KPI, I help teams ship faster with fewer handoff gaps.`
+        ].join('\n');
+        return {
+          isGap: false,
+          hudScript,
+          summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Grounded Core Strength (Backed by Quantified Resume Impact)</div>` +
+            `<div style="margin-bottom:6px;"><strong>Core Strength:</strong> Combining technical depth (${escapeHtml(facts.matchedSkills.slice(0, 4).join(', '))}) with measurable product KPIs.</div>` +
+            `<div><strong>Proof Point:</strong> "${escapeHtml(metricBullet)}"</div>`
+        };
+      }
+
       const hudScript = [
-        `[SLIDE 1: 💡 OPEN-ENDED — STRENGTH & GROWTH AREA]`,
+        `[SLIDE 1: 💡 STRENGTH & WEAKNESS — GROUNDED IN RESUME]`,
         `My core strength is bridging deep technical execution with measurable product outcomes — for example: **${metricBullet}**`,
-        `[PAUSE 2s] A growth area I actively manage is tending to dive deep into technical implementation myself; I counter that by setting clear upfront API and KPI contracts with the team.`,
+        `[PAUSE 2s] A weakness I actively manage is tending to dive too deep into technical implementation myself; I counter that by setting time-boxed checkpoints and clear KPI contracts with the team.`,
         `That balance lets me move fast on ${matchedRoleSkillsStr} while empowering the broader team.`
       ].join('\n');
       return {
         isGap: false,
         hudScript,
-        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Open-Ended: Grounded Strength &amp; Honest Growth Area</div>` +
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Open-Ended: Grounded Strength &amp; Honest Weakness</div>` +
           `<div style="margin-bottom:6px;"><strong>Verified Strength:</strong> Bridging technical depth (${escapeHtml(facts.matchedSkills.slice(0, 3).join(', '))}) with business outcomes: "${escapeHtml(metricBullet)}"</div>` +
-          `<div><strong>Authentic Growth Area:</strong> Managing hands-on deep-dives by establishing clear KPI &amp; architecture contracts early.</div>`
+          `<div><strong>Authentic Weakness &amp; Fix:</strong> Managing hands-on technical deep-dives by establishing time-boxed reviews and clear KPI contracts early.</div>`
       };
     }
 
@@ -5405,11 +5442,11 @@ endstream endobj
   async function streamCloudLlmInterviewAnswer(question, resumeText, jdText, provider, apiKey, onDelta) {
     const sysPrompt = [
       'You are GhostCue, a real-time interview co-pilot generating natural, first-person ("I...") spoken answers for a candidate to read aloud from a webcam teleprompter.',
-      'STRICT ANTI-HALLUCINATION RULES:',
-      '1. Ground every claim, metric, company, and tool 100% in the supplied RESUME and JOB DESCRIPTION.',
-      '2. NEVER invent qualifications, employers, metrics, or tools not present in the RESUME.',
-      '3. If the interviewer asks about a skill, tool, or experience NOT supported by the RESUME, start with "[SLIDE 1: ⚠️ HONEST GAP — NOT IN RESUME]" and give a brief, honest statement acknowledging the gap, then pivot to the closest real experience from the RESUME.',
-      '4. Otherwise start with "[SLIDE 1: 🎯 GROUNDED INTERVIEW ANSWER]" and write 3 short, conversational sentences (60–90 words total) with **bold** around key metrics/terms so it is effortless to say aloud.'
+      'RULES FOR GROUNDING, BEHAVIORAL & OPEN-ENDED QUESTIONS:',
+      '1. Ground all project examples, metrics, companies, and technical skills 100% in the supplied RESUME and JOB DESCRIPTION. Never invent employers, metrics, or tools.',
+      '2. For open-ended or behavioral questions (such as "What is your weakness?", "Tell me about a failure/conflict/challenge", "How do you prioritize?", or "Why should we hire you?") that are not literally written word-for-word on a resume: NEVER refuse to answer and NEVER flag them as a gap! Instead, craft a natural, authentic first-person behavioral answer (e.g., a real, constructive weakness + how the candidate manages it) anchored in the real projects and role context from the RESUME.',
+      '3. ONLY start with "[SLIDE 1: ⚠️ HONEST GAP — NOT IN RESUME]" when the interviewer asks if the candidate has experience with a specific hard technical tool, programming language, certification, or domain (e.g. Kubernetes, Rust, SAP) that is absent from the RESUME.',
+      '4. For all other questions, start with "[SLIDE 1: 🎯 GROUNDED INTERVIEW ANSWER]" and write 3 short, conversational sentences (60–90 words total) with **bold** around key phrases/metrics so it is effortless to say aloud.'
     ].join('\n');
 
     const userPrompt = `CANDIDATE RESUME:\n${resumeText}\n\nTARGET JOB DESCRIPTION:\n${jdText}\n\nINTERVIEWER QUESTION:\n"${question}"\n\nWrite the concise, grounded spoken response now:`;
@@ -5754,17 +5791,20 @@ endstream endobj
   function looksLikeInterviewerQuestion(clauseText) {
     const lower = String(clauseText || '').trim().toLowerCase();
     const words = lower.split(/\s+/).filter(Boolean);
-    if (words.length < 3) return false;
-    // Interrogative starters, behavioral prompts, or question mark
+    if (words.length < 2) return false;
+    // Direct interview topic keywords always trigger even on short 2-3 word voice prompts (e.g. "my weakness", "greatest strength")
+    if (/\b(weakness|weaknesses|strength|strengths|conflict|disagree|failure|mistake|challenge|obstacle|prioritize|roadmap|yourself|introduce|questions for us|hire you|why this role)\b/i.test(lower)) {
+      return true;
+    }
     if (/\?$/.test(lower)) return true;
     if (/^(tell|walk|describe|explain|how|what|why|when|where|who|which|can|could|would|do|did|have|has|are|is|give|share)\b/i.test(lower)) {
       return true;
     }
-    if (/\b(tell me|walk me|talk about|example of|time when|how do you|how did you|how have you|how would you|what is your|why do you|experience with|questions for us)\b/i.test(lower)) {
+    if (/\b(tell me|walk me|talk about|example of|time when|how do you|how did you|how have you|how would you|what is your|why do you|experience with)\b/i.test(lower)) {
       return true;
     }
-    // Any spoken sentence of >= 5 words when not reading the HUD script
-    return words.length >= 5;
+    // Any spoken sentence of >= 4 words when not reading the HUD script
+    return words.length >= 4;
   }
 
   window.onInterviewTranscript = function(transcriptText) {
@@ -5777,10 +5817,15 @@ endstream endobj
     if (!cleaned || cleaned === ivLastTranscript) return;
 
     // Extract only the newly spoken segment since the last answered question
-    let activeUtterance = cleaned;
-    if (ivLastAnsweredRawTranscript && cleaned.toLowerCase().startsWith(ivLastAnsweredRawTranscript.toLowerCase())) {
-      activeUtterance = cleaned.slice(ivLastAnsweredRawTranscript.length).trim();
+    // Use word-count offset rather than exact prefix string match because SFSpeechRecognizer
+    // frequently revises capitalization/punctuation of earlier words in the session!
+    const allWords = cleaned.split(/\s+/).filter(Boolean);
+    if (allWords.length + 2 < ivConsumedQuestionWordCount) {
+      // SFSpeechRecognizer rolled over to a fresh session
+      ivConsumedQuestionWordCount = 0;
     }
+    const newWords = allWords.slice(ivConsumedQuestionWordCount);
+    const activeUtterance = newWords.join(' ').trim();
     ivLastTranscript = cleaned;
     if (!activeUtterance) return;
 
@@ -5788,11 +5833,11 @@ endstream endobj
     if (!spokenTokens.length) return;
 
     // SPEAKER DISCRIMINATION:
-    // Check if the candidate is currently reading the suggested answer displayed on the HUD!
-    if (isCandidateReadingCurrentHudAnswer(spokenTokens)) {
+    // Only treat as Candidate reading the HUD if the spoken phrase does NOT contain an explicit interview question trigger
+    const hasQuestionIntent = /\b(tell me|what is|what's|what are|how do|how did|how would|why do|why should|walk me|describe a|weakness|strength|conflict|failure|mistake|questions for us)\b/i.test(activeUtterance);
+    if (!hasQuestionIntent && isCandidateReadingCurrentHudAnswer(spokenTokens)) {
       clearTimeout(ivSilenceDebounceTimer);
       hudModeStatus.textContent = '🗣️ Candidate Speaking (Reading Answer Aloud) · Auto-Scrolling HUD';
-      // Also advance the HUD word highlight as the candidate reads their answer aloud!
       const prevMode = scrollMode;
       scrollMode = 'voice';
       window.onNativeTranscript(activeUtterance);
@@ -5801,20 +5846,19 @@ endstream endobj
     }
 
     // Otherwise, this is incoming Interviewer speech (or a new question)!
-    const words = activeUtterance.split(/\s+/);
-    const recentClause = words.slice(-24).join(' ');
+    const recentClause = newWords.slice(-24).join(' ');
     if (ivQuestionEl) ivQuestionEl.value = recentClause;
     hudModeStatus.textContent = `👂 Interviewer: "${recentClause.slice(-48)}"`;
 
-    // Auto-trigger answer generation as soon as the interviewer pauses for 600ms after asking a question
+    // Auto-trigger answer generation as soon as the interviewer pauses for 550ms after asking a question
     clearTimeout(ivSilenceDebounceTimer);
     if (looksLikeInterviewerQuestion(recentClause) && recentClause !== ivLastAnsweredQuestion) {
       ivSilenceDebounceTimer = setTimeout(() => {
         if (recentClause !== ivLastAnsweredQuestion) {
-          ivLastAnsweredRawTranscript = cleaned;
+          ivConsumedQuestionWordCount = allWords.length;
           generateInterviewAnswer(recentClause);
         }
-      }, 600);
+      }, 550);
     }
   };
 
@@ -5824,9 +5868,10 @@ endstream endobj
     clearTimeout(ivSilenceDebounceTimer);
     const currentQ = ivQuestionEl ? ivQuestionEl.value.trim() : '';
     const toks = currentQ.toLowerCase().split(/\s+/).map(normalizeTokenForMatch).filter(Boolean);
-    if (isCandidateReadingCurrentHudAnswer(toks)) return;
+    const hasQuestionIntent = /\b(tell me|what is|what's|what are|how do|how did|how would|why do|why should|walk me|describe a|weakness|strength|conflict|failure|mistake|questions for us)\b/i.test(currentQ);
+    if (!hasQuestionIntent && isCandidateReadingCurrentHudAnswer(toks)) return;
     if (looksLikeInterviewerQuestion(currentQ) && currentQ !== ivLastAnsweredQuestion) {
-      ivLastAnsweredRawTranscript = ivLastTranscript;
+      ivConsumedQuestionWordCount = ivLastTranscript ? ivLastTranscript.split(/\s+/).filter(Boolean).length : 0;
       generateInterviewAnswer(currentQ);
     }
   };
