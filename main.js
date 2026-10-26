@@ -121,6 +121,11 @@ function startNativeMacOsSpeechHelper() {
           overlayWindow.webContents.executeJavaScript(`
             if (typeof window.onNativeVoicePhraseEnd === 'function') window.onNativeVoicePhraseEnd();
           `).catch(() => {});
+          if (studioWindow && !studioWindow.isDestroyed()) {
+            studioWindow.webContents.executeJavaScript(`
+              if (typeof window.onNativeVoicePhraseEnd === 'function') window.onNativeVoicePhraseEnd();
+            `).catch(() => {});
+          }
         } else if (trimmed.startsWith('__VOICE_LEVEL__:') || trimmed === '__VOICE_ACTIVE__') {
           const pct = parseInt(trimmed.split(':')[1] || '65', 10) || 65;
           overlayWindow.webContents.executeJavaScript(`

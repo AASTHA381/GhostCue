@@ -3532,6 +3532,15 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
       syncHudSegmentedModePill();
       ensureScrollLoopState();
       initWebSpeechRecognition();
+    } else if (mode === 'interview') {
+      togglePlay(false);
+      setOverlayVisible(true);
+      console.log('__GHOSTCUE_IPC__:SHOW_OVERLAY');
+      console.log('__GHOSTCUE_IPC__:VOICE_MODE_START');
+      hudModeStatus.textContent = '🎯 Interview AI Active · Listening for Interviewer Question';
+      syncHudSegmentedModePill();
+      ensureScrollLoopState();
+      initWebSpeechRecognition();
     } else {
       console.log('__GHOSTCUE_IPC__:VOICE_MODE_STOP');
       stopVoiceSim();
@@ -4984,6 +4993,7 @@ endstream endobj
 
   let ivListening = false;
   let ivLastTranscript = '';
+  let ivLastAnsweredRawTranscript = '';
   let ivLastAnsweredQuestion = '';
   let ivSilenceDebounceTimer = null;
   let ivHistory = [];
@@ -5007,19 +5017,23 @@ endstream endobj
     if (shell) shell.classList.toggle('interview-workspace-active', isIv);
     if (tBtn) tBtn.classList.toggle('active', !isIv);
     if (iBtn) iBtn.classList.toggle('active', isIv);
+    if (isIv) {
+      // Automatically turn on Interviewer Question Listener when entering the AI Interview Co-Pilot tab
+      togglePlay(false);
+      scrollMode = 'interview';
+      syncHudSegmentedModePill();
+      broadcastState('MODE_CHANGE', { mode: 'interview' });
+      if (!ivListening) {
+        window.toggleInterviewListening(true);
+      }
+    }
   };
 
   window.activateInterviewCoPilotMode = function() {
     window.switchStudioWorkspace('interview');
-    togglePlay(false);
-    scrollMode = 'interview';
     setOverlayVisible(true);
     console.log('__GHOSTCUE_IPC__:SHOW_OVERLAY');
-    syncHudSegmentedModePill();
     ensureScrollLoopState();
-    if (!ivListening) {
-      window.toggleInterviewListening(true);
-    }
     hudModeStatus.textContent = '🎯 Interview AI Active · Listening for Interviewer Question';
   };
 
@@ -5711,34 +5725,108 @@ endstream endobj
     if (ivListening) window.toggleInterviewListening(false);
   };
 
+  // Speaker Discrimination & Question Intent Detector:
+  // Distinguishes whether the spoken audio is:
+  //  (A) The Candidate reading the suggested answer aloud on the HUD -> advances word highlight & NEVER triggers a new answer
+  //  (B) The Interviewer asking a question -> triggers a new grounded answer when the interviewer pauses
+  function isCandidateReadingCurrentHudAnswer(spokenTokens) {
+    if (!ivCurrentHudsonScript || spokenTokens.length < 2) return false;
+    const hudWords = cachedScriptWords.length ? cachedScriptWords : Array.from(hudScrollTrack.querySelectorAll('.script-word'));
+    if (hudWords.length < 4) return false;
+
+    // Check if the last 3 spoken words match the current HUD answer around spokenWordIndex
+    const recent = spokenTokens.slice(-3);
+    let matchesInHud = 0;
+    const searchStart = Math.max(0, spokenWordIndex - 2);
+    const searchEnd = Math.min(hudWords.length, spokenWordIndex + 14);
+    for (const tok of recent) {
+      if (COMMON_FILLER_WORDS.has(tok)) continue;
+      for (let i = searchStart; i < searchEnd; i++) {
+        if (tokensMatch(tok, hudWords[i].textContent)) {
+          matchesInHud++;
+          break;
+        }
+      }
+    }
+    return matchesInHud >= 2;
+  }
+
+  function looksLikeInterviewerQuestion(clauseText) {
+    const lower = String(clauseText || '').trim().toLowerCase();
+    const words = lower.split(/\s+/).filter(Boolean);
+    if (words.length < 3) return false;
+    // Interrogative starters, behavioral prompts, or question mark
+    if (/\?$/.test(lower)) return true;
+    if (/^(tell|walk|describe|explain|how|what|why|when|where|who|which|can|could|would|do|did|have|has|are|is|give|share)\b/i.test(lower)) {
+      return true;
+    }
+    if (/\b(tell me|walk me|talk about|example of|time when|how do you|how did you|how have you|how would you|what is your|why do you|experience with|questions for us)\b/i.test(lower)) {
+      return true;
+    }
+    // Any spoken sentence of >= 5 words when not reading the HUD script
+    return words.length >= 5;
+  }
+
   window.onInterviewTranscript = function(transcriptText) {
     if (!ivListening && scrollMode !== 'interview') return;
+    // Only the Studio window (or standalone browser window) runs the question->LLM generator;
+    // the Overlay window receives the synced result via INTERVIEW_QA_SYNC so both windows never fire duplicate API calls.
+    if (document.body.classList.contains('overlay-only-mode')) return;
+
     const cleaned = String(transcriptText || '').trim();
     if (!cleaned || cleaned === ivLastTranscript) return;
+
+    // Extract only the newly spoken segment since the last answered question
+    let activeUtterance = cleaned;
+    if (ivLastAnsweredRawTranscript && cleaned.toLowerCase().startsWith(ivLastAnsweredRawTranscript.toLowerCase())) {
+      activeUtterance = cleaned.slice(ivLastAnsweredRawTranscript.length).trim();
+    }
     ivLastTranscript = cleaned;
+    if (!activeUtterance) return;
 
-    // Extract the most recent sentence/question clause (last ~22 words)
-    const words = cleaned.split(/\s+/);
-    const recentClause = words.slice(-22).join(' ');
+    const spokenTokens = activeUtterance.toLowerCase().split(/\s+/).map(normalizeTokenForMatch).filter(Boolean);
+    if (!spokenTokens.length) return;
+
+    // SPEAKER DISCRIMINATION:
+    // Check if the candidate is currently reading the suggested answer displayed on the HUD!
+    if (isCandidateReadingCurrentHudAnswer(spokenTokens)) {
+      clearTimeout(ivSilenceDebounceTimer);
+      hudModeStatus.textContent = '🗣️ Candidate Speaking (Reading Answer Aloud) · Auto-Scrolling HUD';
+      // Also advance the HUD word highlight as the candidate reads their answer aloud!
+      const prevMode = scrollMode;
+      scrollMode = 'voice';
+      window.onNativeTranscript(activeUtterance);
+      scrollMode = prevMode;
+      return;
+    }
+
+    // Otherwise, this is incoming Interviewer speech (or a new question)!
+    const words = activeUtterance.split(/\s+/);
+    const recentClause = words.slice(-24).join(' ');
     if (ivQuestionEl) ivQuestionEl.value = recentClause;
-    hudModeStatus.textContent = `👂 Heard: "${recentClause.slice(-48)}"`;
+    hudModeStatus.textContent = `👂 Interviewer: "${recentClause.slice(-48)}"`;
 
-    // Auto-trigger answer generation as soon as the interviewer pauses for 650ms after asking >= 4 words
+    // Auto-trigger answer generation as soon as the interviewer pauses for 600ms after asking a question
     clearTimeout(ivSilenceDebounceTimer);
-    if (words.length >= 4 && recentClause !== ivLastAnsweredQuestion) {
+    if (looksLikeInterviewerQuestion(recentClause) && recentClause !== ivLastAnsweredQuestion) {
       ivSilenceDebounceTimer = setTimeout(() => {
         if (recentClause !== ivLastAnsweredQuestion) {
+          ivLastAnsweredRawTranscript = cleaned;
           generateInterviewAnswer(recentClause);
         }
-      }, 650);
+      }, 600);
     }
   };
 
   window.onInterviewPhraseEnd = function() {
     if (!ivListening && scrollMode !== 'interview') return;
+    if (document.body.classList.contains('overlay-only-mode')) return;
     clearTimeout(ivSilenceDebounceTimer);
     const currentQ = ivQuestionEl ? ivQuestionEl.value.trim() : '';
-    if (currentQ.split(/\s+/).length >= 4 && currentQ !== ivLastAnsweredQuestion) {
+    const toks = currentQ.toLowerCase().split(/\s+/).map(normalizeTokenForMatch).filter(Boolean);
+    if (isCandidateReadingCurrentHudAnswer(toks)) return;
+    if (looksLikeInterviewerQuestion(currentQ) && currentQ !== ivLastAnsweredQuestion) {
+      ivLastAnsweredRawTranscript = ivLastTranscript;
       generateInterviewAnswer(currentQ);
     }
   };
