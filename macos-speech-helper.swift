@@ -9,6 +9,11 @@ final class NativeMicVoiceStreamer {
     private var noiseFloor: Float = 0.0045
     private var speechStreak: Int = 0
     private var lastPrintTime: TimeInterval = 0
+    private var envFast: Float = 0
+    private var envSlow: Float = 0
+    private var inPulse: Bool = false
+    private var lastPulseTime: TimeInterval = 0
+    private var wasSpeaking: Bool = false
 
     func start() {
         switch AVCaptureDevice.authorizationStatus(for: .audio) {
@@ -55,13 +60,16 @@ final class NativeMicVoiceStreamer {
                 self.noiseFloor = min(0.015, self.noiseFloor * 0.995 + rms * 0.005)
             }
 
+            self.envFast = self.envFast * 0.35 + rms * 0.65
+            self.envSlow = self.envSlow * 0.85 + rms * 0.15
+
             // Require clear voice energy above ambient noise floor (typical room noise RMS ~0.004-0.006, speech RMS ~0.025-0.12)
             let rmsThreshold = max(0.015, self.noiseFloor * 2.8)
             let peakThreshold = max(0.055, self.noiseFloor * 6.5)
             let frameHasVoice = (rms > rmsThreshold) && (peak > peakThreshold)
 
             if frameHasVoice {
-                self.speechStreak = min(10, self.speechStreak + 1)
+                self.speechStreak = min(5, self.speechStreak + 1)
             } else {
                 self.speechStreak = max(0, self.speechStreak - 1)
             }
@@ -70,10 +78,31 @@ final class NativeMicVoiceStreamer {
             let isSpeaking = self.speechStreak >= 2
             let now = Date().timeIntervalSince1970
 
+            // Detect real-time syllable/word energy peaks so fast speakers advance every word without waiting for WPM
+            if isSpeaking {
+                let isOnset = !self.inPulse && self.envFast > self.envSlow * 1.07 && (now - self.lastPulseTime) > 0.13
+                let isSustainedWord = (now - self.lastPulseTime) > 0.25
+                if isOnset || isSustainedWord {
+                    self.inPulse = true
+                    self.lastPulseTime = now
+                    print("__WORD_PULSE__")
+                    fflush(stdout)
+                }
+            }
+            if self.envFast < self.envSlow * 0.92 || !isSpeaking {
+                self.inPulse = false
+            }
+
             if isSpeaking && (now - self.lastPrintTime) > 0.08 {
                 self.lastPrintTime = now
+                self.wasSpeaking = true
                 let pct = min(100, max(22, Int((rms - self.noiseFloor) * 950)))
                 print("__VOICE_LEVEL__:\(pct)")
+                fflush(stdout)
+            } else if !isSpeaking && self.wasSpeaking && self.speechStreak == 0 {
+                // Presenter finished a phrase or sentence — notify renderer so it snaps cleanly to the next unread line
+                self.wasSpeaking = false
+                print("__PHRASE_END__")
                 fflush(stdout)
             }
         }

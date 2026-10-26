@@ -2711,7 +2711,13 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
           }
         }
 
-        scrollY = nextScrollY;
+        if (shouldAdvanceByLiveVoice && typeof window.__voiceTargetScrollY === 'number') {
+          // Smoothly pull scrollY toward the syllable/word-aligned target so fast speakers never lag behind
+          const pullY = scrollY + (window.__voiceTargetScrollY - scrollY) * Math.min(1, dt * 11);
+          scrollY = Math.min(maxScroll, Math.max(nextScrollY, pullY));
+        } else {
+          scrollY = nextScrollY;
+        }
         hudScrollTrack.style.transform = `translateY(${-scrollY}px)`;
         if (shouldAdvanceByLiveVoice) {
           syncSpokenWordHighlightFromScroll();
@@ -2794,6 +2800,8 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
     stopVoiceSim();
     scrollY = 0;
     spokenWordIndex = 0;
+    phraseWordsSpoken = 0;
+    window.__voiceTargetScrollY = 0;
     isPausingCue = false;
     triggeredPauses.clear();
     triggeredSlideBoundaries.clear();
@@ -2836,6 +2844,11 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
         scrollY = 0;
       }
       pruneTriggersAfterScrollRewind(scrollY);
+      window.__voiceTargetScrollY = scrollY;
+      const slideFirstWord = marker ? marker.nextElementSibling && marker.nextElementSibling.querySelector('.script-word') : hudScrollTrack.querySelector('.script-word');
+      if (slideFirstWord && slideFirstWord.dataset.wordIdx !== undefined) {
+        spokenWordIndex = parseInt(slideFirstWord.dataset.wordIdx, 10);
+      }
       hudScrollTrack.style.transform = `translateY(${-scrollY}px)`;
       updateActiveEyeline();
       // An explicit jump consumes a [PAUSE] sitting on the landing line instead of re-freezing on it
@@ -2845,27 +2858,54 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
     }
   }
 
-  // Voice-Synced Scrolling Engine (Live Mic Voice Activity + Word Highlighting + Demo Fallback)
+  // Voice-Synced Scrolling Engine (Word/Syllable Cadence Tracking + Line-Aligned Eyeline + Phrase-End Snap)
   function syncSpokenWordHighlightFromScroll() {
     const words = hudScrollTrack.querySelectorAll('.script-word');
     if (!words.length) return;
-    const maxScroll = Math.max(1, getMaxScroll());
-    const ratio = Math.min(1, Math.max(0, scrollY / maxScroll));
-    const estIdx = Math.min(words.length - 1, Math.floor(ratio * words.length));
-    spokenWordIndex = estIdx;
+    const targetOffset = scrollY + 52;
+
+    // Find the word on the current eyeline whose vertical position matches the scroll offset
+    let bestIdx = spokenWordIndex;
+    const activeLine = hudScrollTrack.querySelector('.script-line.active-eyeline');
+    if (activeLine) {
+      const lineWords = activeLine.querySelectorAll('.script-word');
+      if (lineWords.length > 0) {
+        const firstIdx = parseInt(lineWords[0].dataset.wordIdx || '0', 10);
+        const lastIdx = parseInt(lineWords[lineWords.length - 1].dataset.wordIdx || String(firstIdx), 10);
+        const lineTop = Math.max(0, activeLine.offsetTop - 36);
+        const lineSpan = Math.max(22, activeLine.offsetHeight + 10);
+        const progressInLine = Math.min(1, Math.max(0, (scrollY - lineTop) / lineSpan));
+        const geomIdx = firstIdx + Math.floor(progressInLine * lineWords.length);
+        bestIdx = Math.max(spokenWordIndex, Math.min(lastIdx, geomIdx));
+        if (spokenWordIndex < firstIdx) bestIdx = firstIdx;
+      }
+    }
+    spokenWordIndex = Math.min(words.length - 1, Math.max(0, bestIdx));
     words.forEach((w, i) => {
       w.classList.remove('spoken', 'current-word');
-      if (i < estIdx) w.classList.add('spoken');
-      else if (i === estIdx) w.classList.add('current-word');
+      if (i < spokenWordIndex) w.classList.add('spoken');
+      else if (i === spokenWordIndex) w.classList.add('current-word');
     });
+  }
+
+  function computeScrollTargetForWord(wordEl, wordsInLine, posInLine) {
+    const line = wordEl.closest('.script-line');
+    if (!line) return scrollY;
+    const spokenLines = Array.from(hudScrollTrack.querySelectorAll('.script-line:not(.slide-marker-line)'));
+    const lineIdx = spokenLines.indexOf(line);
+    const nextLine = lineIdx >= 0 && lineIdx + 1 < spokenLines.length ? spokenLines[lineIdx + 1] : null;
+    const lineTargetY = Math.max(0, line.offsetTop - 36);
+    const nextTargetY = nextLine ? Math.max(lineTargetY + 24, nextLine.offsetTop - 36) : getMaxScroll();
+    const frac = wordsInLine > 1 ? posInLine / wordsInLine : 0.5;
+    return Math.min(getMaxScroll(), lineTargetY + (nextTargetY - lineTargetY) * frac);
   }
 
   function advanceToWordIndex(idx) {
     // Late speech-recognition results must never move the script once the user has paused / left Voice mode
     if (scrollMode !== 'voice') return;
-    const words = document.querySelectorAll('.script-word');
+    const words = hudScrollTrack.querySelectorAll('.script-word');
     if (!words.length) return;
-    spokenWordIndex = Math.min(words.length - 1, idx);
+    spokenWordIndex = Math.min(words.length - 1, Math.max(0, idx));
 
     words.forEach((w, i) => {
       w.classList.remove('spoken', 'current-word');
@@ -2877,13 +2917,67 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
     if (activeWord) {
       const line = activeWord.closest('.script-line');
       if (line) {
-        const targetY = Math.max(0, line.offsetTop - 22);
-        scrollY += (targetY - scrollY) * 0.35;
+        const lineWords = Array.from(line.querySelectorAll('.script-word'));
+        const posInLine = Math.max(0, lineWords.indexOf(activeWord));
+        const targetY = computeScrollTargetForWord(activeWord, lineWords.length, posInLine);
+        window.__voiceTargetScrollY = Math.max(scrollY, targetY);
+        scrollY += (window.__voiceTargetScrollY - scrollY) * 0.45;
         hudScrollTrack.style.transform = `translateY(${-scrollY}px)`;
         updateActiveEyeline();
       }
     }
   }
+
+  // Called on every real-time syllable/word energy peak from macOS native mic helper or Web Audio VAD
+  let phraseWordsSpoken = 0;
+  window.onNativeVoiceWordPulse = function() {
+    if (scrollMode !== 'voice') return;
+    const words = hudScrollTrack.querySelectorAll('.script-word');
+    if (!words.length) return;
+    phraseWordsSpoken++;
+    const nextIdx = Math.min(words.length - 1, spokenWordIndex + 1);
+    advanceToWordIndex(nextIdx);
+  };
+
+  // Called when the presenter finishes a sentence/phrase (brief pause after speaking >= 2 words):
+  // If we're past 45% of the current line, smoothly snap the next unread line into the eyeline focus band
+  // so the presenter never has to wait to see the next sentence.
+  window.onNativeVoicePhraseEnd = function() {
+    if (scrollMode !== 'voice') return;
+    const words = hudScrollTrack.querySelectorAll('.script-word');
+    if (!words.length) return;
+    const activeWord = words[spokenWordIndex];
+    const currentLine = (activeWord && activeWord.closest('.script-line')) || hudScrollTrack.querySelector('.script-line.active-eyeline');
+    if (currentLine && phraseWordsSpoken >= 2) {
+      const lineWords = Array.from(currentLine.querySelectorAll('.script-word'));
+      const posInLine = activeWord ? lineWords.indexOf(activeWord) : 0;
+      const fracDone = lineWords.length > 0 ? (posInLine + 1) / lineWords.length : 1;
+      if (fracDone >= 0.45) {
+        const spokenLines = Array.from(hudScrollTrack.querySelectorAll('.script-line:not(.slide-marker-line)'));
+        const lineIdx = spokenLines.indexOf(currentLine);
+        if (lineIdx >= 0 && lineIdx + 1 < spokenLines.length) {
+          const nextLine = spokenLines[lineIdx + 1];
+          const firstNextWord = nextLine.querySelector('.script-word');
+          if (firstNextWord && firstNextWord.dataset.wordIdx !== undefined) {
+            const nextWordIdx = parseInt(firstNextWord.dataset.wordIdx, 10);
+            spokenWordIndex = nextWordIdx;
+            words.forEach((w, i) => {
+              w.classList.remove('spoken', 'current-word');
+              if (i < spokenWordIndex) w.classList.add('spoken');
+              else if (i === spokenWordIndex) w.classList.add('current-word');
+            });
+          }
+          const nextY = Math.min(getMaxScroll(), Math.max(0, nextLine.offsetTop - 36));
+          window.__voiceTargetScrollY = Math.max(scrollY, nextY);
+          scrollY = window.__voiceTargetScrollY;
+          hudScrollTrack.style.transform = `translateY(${-scrollY}px)`;
+          updateActiveEyeline();
+          broadcastState('SCROLL_SYNC', { scrollY, spokenWordIndex });
+        }
+      }
+    }
+    phraseWordsSpoken = 0;
+  };
 
   function startVoiceSim() {
     // Toggle Live Mic Voice-Synced Mode when clicked in the top bar
@@ -2987,6 +3081,10 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
       const micStatusText = document.getElementById('micLevelStatusText');
       let webNoiseFloor = 0.008;
       let webVoiceStreak = 0;
+      let webEnvFast = 0;
+      let webEnvSlow = 0;
+      let webInPulse = false;
+      let webLastPulseMs = 0;
 
       function updateWaveBars() {
         if (!vadActive) return;
@@ -3000,6 +3098,8 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
           if (centered > peak) peak = centered;
         }
         const rms = Math.sqrt(sumSquares / timeData.length);
+        webEnvFast = webEnvFast * 0.35 + rms * 0.65;
+        webEnvSlow = webEnvSlow * 0.85 + rms * 0.15;
 
         // Adaptive ambient noise floor so 8-bit quantization / room hum never triggers false speech
         if (rms < webNoiseFloor * 1.8) {
@@ -3021,11 +3121,27 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
 
         const now = performance.now();
         if (webVoiceStreak >= 2) {
-          // Hold speaking state for 380ms after each syllable so natural pauses between words don't stutter,
+          // Hold speaking state for 340ms after each syllable so natural pauses between words don't stutter,
           // while stopping promptly when the speaker pauses.
-          voiceHoldUntil = now + 380;
+          voiceHoldUntil = now + 340;
+          // Browser-mode syllable pulse fallback when native helper isn't driving pulses
+          if (!window.__externalVoiceActive) {
+            const isOnset = !webInPulse && webEnvFast > webEnvSlow * 1.07 && (now - webLastPulseMs) > 140;
+            const isSustained = (now - webLastPulseMs) > 260;
+            if (isOnset || isSustained) {
+              webInPulse = true;
+              webLastPulseMs = now;
+              window.onNativeVoiceWordPulse();
+            }
+          }
+        }
+        if (webEnvFast < webEnvSlow * 0.92 || webVoiceStreak < 2) {
+          webInPulse = false;
         }
         const currentlySpeaking = scrollMode === 'voice' && (now < voiceHoldUntil || Boolean(window.__externalVoiceActive));
+        if (isVoiceSpeaking && !currentlySpeaking && scrollMode === 'voice' && !window.__externalVoiceActive) {
+          window.onNativeVoicePhraseEnd();
+        }
         isVoiceSpeaking = currentlySpeaking;
 
         if (micBarFill) micBarFill.style.width = (currentlySpeaking ? Math.max(35, levelPct) : Math.min(12, levelPct)) + '%';

@@ -86,7 +86,15 @@ function startNativeMacOsSpeechHelper() {
       if (!overlayWindow || overlayWindow.isDestroyed()) return;
       for (const line of rawLines) {
         const trimmed = line.trim();
-        if (trimmed.startsWith('__VOICE_LEVEL__:') || trimmed === '__VOICE_ACTIVE__') {
+        if (trimmed === '__WORD_PULSE__') {
+          overlayWindow.webContents.executeJavaScript(`
+            if (typeof window.onNativeVoiceWordPulse === 'function') window.onNativeVoiceWordPulse();
+          `).catch(() => {});
+        } else if (trimmed === '__PHRASE_END__') {
+          overlayWindow.webContents.executeJavaScript(`
+            if (typeof window.onNativeVoicePhraseEnd === 'function') window.onNativeVoicePhraseEnd();
+          `).catch(() => {});
+        } else if (trimmed.startsWith('__VOICE_LEVEL__:') || trimmed === '__VOICE_ACTIVE__') {
           const pct = parseInt(trimmed.split(':')[1] || '65', 10) || 65;
           overlayWindow.webContents.executeJavaScript(`
             (function() {
@@ -98,10 +106,11 @@ function startNativeMacOsSpeechHelper() {
               window.__nativeSpeechTimer = setTimeout(() => {
                 window.__externalVoiceActive = false;
                 isVoiceSpeaking = false;
+                if (typeof window.onNativeVoicePhraseEnd === 'function') window.onNativeVoicePhraseEnd();
                 if (scrollMode === 'voice') {
                   hudModeStatus.textContent = '🎙️ Voice Flow Paused · Speak into Mic to Scroll';
                 }
-              }, 380);
+              }, 340);
             })();
           `).catch(() => {});
           if (studioWindow && !studioWindow.isDestroyed()) {
