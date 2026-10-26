@@ -17,10 +17,11 @@ var noiseFloor: Float = 0.0045
 var speechStreak: Int = 0
 var lastPrintTime: TimeInterval = 0
 var wasSpeaking: Bool = false
+var lastEmittedTranscript: String = ""
 
 let inputNode = audioEngine.inputNode
 let format = inputNode.outputFormat(forBus: 0)
-inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
+inputNode.installTap(onBus: 0, bufferSize: 2048, format: format) { buffer, _ in
     recognitionRequest.append(buffer)
 
     guard let channelData = buffer.floatChannelData?[0] else { return }
@@ -55,7 +56,7 @@ inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
     let isSpeaking = speechStreak >= 2
     let now = Date().timeIntervalSince1970
 
-    if isSpeaking && (now - lastPrintTime) > 0.08 {
+    if isSpeaking && (now - lastPrintTime) > 0.14 {
         lastPrintTime = now
         wasSpeaking = true
         let pct = min(100, max(22, Int((rms - noiseFloor) * 950)))
@@ -76,7 +77,8 @@ let task = recognizer.recognitionTask(with: recognitionRequest) { result, error 
         let text = r.bestTranscription.formattedString
             .replacingOccurrences(of: "\n", with: " ")
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        if !text.isEmpty {
+        if !text.isEmpty && text != lastEmittedTranscript {
+            lastEmittedTranscript = text
             print("__TRANSCRIPT__:\(text)")
             fflush(stdout)
         }

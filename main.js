@@ -12,6 +12,7 @@ let studioWindow = null;
 let overlayWindow = null;
 let clickThrough = true;
 let speechProcess = null;
+let speechHelperDesired = false;
 let isQuittingAppGlobal = false;
 
 // Shows the Quick Drawer reliably, even after hide() or when presenting over a full-screen Space
@@ -73,7 +74,18 @@ function enforceDisplayMirrorSafety() {
   }
 }
 
+function stopNativeMacOsSpeechHelper() {
+  speechHelperDesired = false;
+  if (speechProcess) {
+    const proc = speechProcess;
+    speechProcess = null;
+    try { proc.kill(); } catch (e) {}
+  }
+}
+
 function startNativeMacOsSpeechHelper() {
+  speechHelperDesired = true;
+  if (speechProcess) return;
   const helperBin = path.join(__dirname, 'macos-speech-helper').replace('app.asar', 'app.asar.unpacked');
   if (process.platform !== 'darwin' || !fs.existsSync(helperBin)) return;
   try {
@@ -82,8 +94,10 @@ function startNativeMacOsSpeechHelper() {
     speechProcess.on('error', () => { speechProcess = null; });
     speechProcess.on('exit', () => {
       speechProcess = null;
-      if (!isQuittingAppGlobal) {
-        setTimeout(startNativeMacOsSpeechHelper, 200);
+      if (!isQuittingAppGlobal && speechHelperDesired) {
+        setTimeout(() => {
+          if (speechHelperDesired && !isQuittingAppGlobal) startNativeMacOsSpeechHelper();
+        }, 200);
       }
     });
     speechProcess.stdout.on('error', () => {});
@@ -98,7 +112,7 @@ function startNativeMacOsSpeechHelper() {
           overlayWindow.webContents.executeJavaScript(`
             if (typeof window.onNativeTranscript === 'function') window.onNativeTranscript(${safeJson});
           `).catch(() => {});
-          if (studioWindow && !studioWindow.isDestroyed()) {
+          if (studioWindow && !studioWindow.isDestroyed() && studioWindow.isVisible()) {
             studioWindow.webContents.executeJavaScript(`
               if (typeof window.onNativeTranscript === 'function') window.onNativeTranscript(${safeJson});
             `).catch(() => {});
@@ -125,7 +139,7 @@ function startNativeMacOsSpeechHelper() {
               }, 340);
             })();
           `).catch(() => {});
-          if (studioWindow && !studioWindow.isDestroyed()) {
+          if (studioWindow && !studioWindow.isDestroyed() && studioWindow.isVisible()) {
             studioWindow.webContents.executeJavaScript(`
               (function() {
                 if (scrollMode !== 'voice') return;
@@ -194,7 +208,7 @@ async function createWindows() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      backgroundThrottling: false
+      backgroundThrottling: true
     }
   });
   // Protect the Quick Drawer window from screen sharing/screenshots too
@@ -366,6 +380,10 @@ async function createWindows() {
       stopNativeOverlayDrag();
       const [curW] = overlayWindow.getSize();
       overlayWindow.setPosition(Math.round((width - curW) / 2), 0);
+    } else if (message === '__GHOSTCUE_IPC__:VOICE_MODE_START') {
+      startNativeMacOsSpeechHelper();
+    } else if (message === '__GHOSTCUE_IPC__:VOICE_MODE_STOP') {
+      stopNativeMacOsSpeechHelper();
     }
   };
   overlayWindow.webContents.on('console-message', handleRendererIpc);
@@ -377,8 +395,8 @@ async function createWindows() {
   screen.on('display-metrics-changed', enforceDisplayMirrorSafety);
   enforceDisplayMirrorSafety();
 
-  // Start optional native on-device SFSpeechRecognizer helper if compiled
-  startNativeMacOsSpeechHelper();
+  // Note: Native SFSpeechRecognizer helper is started on-demand ONLY when Voice Flow mode is activated,
+  // keeping idle CPU/Neural Engine usage at 0%.
 
   // Global Hotkeys that work even when Keynote, PowerPoint, Chrome, or Zoom is focused!
   const sendKeyToOverlay = (key, code) => {

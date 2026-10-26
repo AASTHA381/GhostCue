@@ -174,15 +174,13 @@
     width: 1120px;
     max-width: calc(100vw - 24px);
     margin: 4px auto 20px;
-    background: linear-gradient(180deg, rgba(240, 247, 255, 0.96) 0%, rgba(226, 240, 255, 0.96) 100%);
-    backdrop-filter: blur(28px) saturate(180%);
-    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    background: linear-gradient(180deg, rgba(240, 247, 255, 0.98) 0%, rgba(226, 240, 255, 0.98) 100%);
     border: 1.5px solid rgba(59, 130, 246, 0.26);
     border-radius: 22px;
     padding: 18px 22px;
     box-shadow:
-      0 24px 60px rgba(15, 23, 42, 0.14),
-      0 4px 16px rgba(37, 99, 235, 0.08),
+      0 20px 44px rgba(15, 23, 42, 0.14),
+      0 4px 14px rgba(37, 99, 235, 0.08),
       inset 0 1px 0 rgba(255, 255, 255, 0.9);
     display: flex;
     flex-direction: column;
@@ -529,7 +527,7 @@
     background: var(--rose);
     color: #fff;
     border-color: var(--rose);
-    animation: pulse-ring 1.6s infinite;
+    box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.30);
   }
 
   @keyframes pulse-ring {
@@ -765,8 +763,8 @@
     background:
       radial-gradient(120% 90% at 50% 0%, rgba(56, 189, 248, 0.10) 0%, rgba(16, 185, 129, 0.03) 45%, transparent 100%),
       rgba(11, 14, 22, var(--hud-opacity));
-    backdrop-filter: blur(28px) saturate(190%);
-    -webkit-backdrop-filter: blur(28px) saturate(190%);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
     border: 1px solid rgba(255, 255, 255, 0.13);
     border-top: 1px solid rgba(255, 255, 255, 0.22);
     border-bottom-left-radius: 20px;
@@ -774,14 +772,14 @@
     border-top-left-radius: 8px;
     border-top-right-radius: 8px;
     box-shadow:
-      0 28px 70px -12px rgba(0, 0, 0, 0.88),
+      0 20px 48px -12px rgba(0, 0, 0, 0.85),
       0 0 0 1px rgba(0, 0, 0, 0.6),
-      inset 0 1px 0 rgba(255, 255, 255, 0.12),
-      0 0 40px -10px rgba(56, 189, 248, 0.18);
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
     z-index: 90;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    contain: layout paint;
     transition: opacity 0.22s ease, transform 0.22s ease, border-color 0.2s ease;
   }
 
@@ -2140,6 +2138,11 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
   let triggeredPauses = new Set();
   let clickThroughLocked = true;
   let spokenWordIndex = 0;
+  let lastHighlightedWordIdx = -1;
+  let cachedScriptWords = [];
+  let cachedScriptLines = [];
+  let cachedSpokenLines = [];
+  let cachedSlideMarkers = [];
   let voiceSimInterval = null;
   let recognition = null;
 
@@ -2471,6 +2474,11 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
     scriptWordCount = wordCounter;
     scriptSlideCount = slideCount;
     eyelineLineCache = null;
+    cachedScriptWords = Array.from(hudScrollTrack.querySelectorAll('.script-word'));
+    cachedScriptLines = Array.from(hudScrollTrack.querySelectorAll('.script-line'));
+    cachedSpokenLines = cachedScriptLines.filter(l => !l.classList.contains('slide-marker-line'));
+    cachedSlideMarkers = cachedScriptLines.filter(l => l.classList.contains('slide-marker-line'));
+    lastHighlightedWordIdx = -1;
     const maxScrollAfterEdit = getMaxScroll();
     if (scrollY > maxScrollAfterEdit) {
       scrollY = Math.max(0, maxScrollAfterEdit);
@@ -2489,14 +2497,48 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
 
   // Update WPM speed & time-remaining badges WITHOUT rebuilding the script DOM or switching scripts
   function updateWpmStatsOnly() {
-    const wordCounter = hudScrollTrack.querySelectorAll('.script-word').length;
-    const actualSlideCount = Math.max(1, hudScrollTrack.querySelectorAll('.slide-marker-line').length);
+    const wordCounter = scriptWordCount;
+    const actualSlideCount = Math.max(1, scriptSlideCount);
     const totalSeconds = Math.max(1, Math.round((wordCounter / wpm) * 60));
     const mins = Math.floor(totalSeconds / 60);
     const secs = totalSeconds % 60;
     document.getElementById('wordCountStat').textContent = `${wordCounter} words · ${actualSlideCount} slides`;
     document.getElementById('durationStat').textContent = `${mins}m ${String(secs).padStart(2, '0')}s @ ${wpm} WPM`;
     updateActiveEyeline();
+  }
+
+  // Incremental word-highlight updater: only mutates the words that changed between old and new index
+  function updateWordHighlightClasses(targetIdx) {
+    const words = cachedScriptWords;
+    if (!words.length) return;
+    const clamped = Math.min(words.length - 1, Math.max(0, targetIdx));
+    if (lastHighlightedWordIdx < 0 || Math.abs(clamped - lastHighlightedWordIdx) > 35) {
+      for (let i = 0; i < words.length; i++) {
+        const w = words[i];
+        w.classList.remove('spoken', 'current-word');
+        if (i < clamped) w.classList.add('spoken');
+        else if (i === clamped) w.classList.add('current-word');
+      }
+    } else if (clamped >= lastHighlightedWordIdx) {
+      for (let i = lastHighlightedWordIdx; i <= clamped; i++) {
+        const w = words[i];
+        if (!w) continue;
+        w.classList.remove('current-word');
+        if (i < clamped) w.classList.add('spoken');
+        else if (i === clamped) {
+          w.classList.remove('spoken');
+          w.classList.add('current-word');
+        }
+      }
+    } else {
+      for (let i = clamped; i <= lastHighlightedWordIdx; i++) {
+        const w = words[i];
+        if (!w) continue;
+        w.classList.remove('spoken', 'current-word');
+        if (i === clamped) w.classList.add('current-word');
+      }
+    }
+    lastHighlightedWordIdx = clamped;
   }
 
   // Highlight the line currently sitting inside the Eye-Line Focus Band (top 35% of HUD)
@@ -2577,8 +2619,8 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
       }
     }
     if (needFullPass) {
-      const lines = hudScrollTrack.querySelectorAll('.script-line');
-      const spokenLines = hudScrollTrack.querySelectorAll('.script-line:not(.slide-marker-line)');
+      const lines = cachedScriptLines.length ? cachedScriptLines : Array.from(hudScrollTrack.querySelectorAll('.script-line'));
+      const spokenLines = cachedSpokenLines.length ? cachedSpokenLines : lines.filter(l => !l.classList.contains('slide-marker-line'));
       const targetOffset = scrollY + 52; // Eye-line zone relative to scroll track
       let closestLine = null;
       let minDistance = Infinity;
@@ -2705,7 +2747,7 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
 
         // Optional: Auto-pause when reaching the next [SLIDE N] boundary ONLY if user enabled "Pause at Each [SLIDE]"
         if (pauseAtSlideEnd) {
-          const markers = hudScrollTrack.querySelectorAll('.slide-marker-line');
+          const markers = cachedSlideMarkers;
           for (const marker of markers) {
             const slideNum = parseInt(marker.dataset.slide || '1', 10);
             if (slideNum > 1 && !triggeredSlideBoundaries.has(slideNum)) {
@@ -2725,7 +2767,12 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
 
         scrollY = nextScrollY;
         hudScrollTrack.style.transform = `translateY(${-scrollY}px)`;
-        updateActiveEyeline(true);
+        // Throttle full eyeline DOM pass to ~15Hz while scrolling so GPU/CPU stay cool
+        const nowEyeline = performance.now();
+        if (nowEyeline - lastEyelineUpdate >= 65) {
+          lastEyelineUpdate = nowEyeline;
+          updateActiveEyeline(true);
+        }
 
         if (shouldAdvanceByWpm && maxScroll > 20 && scrollY >= maxScroll) {
           togglePlay(false);
@@ -2734,13 +2781,58 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
     }
   }
 
-  function tick() {
-    stepScrollFrame();
-    requestAnimationFrame(tick);
+  // On-demand scroll loop: runs ONLY when actively scrolling in WPM or Voice Flow (0% CPU when paused/idle)
+  let scrollRafId = null;
+  let scrollBackupTimer = null;
+
+  function isScrollLoopNeeded() {
+    if (document.body.classList.contains('studio-only-mode')) return false;
+    if (isPlaying && scrollMode === 'wpm') return true;
+    if (scrollMode === 'voice' && typeof window.__voiceTargetScrollY === 'number' && Math.abs(window.__voiceTargetScrollY - scrollY) > 0.4) {
+      return true;
+    }
+    return false;
   }
-  requestAnimationFrame(tick);
-  // High-priority backup interval so scrolling NEVER stops even when Google Meet / Keynote / PDF is full-screen
-  setInterval(stepScrollFrame, 30);
+
+  function ensureScrollLoopState() {
+    if (isScrollLoopNeeded()) {
+      if (!scrollRafId) {
+        lastFrameTime = performance.now();
+        const loop = () => {
+          stepScrollFrame();
+          if (isScrollLoopNeeded()) {
+            scrollRafId = requestAnimationFrame(loop);
+          } else {
+            scrollRafId = null;
+            if (scrollBackupTimer) {
+              clearInterval(scrollBackupTimer);
+              scrollBackupTimer = null;
+            }
+          }
+        };
+        scrollRafId = requestAnimationFrame(loop);
+      }
+      if (!scrollBackupTimer) {
+        scrollBackupTimer = setInterval(() => {
+          if (isScrollLoopNeeded()) {
+            stepScrollFrame();
+          } else {
+            clearInterval(scrollBackupTimer);
+            scrollBackupTimer = null;
+          }
+        }, 45);
+      }
+    } else {
+      if (scrollRafId) {
+        cancelAnimationFrame(scrollRafId);
+        scrollRafId = null;
+      }
+      if (scrollBackupTimer) {
+        clearInterval(scrollBackupTimer);
+        scrollBackupTimer = null;
+      }
+    }
+  }
 
   function syncHudSegmentedModePill() {
     const pauseSeg = document.getElementById('hudSegPauseBtn');
@@ -2795,6 +2887,7 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
       hudModeStatus.textContent = '⏸ Paused · Click ▶ Play or 🎙️ Voice Flow to Start';
     }
     syncHudSegmentedModePill();
+    ensureScrollLoopState();
     broadcastState('PLAY_STATE', { isPlaying });
   }
 
@@ -2803,6 +2896,7 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
     stopVoiceSim();
     scrollY = 0;
     spokenWordIndex = 0;
+    lastHighlightedWordIdx = -1;
     resetVoiceTranscriptTracker();
     window.__voiceTargetScrollY = 0;
     isPausingCue = false;
@@ -2810,7 +2904,7 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
     triggeredSlideBoundaries.clear();
     pauseBanner.classList.remove('visible');
     hudScrollTrack.style.transform = 'translateY(0px)';
-    document.querySelectorAll('.script-word').forEach(w => {
+    cachedScriptWords.forEach(w => {
       w.classList.remove('spoken', 'current-word');
     });
     setSlide(0, false);
@@ -2820,7 +2914,7 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
 
   // Slide Deck Synchronization (Uses exact number of [SLIDE N] markers in current script)
   function setSlide(index, scrollScriptToSlide = true) {
-    const markerCount = hudScrollTrack.querySelectorAll('.slide-marker-line').length;
+    const markerCount = Math.max(1, scriptSlideCount || cachedSlideMarkers.length);
     const totalSlides = Math.max(1, markerCount);
     const rawIndex = Number(index);
     currentSlideIndex = Math.max(0, Math.min(totalSlides - 1, Number.isFinite(rawIndex) ? Math.trunc(rawIndex) : 0));
@@ -2919,7 +3013,7 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
   function computeScrollTargetForWord(wordEl, wordsInLine, posInLine) {
     const line = wordEl.closest('.script-line');
     if (!line) return scrollY;
-    const spokenLines = Array.from(hudScrollTrack.querySelectorAll('.script-line:not(.slide-marker-line)'));
+    const spokenLines = cachedSpokenLines.length ? cachedSpokenLines : Array.from(hudScrollTrack.querySelectorAll('.script-line:not(.slide-marker-line)'));
     const lineIdx = spokenLines.indexOf(line);
     const nextLine = lineIdx >= 0 && lineIdx + 1 < spokenLines.length ? spokenLines[lineIdx + 1] : null;
     const lineTargetY = Math.max(0, line.offsetTop - 36);
@@ -2935,15 +3029,11 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
   function advanceToWordIndex(idx) {
     // Late speech-recognition results must never move the script once the user has paused / left Voice mode
     if (scrollMode !== 'voice') return;
-    const words = hudScrollTrack.querySelectorAll('.script-word');
+    const words = cachedScriptWords.length ? cachedScriptWords : hudScrollTrack.querySelectorAll('.script-word');
     if (!words.length) return;
     spokenWordIndex = Math.min(words.length - 1, Math.max(0, idx));
 
-    words.forEach((w, i) => {
-      w.classList.remove('spoken', 'current-word');
-      if (i < spokenWordIndex) w.classList.add('spoken');
-      else if (i === spokenWordIndex) w.classList.add('current-word');
-    });
+    updateWordHighlightClasses(spokenWordIndex);
 
     const activeWord = words[spokenWordIndex];
     if (activeWord) {
@@ -2956,6 +3046,7 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
         scrollY += (window.__voiceTargetScrollY - scrollY) * 0.45;
         hudScrollTrack.style.transform = `translateY(${-scrollY}px)`;
         updateActiveEyeline();
+        ensureScrollLoopState();
         broadcastState('SCROLL_SYNC', { scrollY: window.__voiceTargetScrollY, spokenWordIndex });
       }
     }
@@ -2982,7 +3073,7 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
 
   window.onNativeTranscript = function(transcriptText) {
     if (scrollMode !== 'voice') return;
-    const words = hudScrollTrack.querySelectorAll('.script-word');
+    const words = cachedScriptWords.length ? cachedScriptWords : hudScrollTrack.querySelectorAll('.script-word');
     if (!words.length) return;
 
     const cleanStr = String(transcriptText || '').trim().toLowerCase();
@@ -3089,7 +3180,7 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
 
   window.onNativeVoicePhraseEnd = function() {
     if (scrollMode !== 'voice') return;
-    const words = hudScrollTrack.querySelectorAll('.script-word');
+    const words = cachedScriptWords.length ? cachedScriptWords : hudScrollTrack.querySelectorAll('.script-word');
     if (!words.length) return;
     const activeWord = words[spokenWordIndex];
     const currentLine = (activeWord && activeWord.closest('.script-line')) || hudScrollTrack.querySelector('.script-line.active-eyeline');
@@ -3099,18 +3190,14 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
       const posInLine = activeWord ? lineWords.indexOf(activeWord) : 0;
       const wordsRemainingOnLine = lineWords.length - posInLine;
       if (lineWords.length > 0 && (posInLine / lineWords.length >= 0.80 || wordsRemainingOnLine <= 1)) {
-        const spokenLines = Array.from(hudScrollTrack.querySelectorAll('.script-line:not(.slide-marker-line)'));
+        const spokenLines = cachedSpokenLines.length ? cachedSpokenLines : Array.from(hudScrollTrack.querySelectorAll('.script-line:not(.slide-marker-line)'));
         const lineIdx = spokenLines.indexOf(currentLine);
         if (lineIdx >= 0 && lineIdx + 1 < spokenLines.length) {
           const nextLine = spokenLines[lineIdx + 1];
           const firstNextWord = nextLine.querySelector('.script-word');
           if (firstNextWord && firstNextWord.dataset.wordIdx !== undefined) {
             spokenWordIndex = parseInt(firstNextWord.dataset.wordIdx, 10);
-            words.forEach((w, i) => {
-              w.classList.remove('spoken', 'current-word');
-              if (i < spokenWordIndex) w.classList.add('spoken');
-              else if (i === spokenWordIndex) w.classList.add('current-word');
-            });
+            updateWordHighlightClasses(spokenWordIndex);
           }
           const nextY = Math.min(getMaxScroll(), Math.max(0, nextLine.offsetTop - 36));
           window.__voiceTargetScrollY = Math.max(scrollY, nextY);
@@ -3161,20 +3248,18 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
       window.__voiceTargetScrollY = scrollY;
       setOverlayVisible(true);
       console.log('__GHOSTCUE_IPC__:SHOW_OVERLAY');
+      console.log('__GHOSTCUE_IPC__:VOICE_MODE_START');
       if (topVoiceBtn) {
         topVoiceBtn.classList.add('active');
         topVoiceBtn.textContent = '🎙️ Voice: ON';
       }
       if (micMeterWrap) micMeterWrap.style.display = 'block';
       // Ensure current word is visibly highlighted so presenter knows which word Voice Flow is waiting for
-      const words = hudScrollTrack.querySelectorAll('.script-word');
+      const words = cachedScriptWords.length ? cachedScriptWords : hudScrollTrack.querySelectorAll('.script-word');
       if (words.length > 0) {
         spokenWordIndex = Math.min(words.length - 1, Math.max(0, spokenWordIndex));
-        words.forEach((w, i) => {
-          w.classList.remove('spoken', 'current-word');
-          if (i < spokenWordIndex) w.classList.add('spoken');
-          else if (i === spokenWordIndex) w.classList.add('current-word');
-        });
+        lastHighlightedWordIdx = -1;
+        updateWordHighlightClasses(spokenWordIndex);
       }
       const nextWord = words[spokenWordIndex] ? words[spokenWordIndex].textContent : '';
       hudModeStatus.textContent = nextWord
@@ -3182,9 +3267,12 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
         : '🎙️ Voice Tracking ON · Speak Script Words to Scroll';
       statusBox.innerHTML = '<strong>🎙️ On-Device Word-Matching Active:</strong> GhostCue listens to the actual words you speak and only advances when your spoken words match your script.';
       syncHudSegmentedModePill();
+      ensureScrollLoopState();
       initWebSpeechRecognition();
     } else {
+      console.log('__GHOSTCUE_IPC__:VOICE_MODE_STOP');
       stopVoiceSim();
+      stopLiveAudioVad();
       isVoiceSpeaking = false;
       window.__externalVoiceActive = false;
       voiceHoldUntil = 0;
@@ -3198,18 +3286,41 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
       hudModeStatus.textContent = 'Mode: Constant WPM · Click-Through ON';
       statusBox.innerHTML = '<strong>Deterministic WPM Mode:</strong> Scrolls smoothly at your target speaking pace and automatically pauses on <code>[PAUSE Ns]</code> cues.';
       syncHudSegmentedModePill();
+      ensureScrollLoopState();
     }
   }
 
   // Web Audio API Live Voice Activity Detection (VAD) & Cross-Window Voice Sync
   let audioCtx = null;
+  let micStream = null;
   let micAnalyser = null;
   let vadActive = false;
+  let vadTimerId = null;
   let voiceHoldUntil = 0;
   let lastBroadcastVoiceState = false;
 
-  async function initLiveAudioVad() {
+  function stopLiveAudioVad() {
+    vadActive = false;
+    if (vadTimerId) {
+      clearInterval(vadTimerId);
+      vadTimerId = null;
+    }
+    if (micStream) {
+      try { micStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+      micStream = null;
+    }
     if (audioCtx) {
+      try { audioCtx.close(); } catch (e) {}
+      audioCtx = null;
+    }
+    micAnalyser = null;
+  }
+
+  async function initLiveAudioVad() {
+    // Only open WebAudio mic stream in the Studio window (for the visual mic meter) or in plain browser mode;
+    // in Electron overlay-only-mode, the native helper handles mic & speech so we don't open duplicate audio streams.
+    if (document.body.classList.contains('overlay-only-mode')) return;
+    if (audioCtx && vadActive) {
       if (audioCtx.state === 'suspended') {
         try { await audioCtx.resume(); } catch (e) {}
       }
@@ -3217,7 +3328,7 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
     }
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
+      micStream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
@@ -3228,7 +3339,7 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
       if (audioCtx.state === 'suspended') {
         try { await audioCtx.resume(); } catch (e) {}
       }
-      const source = audioCtx.createMediaStreamSource(stream);
+      const source = audioCtx.createMediaStreamSource(micStream);
       micAnalyser = audioCtx.createAnalyser();
       micAnalyser.fftSize = 256;
       micAnalyser.smoothingTimeConstant = 0.5;
@@ -3238,14 +3349,12 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
       const timeData = new Uint8Array(micAnalyser.fftSize);
       const micBarFill = document.getElementById('micLevelBarFill');
       const micDbBadge = document.getElementById('micDbBadge');
-      const micStatusText = document.getElementById('micLevelStatusText');
       let webNoiseFloor = 0.008;
       let webVoiceStreak = 0;
 
       function updateWaveBars() {
-        if (!vadActive) return;
+        if (!vadActive || !micAnalyser || scrollMode !== 'voice') return;
         micAnalyser.getByteTimeDomainData(timeData);
-        // Compute true RMS & peak voice amplitude from time-domain waveform (for visual mic meter only)
         let sumSquares = 0;
         let peak = 0;
         for (let i = 0; i < timeData.length; i++) {
@@ -3255,7 +3364,6 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
         }
         const rms = Math.sqrt(sumSquares / timeData.length);
 
-        // Adaptive ambient noise floor so 8-bit quantization / room hum never triggers false speech
         if (rms < webNoiseFloor * 1.8) {
           webNoiseFloor = Math.max(0.005, Math.min(0.02, webNoiseFloor * 0.94 + rms * 0.06));
         } else {
@@ -3290,10 +3398,10 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
           lastBroadcastVoiceState = currentlySpeaking;
           broadcastState('VOICE_SPEAKING_STATE', { speaking: currentlySpeaking });
         }
-
-        requestAnimationFrame(updateWaveBars);
       }
-      setInterval(updateWaveBars, 45);
+      if (vadTimerId) clearInterval(vadTimerId);
+      // Single clean 15Hz interval (no recursive requestAnimationFrame stacking!)
+      vadTimerId = setInterval(updateWaveBars, 65);
       updateWaveBars();
     } catch (e) {
       const micStatusText = document.getElementById('micLevelStatusText');
