@@ -5027,7 +5027,7 @@ endstream endobj
     const resLines = String(resumeText || '')
       .split(/\r?\n/)
       .map(l => l.replace(/^[•\-*]\s*/, '').trim())
-      .filter(l => l.length > 6);
+      .filter(l => l.length > 6 && !/^(summary|professional summary|profile|objective|experience|work experience|education|skills|projects|certifications|contact)\s*:?$/i.test(l));
     const jdLines = String(jdText || '')
       .split(/\r?\n/)
       .map(l => l.replace(/^[•\-*]\s*/, '').trim())
@@ -5344,6 +5344,50 @@ endstream endobj
     };
   }
 
+  let cachedGroqModel = null;
+
+  async function resolveAvailableGroqModel(apiKey) {
+    if (cachedGroqModel) return cachedGroqModel;
+    try {
+      const mRes = await fetch('https://api.groq.com/openai/v1/models', {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      });
+      if (mRes.ok) {
+        const mData = await mRes.json();
+        const ids = (mData.data || [])
+          .map(m => m.id)
+          .filter(id => id && !/whisper|tts|guard|embed|vision|orpheus|playai/i.test(id));
+        const preferredOrder = [
+          'openai/gpt-oss-120b',
+          'openai/gpt-oss-20b',
+          'meta-llama/llama-4-scout-17b-16e-instruct',
+          'meta-llama/llama-4-maverick-17b-128e-instruct',
+          'qwen/qwen3-32b',
+          'moonshotai/kimi-k2-instruct',
+          'llama-3.3-70b-versatile',
+          'llama-3.1-8b-instant',
+          'gemma2-9b-it'
+        ];
+        for (const pref of preferredOrder) {
+          if (ids.includes(pref)) {
+            cachedGroqModel = pref;
+            return pref;
+          }
+        }
+        const anyLlamaOrGpt = ids.find(id => /llama|gpt|qwen|kimi|deepseek|gemma|mistral/i.test(id));
+        if (anyLlamaOrGpt) {
+          cachedGroqModel = anyLlamaOrGpt;
+          return anyLlamaOrGpt;
+        }
+        if (ids.length > 0) {
+          cachedGroqModel = ids[0];
+          return ids[0];
+        }
+      }
+    } catch (e) {}
+    return 'openai/gpt-oss-20b';
+  }
+
   async function streamCloudLlmInterviewAnswer(question, resumeText, jdText, provider, apiKey, onDelta) {
     const sysPrompt = [
       'You are GhostCue, a real-time interview co-pilot generating natural, first-person ("I...") spoken answers for a candidate to read aloud from a webcam teleprompter.',
@@ -5377,9 +5421,21 @@ endstream endobj
     const endpoint = provider === 'groq'
       ? 'https://api.groq.com/openai/v1/chat/completions'
       : 'https://api.openai.com/v1/chat/completions';
-    const modelsToTry = provider === 'groq'
-      ? ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant']
-      : ['gpt-4o-mini'];
+
+    let modelsToTry = ['gpt-4o-mini'];
+    if (provider === 'groq') {
+      const discovered = await resolveAvailableGroqModel(apiKey);
+      modelsToTry = [
+        discovered,
+        'openai/gpt-oss-120b',
+        'openai/gpt-oss-20b',
+        'meta-llama/llama-4-scout-17b-16e-instruct',
+        'meta-llama/llama-4-maverick-17b-128e-instruct',
+        'qwen/qwen3-32b',
+        'llama-3.3-70b-versatile',
+        'llama-3.1-8b-instant'
+      ].filter((v, i, a) => v && a.indexOf(v) === i);
+    }
 
     let res = null;
     let lastErrText = '';
@@ -5393,7 +5449,7 @@ endstream endobj
         body: JSON.stringify({
           model,
           temperature: 0.25,
-          max_tokens: 240,
+          max_tokens: 260,
           stream: true,
           messages: [
             { role: 'system', content: sysPrompt },
@@ -5401,14 +5457,17 @@ endstream endobj
           ]
         })
       });
-      if (res.ok && res.body) break;
+      if (res.ok && res.body) {
+        if (provider === 'groq') cachedGroqModel = model;
+        break;
+      }
+      if (provider === 'groq' && cachedGroqModel === model) cachedGroqModel = null;
       try {
         const errJson = await res.json();
         lastErrText = errJson?.error?.message || (`HTTP ${res.status}`);
       } catch (e) {
         lastErrText = `HTTP ${res.status}`;
       }
-      // If 401 Invalid API key, don't retry fallback model
       if (res.status === 401) break;
     }
     if (!res || !res.ok || !res.body) {
@@ -5436,12 +5495,16 @@ endstream endobj
           const delta = parsed?.choices?.[0]?.delta?.content || '';
           if (delta) {
             fullText += delta;
-            onDelta(fullText);
+            // Strip <think>...</think> reasoning blocks if a reasoning model (like qwen3) is selected
+            const cleanDisplay = fullText.replace(/<think>[\s\S]*?<\/think>\s*/gi, '').replace(/^<think>[\s\S]*$/i, '');
+            if (cleanDisplay.trim()) {
+              onDelta(cleanDisplay.trim());
+            }
           }
         } catch (e) {}
       }
     }
-    return fullText;
+    return fullText.replace(/<think>[\s\S]*?<\/think>\s*/gi, '').trim();
   }
 
   window.pushInterviewAnswerToHud = function(customHudScript) {
