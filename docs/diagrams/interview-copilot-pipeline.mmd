@@ -1,0 +1,22 @@
+flowchart TD
+    subgraph Prep["1. Pre-Interview Setup (Studio Drawer)"]
+        R[Upload / Paste Candidate Resume<br/>.PDF, .DOCX, .TXT] --> IDX[Local Fact & Skill Indexer]
+        J[Upload / Paste Target Job Description] --> IDX
+        IDX --> GAP[Compute Matched JD Skills vs.<br/>Missing Skill Gap Alerts]
+    end
+
+    subgraph Live["2. Live Interview Question Capture"]
+        MIC[Interviewer Audio / Question] --> ASR[Apple On-Device SFSpeechRecognizer<br/>+ Manual Question Input]
+        ASR --> Silence{650ms Question-End<br/>Pause Detected?}
+    end
+
+    subgraph Engine["3. Grounded Anti-Hallucination Answer Engine"]
+        Silence -->|Yes| CheckGap{Question asks about skill<br/>NOT in Resume?}
+        CheckGap -->|Yes: Unlisted Skill| Honest[Generate Honest Gap Response<br/>+ Pivot to Closest Real Bullet]
+        CheckGap -->|No: Supported by Resume| STAR[Stage 1: Instant <15ms Local STAR Answer<br/> Stage 2: Optional Groq/OpenAI/Gemini Stream]
+    end
+
+    subgraph Display["4. Stealth Webcam HUD Delivery"]
+        Honest --> HUD[Render 3-Sentence Spoken Answer<br/>in Capture-Invisible Notch HUD]
+        STAR --> HUD
+    end

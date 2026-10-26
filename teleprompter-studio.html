@@ -168,6 +168,133 @@
     font-weight: 700;
     box-shadow: 0 0 10px rgba(16, 185, 129, 0.45);
   }
+  .hud-seg-mode-btn.active-interview {
+    background: linear-gradient(135deg, #8b5cf6, #6366f1);
+    color: #ffffff;
+    font-weight: 700;
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.55);
+  }
+
+  /* Phase 2: Studio Mode Switcher Tabs & Interview Co-Pilot Workspace */
+  .studio-mode-tabs {
+    display: inline-flex;
+    background: rgba(37, 99, 235, 0.08);
+    border: 1px solid rgba(37, 99, 235, 0.2);
+    border-radius: 10px;
+    padding: 3px;
+    gap: 4px;
+  }
+  .studio-tab-btn {
+    border: none;
+    background: transparent;
+    color: #334155;
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 5px 12px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .studio-tab-btn.active {
+    background: #2563eb;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+  }
+  .studio-tab-btn.interview-tab.active {
+    background: linear-gradient(135deg, #7c3aed, #4f46e5);
+    color: #ffffff;
+    box-shadow: 0 2px 10px rgba(124, 58, 237, 0.35);
+  }
+  .interview-grid {
+    display: none;
+    grid-template-columns: 315px 1fr 295px;
+    gap: 14px;
+    flex: 1;
+    min-height: 0;
+  }
+  .quick-drawer-shell.interview-workspace-active .qd-grid {
+    display: none;
+  }
+  .quick-drawer-shell.interview-workspace-active .interview-grid {
+    display: grid;
+  }
+  .iv-card {
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid rgba(99, 102, 241, 0.22);
+    border-radius: 14px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  .iv-textarea {
+    width: 100%;
+    min-height: 92px;
+    resize: vertical;
+    border: 1px solid rgba(148, 163, 184, 0.45);
+    border-radius: 8px;
+    padding: 7px 9px;
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 11.5px;
+    line-height: 1.45;
+    color: #0f172a;
+    background: #f8fafc;
+  }
+  .iv-textarea:focus {
+    outline: none;
+    border-color: #6366f1;
+    background: #ffffff;
+  }
+  .iv-badge-grounded {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #86efac;
+  }
+  .iv-badge-gap {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+  }
+  .iv-answer-preview {
+    flex: 1;
+    background: #0f172a;
+    color: #f8fafc;
+    border-radius: 10px;
+    padding: 11px 13px;
+    font-size: 12.5px;
+    line-height: 1.55;
+    overflow-y: auto;
+    border: 1px solid rgba(139, 92, 246, 0.4);
+  }
+  .iv-qa-history-item {
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 6px 8px;
+    font-size: 10.5px;
+    color: #1e293b;
+    cursor: pointer;
+  }
+  .iv-qa-history-item:hover {
+    border-color: #6366f1;
+    background: #eef2ff;
+  }
 
   /* Floating Quick Drawer Card directly beneath the Notch HUD (Executive Light-Blue Theme) */
   .quick-drawer-shell {
@@ -1676,11 +1803,12 @@
             <span id="hudHeaderTitle">Stealth</span>
           </div>
 
-          <!-- Direction 5: Built-in 3-State Segmented Mode Pill right inside the Notch HUD -->
+          <!-- Direction 5: Built-in Mode Pill right inside the Notch HUD (Presentation + Phase 2 AI Interview Co-Pilot) -->
           <div class="hud-mode-pill-group" id="hudModePillGroup">
             <button class="hud-seg-mode-btn active-pause" id="hudSegPauseBtn" title="Resume Teleprompter (Shortcut: Option+Space)">▶ Play</button>
             <button class="hud-seg-mode-btn" id="hudSegWpmBtn" title="Auto-Scroll at Constant WPM Speed">▶ <span id="hudPacingBadge">105 WPM</span></button>
             <button class="hud-seg-mode-btn" id="hudSegVoiceBtn" title="1-Click Voice-Activated Scrolling (Scrolls automatically when you speak)">🎙️ Voice Flow</button>
+            <button class="hud-seg-mode-btn" id="hudSegInterviewBtn" title="Phase 2: AI Real-Time Interview Co-Pilot (Listens to interviewer questions & suggests grounded answers)">🎯 Interview AI</button>
           </div>
 
           <div class="hud-meta-group">
@@ -1788,7 +1916,11 @@
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
-          <span class="qd-status-pill">🛡️ Screen-Share Invisible (Stealth Active)</span>
+          <div class="studio-mode-tabs">
+            <button class="studio-tab-btn active" id="tabTeleprompterBtn" onclick="switchStudioWorkspace('teleprompter')">📜 Pitch Teleprompter</button>
+            <button class="studio-tab-btn interview-tab" id="tabInterviewBtn" onclick="switchStudioWorkspace('interview')">🎯 AI Interview Co-Pilot</button>
+          </div>
+          <span class="qd-status-pill">🛡️ Screen-Share Invisible</span>
           <button class="qd-btn" id="presentNowBtn" style="background:#e0f2fe;border-color:#0284c7;color:#0369a1;font-weight:700;" title="Hide Quick Drawer & Present with Only the Floating Notch HUD">
             🚀 Hide Drawer
           </button>
@@ -1965,6 +2097,117 @@
             <button class="swatch-btn" onclick="setTheme('#fde68a', '#f59e0b', this)">Amber</button>
             <button class="swatch-btn" onclick="setTheme('#a7f3d0', '#10b981', this)">Green</button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHASE 2: AI-POWERED REAL-TIME INTERVIEW CO-PILOT WORKSPACE -->
+    <div class="interview-grid" id="interviewWorkspaceGrid">
+      <!-- Column 1: Candidate Resume & Job Description Grounding Knowledge Base -->
+      <div class="iv-card">
+        <div class="qd-col-header" style="margin-bottom:2px;">
+          <span class="qd-col-title">1. Resume &amp; Job Description</span>
+          <span id="ivFactsBadge" class="iv-badge-grounded">✓ Grounded</span>
+        </div>
+
+        <div style="display:flex;gap:5px;">
+          <label class="chip-btn" for="resumeFileUploadInput" style="flex:1;text-align:center;cursor:pointer;padding:5px 6px;font-size:10px;background:#eef2ff;border-color:#818cf8;color:#3730a3;font-weight:700;">
+            📄 Upload Resume (.PDF/.DOCX/.TXT)
+            <input type="file" id="resumeFileUploadInput" accept=".pdf,.docx,.doc,.txt,.md,.rtf" style="display:none" />
+          </label>
+          <button class="chip-btn" id="loadSampleResumeJdBtn" style="padding:5px 7px;font-size:10px;" title="Load sample PM/SWE Resume & Job Description">⚡ Sample</button>
+        </div>
+
+        <div style="font-size:10.5px;font-weight:700;color:#334155;display:flex;justify-content:space-between;">
+          <span>Candidate Resume / Experience</span>
+          <span id="resumeCharStat" style="color:#64748b;font-weight:500;">Loaded</span>
+        </div>
+        <textarea class="iv-textarea" id="interviewResumeInput" placeholder="Paste your resume or upload a PDF/DOCX above..."></textarea>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px;">
+          <span style="font-size:10.5px;font-weight:700;color:#334155;">Target Job Description (JD)</span>
+          <label class="chip-btn" for="jdFileUploadInput" style="cursor:pointer;padding:2px 6px;font-size:9.5px;">
+            📥 Upload JD
+            <input type="file" id="jdFileUploadInput" accept=".pdf,.docx,.doc,.txt,.md,.rtf" style="display:none" />
+          </label>
+        </div>
+        <textarea class="iv-textarea" id="interviewJdInput" placeholder="Paste the target role Job Description (skills, responsibilities, requirements)..."></textarea>
+
+        <div id="ivSkillGapSummary" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:7px 9px;font-size:10.5px;color:#334155;line-height:1.4;">
+          <strong>Matched Role Skills:</strong> <span id="ivMatchedSkillsList">—</span><br/>
+          <strong>Honest Gap Alert (Not in Resume):</strong> <span id="ivMissingSkillsList" style="color:#b45309;">None detected</span>
+        </div>
+      </div>
+
+      <!-- Column 2: Live Interviewer Question Listener + Grounded Answer Generator -->
+      <div class="iv-card">
+        <div class="qd-col-header" style="margin-bottom:2px;">
+          <span class="qd-col-title">2. Live Interviewer Question &amp; Grounded Answer</span>
+          <div style="display:flex;gap:5px;align-items:center;">
+            <span id="ivLatencyBadge" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#4f46e5;font-weight:700;">⚡ Ready</span>
+            <button class="chip-btn" id="ivListenToggleBtn" onclick="toggleInterviewListening()" style="padding:4px 9px;font-size:10.5px;background:#ede9fe;border-color:#8b5cf6;color:#5b21b6;font-weight:700;">
+              🎙️ Listen to Interviewer: OFF
+            </button>
+          </div>
+        </div>
+
+        <!-- Live Question Input + Instant Trigger -->
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input type="text" id="ivQuestionInput" class="script-title-input" placeholder="Interviewer question appears here live (or type/paste any question & press Enter)..." style="flex:1;font-size:12px;padding:7px 10px;background:#ffffff;" />
+          <button class="qd-btn qd-btn-primary" id="ivAskBtn" onclick="generateInterviewAnswerFromInput()" style="padding:6px 12px;font-size:11.5px;background:linear-gradient(135deg,#7c3aed,#4f46e5);">
+            ✨ Answer Now
+          </button>
+        </div>
+
+        <!-- 1-Click Common Interview Question Chips for Instant Testing & Live Fallback -->
+        <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;">
+          <span style="font-size:9.5px;font-weight:700;color:#64748b;">Quick Questions:</span>
+          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Tell me about yourself and why you fit this role.')">Intro / Fit</button>
+          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Tell me about a time you improved retention or onboarding metrics.')">STAR Metric Story</button>
+          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('How have you handled fraud detection or risk models?')">Domain Depth</button>
+          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Do you have 5 years of production Kubernetes and Rust kernel experience?')">Gap / Unlisted Skill</button>
+        </div>
+
+        <!-- Grounding Verification Banner -->
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;background:#f1f5f9;border-radius:7px;font-size:10.5px;">
+          <span id="ivGroundingStatusBanner" class="iv-badge-grounded">✓ 100% Grounded in Uploaded Resume &amp; JD</span>
+          <button class="chip-btn" style="padding:2px 8px;font-size:9.5px;" onclick="pushInterviewAnswerToHud()">📺 Send to Notch HUD</button>
+        </div>
+
+        <!-- Live Spoken-Style Suggested Answer Preview -->
+        <div class="iv-answer-preview" id="ivAnswerPreviewBox">
+          Click <strong>✨ Answer Now</strong>, pick a Quick Question chip above, or turn on <strong>🎙️ Listen to Interviewer</strong>. Suggested answers stream directly into your invisible webcam HUD so you can speak naturally while maintaining eye contact.
+        </div>
+      </div>
+
+      <!-- Column 3: AI Engine Settings (BYOK Groq/OpenAI/Gemini + Zero-Key Grounded Engine) & Q&A Log -->
+      <div class="iv-card">
+        <div class="qd-col-header" style="margin-bottom:2px;">
+          <span class="qd-col-title">3. AI Engine &amp; Privacy</span>
+        </div>
+
+        <div style="font-size:10.5px;font-weight:700;color:#334155;">Response Engine</div>
+        <select id="ivProviderSelect" class="script-title-input" style="font-size:11px;padding:5px 8px;background:#fff;" onchange="saveInterviewSettings()">
+          <option value="auto">⚡ Auto (Cloud LLM Stream if Key Set + Instant Local Grounded Engine)</option>
+          <option value="local">🛡️ Local Grounded STAR Engine Only (100% Offline · Zero Network · <15ms)</option>
+          <option value="groq">🚀 Groq Llama-3.3-70B Streaming (~220ms First Token)</option>
+          <option value="openai">🧠 OpenAI GPT-4o-mini Streaming</option>
+          <option value="gemini">✨ Google Gemini 2.0 Flash Streaming</option>
+        </select>
+
+        <div style="font-size:10.5px;font-weight:700;color:#334155;display:flex;justify-content:space-between;">
+          <span>API Key (Optional · Stored Locally Only)</span>
+          <span style="font-size:9.5px;color:#059669;">🔒 Never Committed</span>
+        </div>
+        <input type="password" id="ivApiKeyInput" class="script-title-input" placeholder="gsk_... / sk-... / AIza... (Leave blank for offline engine)" style="font-size:11px;padding:5px 8px;background:#fff;" oninput="saveInterviewSettings()" />
+
+        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:7px 9px;font-size:10px;color:#1e3a8a;line-height:1.4;">
+          <strong>Anti-Hallucination &amp; Honesty Guardrail:</strong> Answers strictly cite facts from your uploaded Resume. If the interviewer asks about a tool or skill not in your resume, GhostCue explicitly flags the gap and gives you an honest, pivot-focused response.
+        </div>
+
+        <div style="font-size:10.5px;font-weight:700;color:#334155;margin-top:2px;">Recent Interview Q&amp;A History</div>
+        <div id="ivHistoryList" style="display:flex;flex-direction:column;gap:5px;flex:1;overflow-y:auto;min-height:70px;">
+          <div style="font-size:10.5px;color:#64748b;text-align:center;padding:10px 4px;">Asked questions will appear here for 1-click review.</div>
         </div>
       </div>
     </div>
@@ -2838,15 +3081,19 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
     const pauseSeg = document.getElementById('hudSegPauseBtn');
     const wpmSeg = document.getElementById('hudSegWpmBtn');
     const voiceSeg = document.getElementById('hudSegVoiceBtn');
+    const ivSeg = document.getElementById('hudSegInterviewBtn');
     if (!pauseSeg || !wpmSeg || !voiceSeg) return;
     pauseSeg.classList.remove('active-pause');
     wpmSeg.classList.remove('active-wpm');
     voiceSeg.classList.remove('active-voice');
+    if (ivSeg) ivSeg.classList.remove('active-interview');
     // Label shows the action the button will perform so it always acts as a Play/Pause toggle
-    const canPause = isPlaying || scrollMode === 'voice';
+    const canPause = isPlaying || scrollMode === 'voice' || scrollMode === 'interview';
     pauseSeg.textContent = canPause ? '⏸ Pause' : '▶ Play';
     pauseSeg.title = canPause ? 'Pause Teleprompter (Shortcut: Option+Space)' : 'Resume Teleprompter (Shortcut: Option+Space)';
-    if (scrollMode === 'voice') {
+    if (scrollMode === 'interview') {
+      if (ivSeg) ivSeg.classList.add('active-interview');
+    } else if (scrollMode === 'voice') {
       voiceSeg.classList.add('active-voice');
     } else if (isPlaying) {
       wpmSeg.classList.add('active-wpm');
@@ -3072,6 +3319,10 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
   }
 
   window.onNativeTranscript = function(transcriptText) {
+    if (scrollMode === 'interview' && typeof window.onInterviewTranscript === 'function') {
+      window.onInterviewTranscript(transcriptText);
+      return;
+    }
     if (scrollMode !== 'voice') return;
     const words = cachedScriptWords.length ? cachedScriptWords : hudScrollTrack.querySelectorAll('.script-word');
     if (!words.length) return;
@@ -3179,6 +3430,10 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
   };
 
   window.onNativeVoicePhraseEnd = function() {
+    if (scrollMode === 'interview' && typeof window.onInterviewPhraseEnd === 'function') {
+      window.onInterviewPhraseEnd();
+      return;
+    }
     if (scrollMode !== 'voice') return;
     const words = cachedScriptWords.length ? cachedScriptWords : hudScrollTrack.querySelectorAll('.script-word');
     if (!words.length) return;
@@ -3686,7 +3941,8 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
   if (hudSegPauseBtn) {
     hudSegPauseBtn.onclick = (e) => {
       e.stopPropagation();
-      if (scrollMode === 'voice') {
+      if (scrollMode === 'voice' || scrollMode === 'interview') {
+        if (scrollMode === 'interview' && typeof stopInterviewListening === 'function') stopInterviewListening();
         setScrollMode('wpm');
         togglePlay(false);
       } else {
@@ -3698,7 +3954,10 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
   if (hudSegWpmBtn) {
     hudSegWpmBtn.onclick = (e) => {
       e.stopPropagation();
-      if (scrollMode === 'voice') setScrollMode('wpm');
+      if (scrollMode === 'voice' || scrollMode === 'interview') {
+        if (scrollMode === 'interview' && typeof stopInterviewListening === 'function') stopInterviewListening();
+        setScrollMode('wpm');
+      }
       togglePlay(true);
     };
   }
@@ -3706,7 +3965,17 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
   if (hudSegVoiceBtn) {
     hudSegVoiceBtn.onclick = (e) => {
       e.stopPropagation();
+      if (scrollMode === 'interview' && typeof stopInterviewListening === 'function') stopInterviewListening();
       setScrollMode('voice');
+    };
+  }
+  const hudSegInterviewBtn = document.getElementById('hudSegInterviewBtn');
+  if (hudSegInterviewBtn) {
+    hudSegInterviewBtn.onclick = (e) => {
+      e.stopPropagation();
+      if (typeof activateInterviewCoPilotMode === 'function') {
+        activateInterviewCoPilotMode();
+      }
     };
   }
   const qdMoreBtn = document.getElementById('qdMoreBtn');
@@ -4662,8 +4931,605 @@ endstream endobj
     }
   });
 
+  // ============================================================================
+  // PHASE 2: AI-POWERED REAL-TIME INTERVIEW CO-PILOT (GROUNDED RAG + STREAMING)
+  // ============================================================================
+  const IV_STORAGE_KEY = 'ghostcue_interview_v1';
+  const DEFAULT_SAMPLE_RESUME = [
+    'Aastha Saini — Product & Analytics / AI Systems Lead',
+    '• Built Sentinel Travel Risk Lab: explainable travel-booking payment fraud & inventory abuse detection using XGBoost, SHAP explainability, FastAPI, and React, reducing false-positive review time by 38%.',
+    '• Built Echo Voice-to-Roadmap & POM RAG Chatbot: end-to-end voice and retrieval-augmented generation (RAG) pipelines turning unstructured customer feedback and documents into prioritized product roadmaps.',
+    '• Built PrepVault MBA Finance & DCF Valuation Suite: local-first PWA with BYOK Groq AI integration, DCF & Market Multiples valuation models, and retail sensitivity forecasting.',
+    '• Led cross-functional product execution: improved enterprise cohort retention to 128% NDR and cut customer onboarding time by 40% through automated self-serve workflows.',
+    '• Core Skills: Product Management, Python, SQL, XGBoost, FastAPI, React, RAG / LLM Grounding, Financial Modeling (DCF), Risk & Fraud Analytics, A/B Testing.'
+  ].join('\n');
+
+  const DEFAULT_SAMPLE_JD = [
+    'Role: Senior AI Product Manager / Applied AI Engineer',
+    'Responsibilities:',
+    '• Own end-to-end AI product strategy, roadmapping, and KPI delivery (retention, onboarding velocity, conversion).',
+    '• Partner with engineering and data science to ship low-latency LLM/RAG features and explainable ML risk models (Python, SQL, FastAPI, React).',
+    '• Drive data-informed decisions through A/B testing, cohort retention analysis, and financial ROI modeling.',
+    'Preferred / Bonus Qualifications:',
+    '• Experience with Kubernetes cluster administration, Rust kernel development, or Terraform multi-region infra.'
+  ].join('\n');
+
+  const KNOWN_TECH_AND_DOMAIN_SKILLS = [
+    'python', 'sql', 'xgboost', 'fastapi', 'react', 'rag', 'llm', 'product management',
+    'roadmap', 'retention', 'onboarding', 'fraud', 'risk', 'dcf', 'valuation', 'finance',
+    'a/b testing', 'analytics', 'streamlit', 'langchain', 'electron', 'swift',
+    'kubernetes', 'rust', 'terraform', 'golang', 'kafka', 'solidity', 'sap', 'cobol'
+  ];
+
+  let ivListening = false;
+  let ivLastTranscript = '';
+  let ivLastAnsweredQuestion = '';
+  let ivSilenceDebounceTimer = null;
+  let ivHistory = [];
+  let ivCurrentHudsonScript = '';
+
+  const ivResumeEl = document.getElementById('interviewResumeInput');
+  const ivJdEl = document.getElementById('interviewJdInput');
+  const ivQuestionEl = document.getElementById('ivQuestionInput');
+  const ivPreviewEl = document.getElementById('ivAnswerPreviewBox');
+  const ivProviderEl = document.getElementById('ivProviderSelect');
+  const ivApiKeyEl = document.getElementById('ivApiKeyInput');
+  const ivListenBtn = document.getElementById('ivListenToggleBtn');
+  const ivLatencyBadge = document.getElementById('ivLatencyBadge');
+  const ivGroundingBanner = document.getElementById('ivGroundingStatusBanner');
+
+  window.switchStudioWorkspace = function(tab) {
+    const shell = document.getElementById('quickDrawerShell');
+    const tBtn = document.getElementById('tabTeleprompterBtn');
+    const iBtn = document.getElementById('tabInterviewBtn');
+    const isIv = tab === 'interview';
+    if (shell) shell.classList.toggle('interview-workspace-active', isIv);
+    if (tBtn) tBtn.classList.toggle('active', !isIv);
+    if (iBtn) iBtn.classList.toggle('active', isIv);
+  };
+
+  window.activateInterviewCoPilotMode = function() {
+    window.switchStudioWorkspace('interview');
+    togglePlay(false);
+    scrollMode = 'interview';
+    setOverlayVisible(true);
+    console.log('__GHOSTCUE_IPC__:SHOW_OVERLAY');
+    syncHudSegmentedModePill();
+    ensureScrollLoopState();
+    if (!ivListening) {
+      window.toggleInterviewListening(true);
+    }
+    hudModeStatus.textContent = '🎯 Interview AI Active · Listening for Interviewer Question';
+  };
+
+  function extractStructuredFacts(resumeText, jdText) {
+    const resLines = String(resumeText || '')
+      .split(/\r?\n/)
+      .map(l => l.replace(/^[•\-*]\s*/, '').trim())
+      .filter(l => l.length > 6);
+    const jdLines = String(jdText || '')
+      .split(/\r?\n/)
+      .map(l => l.replace(/^[•\-*]\s*/, '').trim())
+      .filter(l => l.length > 6);
+
+    const resLower = String(resumeText || '').toLowerCase();
+    const jdLower = String(jdText || '').toLowerCase();
+
+    const resumeSkills = KNOWN_TECH_AND_DOMAIN_SKILLS.filter(k => resLower.includes(k));
+    const jdSkills = KNOWN_TECH_AND_DOMAIN_SKILLS.filter(k => jdLower.includes(k));
+    const matchedSkills = jdSkills.filter(k => resLower.includes(k));
+    const missingJdSkills = jdSkills.filter(k => !resLower.includes(k));
+
+    return { resLines, jdLines, resLower, jdLower, resumeSkills, jdSkills, matchedSkills, missingJdSkills };
+  }
+
+  function refreshResumeJdSkillAnalysis() {
+    if (!ivResumeEl || !ivJdEl) return;
+    const facts = extractStructuredFacts(ivResumeEl.value, ivJdEl.value);
+    const matchedEl = document.getElementById('ivMatchedSkillsList');
+    const missingEl = document.getElementById('ivMissingSkillsList');
+    const charStat = document.getElementById('resumeCharStat');
+    if (matchedEl) {
+      matchedEl.textContent = facts.matchedSkills.length
+        ? facts.matchedSkills.map(s => s.toUpperCase()).join(', ')
+        : (facts.resumeSkills.slice(0, 6).map(s => s.toUpperCase()).join(', ') || 'Upload resume & JD');
+    }
+    if (missingEl) {
+      missingEl.textContent = facts.missingJdSkills.length
+        ? facts.missingJdSkills.map(s => s.toUpperCase()).join(', ') + ' (Will suggest honest pivot if asked)'
+        : 'None — full coverage of detected JD skills';
+    }
+    if (charStat) {
+      charStat.textContent = `${facts.resLines.length} resume bullets · ${facts.resumeSkills.length} skills indexed`;
+    }
+  }
+
+  window.saveInterviewSettings = function() {
+    try {
+      const data = {
+        resume: ivResumeEl ? ivResumeEl.value : '',
+        jd: ivJdEl ? ivJdEl.value : '',
+        provider: ivProviderEl ? ivProviderEl.value : 'auto',
+        apiKey: ivApiKeyEl ? ivApiKeyEl.value : ''
+      };
+      localStorage.setItem(IV_STORAGE_KEY, JSON.stringify(data));
+      refreshResumeJdSkillAnalysis();
+    } catch (e) {}
+  };
+
+  function loadInterviewSettings() {
+    try {
+      const raw = localStorage.getItem(IV_STORAGE_KEY);
+      if (raw) {
+        const data = JSON.parse(raw);
+        if (ivResumeEl && data.resume) ivResumeEl.value = data.resume;
+        if (ivJdEl && data.jd) ivJdEl.value = data.jd;
+        if (ivProviderEl && data.provider) ivProviderEl.value = data.provider;
+        if (ivApiKeyEl && typeof data.apiKey === 'string') ivApiKeyEl.value = data.apiKey;
+      }
+      if (ivResumeEl && !ivResumeEl.value.trim()) ivResumeEl.value = DEFAULT_SAMPLE_RESUME;
+      if (ivJdEl && !ivJdEl.value.trim()) ivJdEl.value = DEFAULT_SAMPLE_JD;
+      refreshResumeJdSkillAnalysis();
+    } catch (e) {}
+  }
+
+  // Deterministic, <15ms Grounded Answer Engine with Anti-Hallucination & Honest Gap Detection
+  function buildLocalGroundedInterviewAnswer(question, resumeText, jdText) {
+    const qClean = String(question || '').trim();
+    const qLower = qClean.toLowerCase();
+    const facts = extractStructuredFacts(resumeText, jdText);
+
+    // 1. Check if the question asks about a specific technology/skill NOT present in the user's resume
+    const mentionedUnlistedSkills = KNOWN_TECH_AND_DOMAIN_SKILLS.filter(skill => {
+      const regex = new RegExp(`\\b${skill.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+      return regex.test(qLower) && !facts.resLower.includes(skill);
+    });
+
+    // Also catch explicit "X years of <Word>" claims where <Word> is not in the resume
+    const qWords = qLower
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .split(/\s+/)
+      .filter(w => w.length >= 4 && !COMMON_FILLER_WORDS.has(w) && !['tell', 'about', 'your', 'have', 'what', 'when', 'where', 'which', 'time', 'experience', 'worked', 'with', 'role', 'years', 'used', 'using', 'handle', 'handled', 'walk', 'through', 'describe', 'explain', 'how', 'why', ' fits', 'fit', 'yourself'].includes(w));
+
+    // Score each resume bullet against the question + JD priorities
+    const scoredBullets = facts.resLines.map((line, idx) => {
+      const lLower = line.toLowerCase();
+      let score = 0;
+      qWords.forEach(w => {
+        if (lLower.includes(w)) score += 4;
+        else if (w.length >= 5 && lLower.includes(w.slice(0, 5))) score += 2;
+      });
+      facts.matchedSkills.forEach(sk => {
+        if (lLower.includes(sk)) score += 1.5;
+      });
+      if (/\d+%|\$\d+|\d+\.\d+x/i.test(line)) score += 1.2; // Prefer quantified impact bullets
+      return { line, score, idx };
+    }).sort((a, b) => b.score - a.score);
+
+    const topBullet1 = scoredBullets[0] ? scoredBullets[0].line : 'my background listed in my resume';
+    const topBullet2 = scoredBullets[1] ? scoredBullets[1].line : '';
+    const headlineLine = facts.resLines[0] || 'my product and engineering background';
+    const matchedRoleSkillsStr = facts.matchedSkills.slice(0, 4).map(s => `**${s.toUpperCase()}**`).join(', ') || 'the core skills in this role';
+
+    // CASE A: Honest Gap Response — Question asks about a skill/tool NOT in the uploaded resume
+    if (mentionedUnlistedSkills.length > 0) {
+      const gapNames = mentionedUnlistedSkills.map(s => s.toUpperCase()).join(' & ');
+      const closestTransferable = topBullet1;
+      const hudScript = [
+        `[SLIDE 1: ⚠️ HONEST GAP ALERT — ${gapNames} NOT IN RESUME]`,
+        `I want to be completely transparent: I haven't used **${gapNames}** in production yet, so I wouldn't want to overstate my hands-on experience there.`,
+        `[PAUSE 2s] What I **do** bring from my direct experience is: **${closestTransferable}**`,
+        `Because I've already worked deeply with ${matchedRoleSkillsStr}, I can ramp up on **${gapNames}** quickly while contributing immediately on day one.`
+      ].join('\n');
+      return {
+        isGap: true,
+        gapSkills: gapNames,
+        hudScript,
+        summaryHtml: `<div style="color:#fcd34d;font-weight:700;margin-bottom:6px;">⚠️ Honest Gap Detected: ${escapeHtml(gapNames)} is not in your uploaded resume.</div>` +
+          `<div style="margin-bottom:6px;"><strong>Say Aloud (Honest + Pivot):</strong> "I want to be transparent — I haven't used <strong>${escapeHtml(gapNames)}</strong> in production yet. However, in my recent work, <em>${escapeHtml(closestTransferable)}</em>, which gives me a strong foundation to ramp up quickly."</div>`
+      };
+    }
+
+    // CASE B: "Tell me about yourself" / Role Fit / Why this role
+    if (/tell me about yourself|walk me through your resume|introduce yourself|why.*fit|why.*role|background/i.test(qLower)) {
+      const b1 = scoredBullets[0] ? scoredBullets[0].line : '';
+      const b2 = scoredBullets[1] ? scoredBullets[1].line : '';
+      const hudScript = [
+        `[SLIDE 1: 🎯 ROLE FIT — GROUNDED IN RESUME & JD]`,
+        `I'm **${headlineLine}**, and my background aligns directly with your focus on ${matchedRoleSkillsStr}.`,
+        b1 ? `Most recently: **${b1}**` : '',
+        b2 ? `[PAUSE 2s] Before that: **${b2}**` : '',
+        `That combination of quantified execution and hands-on technical depth is why I'm excited about this role.`
+      ].filter(Boolean).join('\n');
+      return {
+        isGap: false,
+        hudScript,
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Grounded Role-Fit Pitch (Matched ${facts.matchedSkills.length} JD skills)</div>` +
+          `<div style="margin-bottom:6px;"><strong>1. Headline:</strong> "I'm ${escapeHtml(headlineLine)}, focusing on ${escapeHtml(facts.matchedSkills.slice(0, 4).join(', '))}."</div>` +
+          (b1 ? `<div style="margin-bottom:6px;"><strong>2. Proof Point 1:</strong> "${escapeHtml(b1)}"</div>` : '') +
+          (b2 ? `<div><strong>3. Proof Point 2:</strong> "${escapeHtml(b2)}"</div>` : '')
+      };
+    }
+
+    // CASE C: Specific Behavioral / Technical Question matched to Resume Bullets (STAR Format)
+    if (scoredBullets[0] && scoredBullets[0].score >= 2.5) {
+      const primary = scoredBullets[0].line;
+      const secondary = (scoredBullets[1] && scoredBullets[1].score >= 2.0) ? scoredBullets[1].line : '';
+      const hudScript = [
+        `[SLIDE 1: ⭐ STAR ANSWER — GROUNDED IN RESUME]`,
+        `A great example from my experience is when I **${primary.replace(/^(Built|Led|Improved|Created)\s+/i, m => m.toLowerCase())}**`,
+        secondary ? `[PAUSE 2s] Additionally, I **${secondary.replace(/^(Built|Led|Improved|Created)\s+/i, m => m.toLowerCase())}**` : '',
+        `[SLOW DOWN] I focused on measurable business impact and explainability, which maps directly to what you need in this role.`
+      ].filter(Boolean).join('\n');
+      return {
+        isGap: false,
+        hudScript,
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Grounded STAR Answer (Cited from Resume)</div>` +
+          `<div style="margin-bottom:6px;"><strong>Situation &amp; Action:</strong> "${escapeHtml(primary)}"</div>` +
+          (secondary ? `<div style="margin-bottom:6px;"><strong>Supporting Evidence:</strong> "${escapeHtml(secondary)}"</div>` : '') +
+          `<div><strong>Role Tie-Back:</strong> Connects directly to JD priorities (${escapeHtml(facts.matchedSkills.slice(0, 3).join(', ') || 'core role requirements')}).</div>`
+      };
+    }
+
+    // CASE D: Question topic isn't explicitly detailed in the resume — be transparent & pivot to closest verified strength
+    const hudScript = [
+      `[SLIDE 1: ⚠️ TOPIC NOT EXPLICIT IN RESUME — HONEST PIVOT]`,
+      `While that exact scenario isn't detailed on my resume, I want to answer honestly based on my closest hands-on work.`,
+      `[PAUSE 2s] In my recent work: **${topBullet1}**`,
+      `That same structured approach is how I would tackle this problem in your team.`
+    ].join('\n');
+    return {
+      isGap: true,
+      gapSkills: 'Specific topic not explicitly listed in resume',
+      hudScript,
+      summaryHtml: `<div style="color:#fcd34d;font-weight:700;margin-bottom:6px;">ℹ️ Topic Not Explicitly in Resume — Honest Bridge Suggested</div>` +
+        `<div><strong>Suggested Spoken Response:</strong> "While I haven't tackled that exact scenario directly, the closest parallel from my experience is: <em>${escapeHtml(topBullet1)}</em>."</div>`
+    };
+  }
+
+  async function streamCloudLlmInterviewAnswer(question, resumeText, jdText, provider, apiKey, onDelta) {
+    const sysPrompt = [
+      'You are GhostCue, a real-time interview co-pilot generating natural, first-person ("I...") spoken answers for a candidate to read aloud from a webcam teleprompter.',
+      'STRICT ANTI-HALLUCINATION RULES:',
+      '1. Ground every claim, metric, company, and tool 100% in the supplied RESUME and JOB DESCRIPTION.',
+      '2. NEVER invent qualifications, employers, metrics, or tools not present in the RESUME.',
+      '3. If the interviewer asks about a skill, tool, or experience NOT supported by the RESUME, start with "[SLIDE 1: ⚠️ HONEST GAP — NOT IN RESUME]" and give a brief, honest statement acknowledging the gap, then pivot to the closest real experience from the RESUME.',
+      '4. Otherwise start with "[SLIDE 1: 🎯 GROUNDED INTERVIEW ANSWER]" and write 3 short, conversational sentences (60–90 words total) with **bold** around key metrics/terms so it is effortless to say aloud.'
+    ].join('\n');
+
+    const userPrompt = `CANDIDATE RESUME:\n${resumeText}\n\nTARGET JOB DESCRIPTION:\n${jdText}\n\nINTERVIEWER QUESTION:\n"${question}"\n\nWrite the concise, grounded spoken response now:`;
+
+    if (provider === 'gemini') {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: sysPrompt + '\n\n' + userPrompt }] }],
+          generationConfig: { temperature: 0.2, maxOutputTokens: 220 }
+        })
+      });
+      if (!res.ok) throw new Error('Gemini API HTTP ' + res.status);
+      const data = await res.json();
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if (!text) throw new Error('Empty Gemini response');
+      onDelta(text);
+      return text;
+    }
+
+    const endpoint = provider === 'groq'
+      ? 'https://api.groq.com/openai/v1/chat/completions'
+      : 'https://api.openai.com/v1/chat/completions';
+    const model = provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini';
+
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model,
+        temperature: 0.2,
+        max_tokens: 220,
+        stream: true,
+        messages: [
+          { role: 'system', content: sysPrompt },
+          { role: 'user', content: userPrompt }
+        ]
+      })
+    });
+    if (!res.ok || !res.body) throw new Error(`${provider} API HTTP ${res.status}`);
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let fullText = '';
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith('data:')) continue;
+        const payload = trimmed.slice(5).trim();
+        if (payload === '[DONE]') break;
+        try {
+          const parsed = JSON.parse(payload);
+          const delta = parsed?.choices?.[0]?.delta?.content || '';
+          if (delta) {
+            fullText += delta;
+            onDelta(fullText);
+          }
+        } catch (e) {}
+      }
+    }
+    return fullText;
+  }
+
+  window.pushInterviewAnswerToHud = function(customHudScript) {
+    const textToPush = customHudScript || ivCurrentHudsonScript;
+    if (!textToPush) return;
+    scriptEditorEl.value = textToPush;
+    scrollY = 0;
+    spokenWordIndex = 0;
+    window.__voiceTargetScrollY = 0;
+    hudScrollTrack.style.transform = 'translateY(0px)';
+    setOverlayVisible(true);
+    console.log('__GHOSTCUE_IPC__:SHOW_OVERLAY');
+    parseAndRenderHud();
+    broadcastState('SCRIPT_UPDATE', { content: textToPush });
+    broadcastState('SCROLL_SYNC', { scrollY: 0, spokenWordIndex: 0 });
+  };
+
+  function renderInterviewHistory() {
+    const listEl = document.getElementById('ivHistoryList');
+    if (!listEl) return;
+    listEl.innerHTML = '';
+    if (!ivHistory.length) {
+      listEl.innerHTML = '<div style="font-size:10.5px;color:#64748b;text-align:center;padding:10px 4px;">Asked questions will appear here for 1-click review.</div>';
+      return;
+    }
+    ivHistory.slice(0, 8).forEach((item) => {
+      const div = document.createElement('div');
+      div.className = 'iv-qa-history-item';
+      div.innerHTML = `<div style="font-weight:700;color:#312e81;">Q: ${escapeHtml(item.question)}</div>` +
+        `<div style="color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.isGap ? '⚠️ Honest Gap · ' : '✓ Grounded · '}${escapeHtml(item.hudScript.replace(/\[SLIDE[^\]]*\]/g, '').trim())}</div>`;
+      div.onclick = () => {
+        if (ivQuestionEl) ivQuestionEl.value = item.question;
+        if (ivPreviewEl) ivPreviewEl.innerHTML = item.summaryHtml;
+        ivCurrentHudsonScript = item.hudScript;
+        window.pushInterviewAnswerToHud(item.hudScript);
+      };
+      listEl.appendChild(div);
+    });
+  }
+
+  async function generateInterviewAnswer(questionText) {
+    const q = String(questionText || '').trim();
+    if (!q) return;
+    ivLastAnsweredQuestion = q;
+    const t0 = performance.now();
+
+    const resumeText = ivResumeEl ? ivResumeEl.value : DEFAULT_SAMPLE_RESUME;
+    const jdText = ivJdEl ? ivJdEl.value : DEFAULT_SAMPLE_JD;
+
+    // Step 1: Always compute instant (<15ms) deterministic grounded answer first for zero-lag HUD display
+    const localResult = buildLocalGroundedInterviewAnswer(q, resumeText, jdText);
+    ivCurrentHudsonScript = localResult.hudScript;
+    const localMs = Math.max(1, Math.round(performance.now() - t0));
+
+    if (ivLatencyBadge) ivLatencyBadge.textContent = `⚡ ${localMs}ms Grounded`;
+    if (ivGroundingBanner) {
+      ivGroundingBanner.className = localResult.isGap ? 'iv-badge-gap' : 'iv-badge-grounded';
+      ivGroundingBanner.textContent = localResult.isGap
+        ? `⚠️ Honest Gap Flagged (${localResult.gapSkills}) — No Qualifications Invented`
+        : '✓ 100% Grounded in Uploaded Resume & JD';
+    }
+    if (ivPreviewEl) {
+      ivPreviewEl.innerHTML = localResult.summaryHtml +
+        `<hr style="border:none;border-top:1px solid rgba(255,255,255,0.12);margin:8px 0;"/>` +
+        `<div style="font-size:11px;color:#cbd5e1;white-space:pre-wrap;">${escapeHtml(localResult.hudScript)}</div>`;
+    }
+
+    // Immediately push to Notch HUD so the candidate can start speaking with zero delay
+    window.pushInterviewAnswerToHud(localResult.hudScript);
+    hudModeStatus.textContent = localResult.isGap
+      ? `⚠️ Honest Gap Response Ready (${localMs}ms) · Speak Naturally`
+      : `🎯 Grounded Answer Ready (${localMs}ms) · Speak Naturally`;
+
+    // Step 2: If user configured a Cloud LLM key (Groq / OpenAI / Gemini) and selected auto or cloud provider, stream refinement
+    const providerPref = ivProviderEl ? ivProviderEl.value : 'auto';
+    const apiKey = (ivApiKeyEl ? ivApiKeyEl.value : '').trim();
+    let activeProvider = providerPref;
+    if (providerPref === 'auto' && apiKey) {
+      if (apiKey.startsWith('gsk_')) activeProvider = 'groq';
+      else if (apiKey.startsWith('AIza')) activeProvider = 'gemini';
+      else activeProvider = 'openai';
+    }
+
+    if (apiKey && ['groq', 'openai', 'gemini'].includes(activeProvider)) {
+      try {
+        await streamCloudLlmInterviewAnswer(q, resumeText, jdText, activeProvider, apiKey, (partialText) => {
+          ivCurrentHudsonScript = partialText;
+          const streamMs = Math.round(performance.now() - t0);
+          if (ivLatencyBadge) ivLatencyBadge.textContent = `🚀 ${activeProvider.toUpperCase()} ${streamMs}ms`;
+          if (ivPreviewEl) {
+            ivPreviewEl.innerHTML = `<div style="color:#a5b4fc;font-weight:700;margin-bottom:6px;">🚀 Live ${escapeHtml(activeProvider.toUpperCase())} Grounded Stream (${streamMs}ms)</div>` +
+              `<div style="white-space:pre-wrap;">${escapeHtml(partialText)}</div>`;
+          }
+          window.pushInterviewAnswerToHud(partialText);
+        });
+      } catch (err) {
+        // Keep the instant local grounded answer on screen if network/API key fails
+        if (ivLatencyBadge) ivLatencyBadge.textContent = `🛡️ Local Fallback (${localMs}ms)`;
+      }
+    }
+
+    ivHistory.unshift({
+      question: q,
+      hudScript: ivCurrentHudsonScript,
+      summaryHtml: ivPreviewEl ? ivPreviewEl.innerHTML : localResult.summaryHtml,
+      isGap: localResult.isGap
+    });
+    renderInterviewHistory();
+    broadcastState('INTERVIEW_QA_SYNC', {
+      question: q,
+      hudScript: ivCurrentHudsonScript,
+      isGap: localResult.isGap
+    });
+  }
+
+  window.generateInterviewAnswerFromInput = function() {
+    if (!ivQuestionEl) return;
+    generateInterviewAnswer(ivQuestionEl.value);
+  };
+
+  window.askPresetInterviewQuestion = function(qText) {
+    if (ivQuestionEl) ivQuestionEl.value = qText;
+    generateInterviewAnswer(qText);
+  };
+
+  if (ivQuestionEl) {
+    ivQuestionEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        generateInterviewAnswer(ivQuestionEl.value);
+      }
+    });
+  }
+
+  // Live Interviewer Speech Listener (Uses On-Device SFSpeechRecognizer + Question Detection)
+  window.toggleInterviewListening = function(forceState) {
+    ivListening = typeof forceState === 'boolean' ? forceState : !ivListening;
+    if (ivListenBtn) {
+      ivListenBtn.textContent = ivListening ? '🟢 Listening to Interviewer: ON' : '🎙️ Listen to Interviewer: OFF';
+      ivListenBtn.style.background = ivListening ? '#dcfce7' : '#ede9fe';
+      ivListenBtn.style.borderColor = ivListening ? '#10b981' : '#8b5cf6';
+      ivListenBtn.style.color = ivListening ? '#065f46' : '#5b21b6';
+    }
+    if (ivListening) {
+      scrollMode = 'interview';
+      syncHudSegmentedModePill();
+      console.log('__GHOSTCUE_IPC__:VOICE_MODE_START');
+      initWebSpeechRecognition();
+      hudModeStatus.textContent = '🎯 Listening for Interviewer Question...';
+    } else {
+      clearTimeout(ivSilenceDebounceTimer);
+      if (scrollMode === 'interview') {
+        console.log('__GHOSTCUE_IPC__:VOICE_MODE_STOP');
+        stopLiveAudioVad();
+      }
+    }
+  };
+
+  window.stopInterviewListening = function() {
+    if (ivListening) window.toggleInterviewListening(false);
+  };
+
+  window.onInterviewTranscript = function(transcriptText) {
+    if (!ivListening && scrollMode !== 'interview') return;
+    const cleaned = String(transcriptText || '').trim();
+    if (!cleaned || cleaned === ivLastTranscript) return;
+    ivLastTranscript = cleaned;
+
+    // Extract the most recent sentence/question clause (last ~22 words)
+    const words = cleaned.split(/\s+/);
+    const recentClause = words.slice(-22).join(' ');
+    if (ivQuestionEl) ivQuestionEl.value = recentClause;
+    hudModeStatus.textContent = `👂 Heard: "${recentClause.slice(-48)}"`;
+
+    // Auto-trigger answer generation as soon as the interviewer pauses for 650ms after asking >= 4 words
+    clearTimeout(ivSilenceDebounceTimer);
+    if (words.length >= 4 && recentClause !== ivLastAnsweredQuestion) {
+      ivSilenceDebounceTimer = setTimeout(() => {
+        if (recentClause !== ivLastAnsweredQuestion) {
+          generateInterviewAnswer(recentClause);
+        }
+      }, 650);
+    }
+  };
+
+  window.onInterviewPhraseEnd = function() {
+    if (!ivListening && scrollMode !== 'interview') return;
+    clearTimeout(ivSilenceDebounceTimer);
+    const currentQ = ivQuestionEl ? ivQuestionEl.value.trim() : '';
+    if (currentQ.split(/\s+/).length >= 4 && currentQ !== ivLastAnsweredQuestion) {
+      generateInterviewAnswer(currentQ);
+    }
+  };
+
+  // Resume & JD File Upload Handlers (.PDF, .DOCX, .DOC, .TXT, .MD)
+  async function extractTextFromUploadedDoc(file) {
+    const lower = file.name.toLowerCase();
+    if (lower.endsWith('.pdf')) {
+      const buf = await file.arrayBuffer();
+      const parsed = await extractPdfTextFromArrayBuffer(buf);
+      return parsed.scriptText.replace(/^\[SLIDE\s*\d+\]\s*/gm, '');
+    }
+    if (lower.endsWith('.docx')) {
+      const buf = await file.arrayBuffer();
+      const parsed = await extractDocxTextFromArrayBuffer(buf);
+      return parsed.scriptText.replace(/^\[SLIDE\s*\d+\]\s*/gm, '');
+    }
+    if (lower.endsWith('.doc') || lower.endsWith('.rtf')) {
+      const buf = await file.arrayBuffer();
+      const parsed = extractDocTextFromArrayBuffer(buf);
+      return parsed.scriptText.replace(/^\[SLIDE\s*\d+\]\s*/gm, '');
+    }
+    return await file.text();
+  }
+
+  const resumeUploadEl = document.getElementById('resumeFileUploadInput');
+  if (resumeUploadEl) {
+    resumeUploadEl.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      e.target.value = '';
+      try {
+        const text = await extractTextFromUploadedDoc(file);
+        if (ivResumeEl) ivResumeEl.value = text.trim();
+        window.saveInterviewSettings();
+      } catch (err) {
+        alert('Could not read resume file: ' + err.message);
+      }
+    };
+  }
+
+  const jdUploadEl = document.getElementById('jdFileUploadInput');
+  if (jdUploadEl) {
+    jdUploadEl.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      e.target.value = '';
+      try {
+        const text = await extractTextFromUploadedDoc(file);
+        if (ivJdEl) ivJdEl.value = text.trim();
+        window.saveInterviewSettings();
+      } catch (err) {
+        alert('Could not read JD file: ' + err.message);
+      }
+    };
+  }
+
+  const loadSampleResumeJdBtn = document.getElementById('loadSampleResumeJdBtn');
+  if (loadSampleResumeJdBtn) {
+    loadSampleResumeJdBtn.onclick = () => {
+      if (ivResumeEl) ivResumeEl.value = DEFAULT_SAMPLE_RESUME;
+      if (ivJdEl) ivJdEl.value = DEFAULT_SAMPLE_JD;
+      window.saveInterviewSettings();
+    };
+  }
+
+  if (ivResumeEl) ivResumeEl.addEventListener('input', () => window.saveInterviewSettings());
+  if (ivJdEl) ivJdEl.addEventListener('input', () => window.saveInterviewSettings());
+
   // Initialize from LocalStorage or Default Seed
   loadStateFromStorage();
+  loadInterviewSettings();
   selectScript(currentScriptId);
   window.scrollTo(0, 0);
 </script>

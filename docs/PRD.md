@@ -75,6 +75,19 @@ Two Electron `BrowserWindow`s (Studio and Overlay HUD) load the same renderer. T
 | Hardware-mirror detection is heuristic (matching display origins) | Manual simulate/alert in pre-flight |
 | Unsigned or unnotarized builds trigger Gatekeeper warnings | Add signing and notarization to the release pipeline |
 
-## 10. Future work
+## 10. Phase 2 — AI-Powered Real-Time Interview Co-Pilot (v2.0)
 
-Windows voice-sync, auto-update, script templates, per-slide timers, and cloud backup (opt-in).
+### 10.1 Objective
+Enable candidates to upload their **Resume** and target **Job Description (JD)** before an interview and receive real-time, concise, spoken-style suggested answers inside GhostCue's capture-invisible webcam HUD as the interviewer asks questions—strictly grounded in the candidate's real experience without inventing qualifications.
+
+### 10.2 Phase 2 Functional Requirements
+
+| ID | Requirement | Priority |
+|---|---|---|
+| FR-15 | **Resume & JD Ingestion:** Upload `.PDF`, `.DOCX`, `.DOC`, `.TXT`, or paste text for both Candidate Resume and Target Job Description; automatically index experience bullets, quantified metrics, and matched vs. missing JD skills. | P0 |
+| FR-16 | **Live Interviewer Question Capture:** Stream spoken interviewer questions via on-device `SFSpeechRecognizer` with automatic 650 ms end-of-question pause detection, plus 1-click/manual question input. | P0 |
+| FR-17 | **Two-Stage Low-Latency Answer Generation:** Stage 1 renders a deterministic grounded STAR/Role-Fit answer in **<15 ms**; Stage 2 optionally streams a cloud LLM refinement (Groq `llama-3.3-70b-versatile`, OpenAI `gpt-4o-mini`, or Gemini 2.0 Flash) in **~220–400 ms** first-token latency. | P0 |
+| FR-18 | **Strict Grounding & Honest Gap Guardrail:** Never fabricate employers, metrics, or skills. When asked about a skill/tool absent from the resume (e.g., Kubernetes, Rust), explicitly flag `⚠️ HONEST GAP ALERT` and suggest a transparent response that pivots to the candidate's closest verified experience. | P0 |
+| FR-19 | **Spoken-Style HUD Formatting:** Format suggested answers in first-person conversational sentences (`60–90` words) with `**bold**` metric callouts and `[PAUSE 2s]` breathing cues inside the webcam-docked HUD. | P0 |
+| FR-20 | **Local-First Privacy & Consent:** Store Resume, JD, and optional BYOK API keys strictly in local storage; never log or transmit data unless the user explicitly enables a cloud LLM provider. | P0 |
+

@@ -9,6 +9,7 @@ GhostCue is an Electron desktop app (macOS & Windows) that docks a floating tele
 - **Two scroll modes** — Constant WPM, or Voice-Sync (scrolls while you speak, using a native macOS speech helper).
 - **Script cues** — `[SLIDE N]`, `[PAUSE Ns]`, `[SLOW DOWN]`, and `**bold**` highlights for key numbers.
 - **Script import / export** — PDF, Word (.docx), PowerPoint (.pptx) speaker notes, and Markdown export.
+- **Phase 2: AI Real-Time Interview Co-Pilot** — Upload your Resume and target Job Description (`.PDF`, `.DOCX`, `.TXT`), listen to interviewer questions live via on-device speech recognition, and get instant, grounded, natural-sounding STAR answers in the webcam HUD—with strict anti-hallucination guardrails that flag unlisted skills honestly instead of inventing experience.
 - **Pre-flight check** — display-mirroring detection, mic check and an audience-view self-test.
 - **HDMI mirror safety** — overlay opacity drops to 0 if displays are hardware-mirrored.
 
