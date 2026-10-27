@@ -5173,10 +5173,13 @@ endstream endobj
     const scoredBullets = candidateLines.map((line, idx) => {
       const lLower = line.toLowerCase();
       let qMatchScore = 0;
+      // SFSpeechRecognizer sometimes splits compound words ("on boarding" vs "onboarding", "full-time" vs "full time")
+      const normalizedJoined = lLower.replace(/[-\s]+/g, '');
       qWords.forEach(w => {
         const wRegex = new RegExp(`\\b${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i');
         if (wRegex.test(lLower)) qMatchScore += 4;
         else if (w.length >= 6 && new RegExp(`\\b${w.slice(0, 5)}`, 'i').test(lLower)) qMatchScore += 2;
+        else if (w.length >= 5 && normalizedJoined.includes(w)) qMatchScore += 3;
       });
       let jdBonus = 0;
       facts.matchedSkills.forEach(sk => {
@@ -5881,30 +5884,35 @@ endstream endobj
     if (ivQuestionEl) ivQuestionEl.value = recentClause;
     hudModeStatus.textContent = `👂 Interviewer: "${recentClause.slice(-48)}"`;
 
-    // Auto-trigger answer generation as soon as the interviewer pauses for 550ms after asking a question
+    // Auto-trigger answer generation as soon as the interviewer pauses for 450ms after asking a question
     clearTimeout(ivSilenceDebounceTimer);
     if (looksLikeInterviewerQuestion(recentClause) && recentClause !== ivLastAnsweredQuestion) {
       ivSilenceDebounceTimer = setTimeout(() => {
-        if (recentClause !== ivLastAnsweredQuestion) {
-          ivConsumedQuestionWordCount = allWords.length;
-          generateInterviewAnswer(recentClause);
+        const latestQ = ivQuestionEl ? ivQuestionEl.value.trim() : recentClause;
+        if (latestQ && latestQ !== ivLastAnsweredQuestion) {
+          ivConsumedQuestionWordCount = ivLastTranscript ? ivLastTranscript.split(/\s+/).filter(Boolean).length : allWords.length;
+          generateInterviewAnswer(latestQ);
         }
-      }, 550);
+      }, 450);
     }
   };
 
   window.onInterviewPhraseEnd = function() {
     if (!ivListening && scrollMode !== 'interview') return;
     if (document.body.classList.contains('overlay-only-mode')) return;
+    // Wait 260ms after acoustic silence so SFSpeechRecognizer's final trailing word ("weak" -> "weakness")
+    // arrives before we snapshot the question, and always read the live ivQuestionEl.value!
     clearTimeout(ivSilenceDebounceTimer);
-    const currentQ = ivQuestionEl ? ivQuestionEl.value.trim() : '';
-    const toks = currentQ.toLowerCase().split(/\s+/).map(normalizeTokenForMatch).filter(Boolean);
-    const hasQuestionIntent = /\b(tell me|what is|what's|what are|how do|how did|how would|why do|why should|walk me|describe a|weakness|strength|conflict|failure|mistake|questions for us)\b/i.test(currentQ);
-    if (!hasQuestionIntent && isCandidateReadingCurrentHudAnswer(toks)) return;
-    if (looksLikeInterviewerQuestion(currentQ) && currentQ !== ivLastAnsweredQuestion) {
-      ivConsumedQuestionWordCount = ivLastTranscript ? ivLastTranscript.split(/\s+/).filter(Boolean).length : 0;
-      generateInterviewAnswer(currentQ);
-    }
+    ivSilenceDebounceTimer = setTimeout(() => {
+      const currentQ = ivQuestionEl ? ivQuestionEl.value.trim() : '';
+      const toks = currentQ.toLowerCase().split(/\s+/).map(normalizeTokenForMatch).filter(Boolean);
+      const hasQuestionIntent = /\b(tell me|what is|what's|what are|how do|how did|how would|why do|why should|walk me|describe a|weakness|strength|conflict|failure|mistake|questions for us|when can you|work from office)\b/i.test(currentQ);
+      if (!hasQuestionIntent && isCandidateReadingCurrentHudAnswer(toks)) return;
+      if (looksLikeInterviewerQuestion(currentQ) && currentQ !== ivLastAnsweredQuestion) {
+        ivConsumedQuestionWordCount = ivLastTranscript ? ivLastTranscript.split(/\s+/).filter(Boolean).length : 0;
+        generateInterviewAnswer(currentQ);
+      }
+    }, 260);
   };
 
   // Resume & JD File Upload Handlers (.PDF, .DOCX, .DOC, .TXT, .MD)
