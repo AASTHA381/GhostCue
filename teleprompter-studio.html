@@ -4970,7 +4970,7 @@ endstream endobj
   // PHASE 2: AI-POWERED REAL-TIME INTERVIEW CO-PILOT (GROUNDED RAG + STREAMING)
   // ============================================================================
   const IV_STORAGE_KEY = 'ghostcue_interview_v1';
-  const IV_RESUME_SEED_VERSION = 'aastha_real_resume_v2';
+  const IV_RESUME_SEED_VERSION = 'aastha_real_resume_v3';
   const DEFAULT_SAMPLE_RESUME = [
     'Aastha Saini — Associate Product Manager · Analytics & AI Products (MBA Marketing & Analytics, NMIMS Hyderabad 2025–2027 | B.Tech ECE 2018–2022)',
     '• Product Intern at TradeIndia.com (Apr 2026 – Jun 2026): Owned the end-to-end product lifecycle across 3 B2B marketplace product lines from user research and ideation through launch and iteration; authored 136 PRDs, BRDs, FSDs, user stories, and acceptance criteria shipped to production.',
@@ -4978,8 +4978,9 @@ endstream endobj
     '• Growth, Funnel Analytics & User Discovery at TradeIndia: Conducted customer discovery interviews surfacing 55 bugs and feature gaps, prioritized the backlog with RICE and MoSCoW, and optimized core marketplace CTAs (PBR, Call Now, WhatsApp, Send Inquiry) across prod and pre-prod to drive a 10% increase in DAU and stronger retention.',
     '• Analyst at HCLTech (Aug 2022 – May 2025, 2.8 years): Led end-to-end cross-functional implementation of an automated financial reporting system across finance and engineering teams, delivering a 60% cost reduction and improved accuracy across 3 departments.',
     '• Data Automation & BI Dashboards at HCLTech: Spearheaded a Python & SQL ETL and data-collection automation initiative achieving a 15% efficiency gain (presented ROI business case to senior leadership) and built interactive Power BI and Tableau dashboards that improved financial response time by 25%.',
-    '• CSR Intern at Prudent Corporate Advisory Services (Jan 2026 – Feb 2026): Built an MIS Excel master tracker from scratch for FY 2026–27, compiled a verified 5-year CSR Impact Report, and drove 9+ retail/exhibition and college partnerships for Project Samarth.',
+    '• CSR Intern at Prudent Corporate Advisory Services (Jan 2026 – Feb 2026) & NMIMS Placement Committee: Built an MIS Excel master tracker from scratch for FY 2026–27, compiled a 5-year CSR Impact Report, drove 9+ retail/exhibition and college partnerships for Project Samarth, and built recruiter relationships on the NMIMS Placement Committee.',
     '• Shipped AI & Product Portfolio: Built Echo (Voice-to-Roadmap AI Copilot using Whisper ASR + LangChain RAG + transcript citation guardrails), Sentinel (Explainable Travel Booking Fraud & Risk Platform evaluated on 15,000 bookings at 83.9% precision), GhostCue (Stealth Electron + On-Device ASR Teleprompter), and PayEase (28-page Digital Payments PRD & GTM model).',
+    '• Certifications & Accolades: Bloomberg Markets Concepts (BMC), Financial Markets Analyst (Finlatics), Google Data Analytics Professional Certificate, Microsoft Power BI Data Analyst Associate, HCL Annual Hackathon Winner & 2x HCL Spot Award.',
     '• Availability & Notice Period: Can join IMMEDIATELY for remote roles (or remote-first transitions), and available full-time on-site (Work From Office) starting late June / July right after completing final MBA exams at NMIMS Hyderabad.',
     '• Core Skills: Product Management, PRDs/BRDs/FSDs, User Stories, Agile/Scrum, Jira, Confluence, Figma, RICE & MoSCoW Prioritization, User Research, A/B & CTA Testing, SQL, Python, Power BI, Tableau, Excel, LLM Prompting, RAG, LangChain, Whisper ASR, Guardrail Design, React, FastAPI, REST APIs, CI/CD.'
   ].join('\n');
@@ -5201,74 +5202,74 @@ endstream endobj
     // CASE A: Honest Gap Response — Question asks about a skill/tool NOT in the uploaded resume
     if (mentionedUnlistedSkills.length > 0) {
       const gapNames = mentionedUnlistedSkills.map(s => s.toUpperCase()).join(' & ');
-      const closestTransferable = topBullet1;
       const hudScript = [
         `[SLIDE 1: ⚠️ HONEST GAP ALERT — ${gapNames} NOT IN RESUME]`,
-        `I want to be completely transparent: I haven't used **${gapNames}** in production yet, so I wouldn't want to overstate my hands-on experience there.`,
-        `[PAUSE 2s] What I **do** bring from my direct experience is: **${closestTransferable}**`,
-        `Because I've already worked deeply with ${matchedRoleSkillsStr}, I can ramp up on **${gapNames}** quickly while contributing immediately on day one.`
+        `**Three things.** **First**, to be upfront: I haven't used **${gapNames}** in production yet, so I won't overstate my hands-on experience there.`,
+        `[PAUSE 2s] **Second**, I've built the adjacent foundation: at **TradeIndia** I integrated **Sentinel-2 and Google Earth Engine APIs** (−40% verification time), and at **HCLTech** I automated **Python & SQL** pipelines (−60% reporting cost).`,
+        `**Third**, I ramp up fast by shipping—I built **Echo** (Whisper + LangChain RAG) and **Sentinel** (fraud models on 15,000 bookings) from scratch, so I can pick up **${gapNames}** quickly while delivering on ${matchedRoleSkillsStr} from day one.`
       ].join('\n');
       return {
         isGap: true,
         gapSkills: gapNames,
         hudScript,
-        summaryHtml: `<div style="color:#fcd34d;font-weight:700;margin-bottom:6px;">⚠️ Honest Gap Detected: ${escapeHtml(gapNames)} is not in your uploaded resume.</div>` +
-          `<div style="margin-bottom:6px;"><strong>Say Aloud (Honest + Pivot):</strong> "I want to be transparent — I haven't used <strong>${escapeHtml(gapNames)}</strong> in production yet. However, in my recent work, <em>${escapeHtml(closestTransferable)}</em>, which gives me a strong foundation to ramp up quickly."</div>`
+        summaryHtml: `<div style="color:#fcd34d;font-weight:700;margin-bottom:6px;">⚠️ Honest Gap Detected (${escapeHtml(gapNames)}) — Structured 3-Part Pivot</div>` +
+          `<div style="margin-bottom:4px;"><strong>First (Honest):</strong> Upfront that I haven't used ${escapeHtml(gapNames)} in production yet.</div>` +
+          `<div style="margin-bottom:4px;"><strong>Second (Adjacent Proof):</strong> TradeIndia API/CV pipeline (−40% verification time) &amp; HCLTech Python/SQL automation (−60% cost).</div>` +
+          `<div><strong>Third (Fast Ramp-Up):</strong> Self-built Echo &amp; Sentinel from scratch; ready to deliver on ${escapeHtml(facts.matchedSkills.slice(0, 3).join(', ') || 'core skills')} immediately.</div>`
       };
     }
 
-    // CASE B: "Tell me about yourself" / Role Fit / Why this role / Why us
-    if (/tell me about yourself|walk me through your resume|introduce yourself|why.*fit|why.*role|why.*hire|why.*company|why.*join|background/i.test(qLower)) {
-      const b1 = scoredBullets[0] ? scoredBullets[0].line : '';
-      const b2 = scoredBullets[1] ? scoredBullets[1].line : '';
+    // CASE B: "Tell me about yourself" / Role Fit / Why are you a good fit / Why this role / Why hire you
+    if (/tell me about yourself|walk me through your resume|introduce yourself|why.*fit|good fit|why.*role|why.*hire|why.*company|why.*join|background/i.test(qLower)) {
       const hudScript = [
-        `[SLIDE 1: 🎯 ROLE FIT — GROUNDED IN RESUME & JD]`,
-        `I'm **${headlineLine}**, and my background aligns directly with your focus on ${matchedRoleSkillsStr}.`,
-        b1 ? `Most recently: **${b1}**` : '',
-        b2 ? `[PAUSE 2s] Before that: **${b2}**` : '',
-        `That combination of quantified execution and hands-on technical depth is why I'm excited about **${roleTitleLine}**.`
-      ].filter(Boolean).join('\n');
+        `[SLIDE 1: 🎯 WHY I'M A STRONG FIT — 3-PART STRUCTURE]`,
+        `**Three things.** **First**, I've done the work this role needs: owning **3 product lines and 136 PRDs** at **TradeIndia** (+10% DAU lift via CTA optimization and −40% onboarding time via a computer-vision pipeline), plus relationship-building at **Prudent** and the **NMIMS Placement Committee**.`,
+        `[PAUSE 2s] **Second**, I'm analytical and technical. At **HCLTech**, I automated reporting in **Python & SQL** (−60% manual cost), built **Power BI & Tableau** dashboards (+25% faster response time), and presented ROI cases to senior stakeholders—and I've shipped AI apps like **Echo** and **Sentinel**.`,
+        `[SLOW DOWN] **Third**, I fit the culture: I work seamlessly across teams (finance and engineering at HCLTech, design and QA at TradeIndia), I take ownership early, and I bring strong business and financial markets grounding from my **NMIMS MBA**, **Bloomberg**, and **Finlatics**.`
+      ].join('\n');
       return {
         isGap: false,
         hudScript,
-        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Grounded Role-Fit Pitch (Matched ${facts.matchedSkills.length} JD skills)</div>` +
-          `<div style="margin-bottom:6px;"><strong>1. Headline:</strong> "I'm ${escapeHtml(headlineLine)}, focusing on ${escapeHtml(facts.matchedSkills.slice(0, 4).join(', '))}."</div>` +
-          (b1 ? `<div style="margin-bottom:6px;"><strong>2. Proof Point 1:</strong> "${escapeHtml(b1)}"</div>` : '') +
-          (b2 ? `<div><strong>3. Proof Point 2:</strong> "${escapeHtml(b2)}"</div>` : '')
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Structured 3-Part Role-Fit Answer</div>` +
+          `<div style="margin-bottom:4px;"><strong>First (Done the Work):</strong> TradeIndia (3 product lines, 136 PRDs, +10% DAU, −40% CV onboarding) + Prudent &amp; Placement Committee relationship-building.</div>` +
+          `<div style="margin-bottom:4px;"><strong>Second (Analytical &amp; AI Builder):</strong> HCLTech Python/SQL automation (−60% cost), Power BI dashboards (+25% response time), ROI cases, and Echo/Sentinel AI apps.</div>` +
+          `<div><strong>Third (Culture &amp; Business Grounding):</strong> Cross-functional execution (finance + engineering), early ownership, and NMIMS MBA + Bloomberg/Finlatics grounding.</div>`
       };
     }
 
     // CASE B2: Behavioral — Disagreement / Conflict / Stakeholder Alignment / Cross-Functional Influence
     if (/disagree|conflict|pushback|difficult stakeholder|convince|persuade|influence|align.*team|cross-functional/i.test(qLower)) {
       const hudScript = [
-        `[SLIDE 1: 🤝 BEHAVIORAL STAR — STAKEHOLDER ALIGNMENT]`,
-        `When navigating a disagreement, I anchor the conversation on shared user and business metrics rather than opinions.`,
-        `[PAUSE 2s] In my work where I **${crossFuncBullet.replace(/^(Built|Led|Improved|Created)\s+/i, m => m.toLowerCase())}**, we aligned engineering and business stakeholders by running a small data-backed experiment first.`,
-        `[SLOW DOWN] That objective evidence resolved the trade-off quickly and delivered measurable impact.`
+        `[SLIDE 1: 🤝 STAKEHOLDER ALIGNMENT — 3-PART STRUCTURE]`,
+        `**Three steps.** **First**, the situation: at **HCLTech**, finance wanted custom manual reports across 3 departments while engineering wanted a standardized pipeline—and at **TradeIndia**, we had **55 competing backlog items** across buyer and seller teams.`,
+        `[PAUSE 2s] **Second**, how I aligned them: I depersonalized the debate using data—quantifying manual cost at HCLTech and scoring TradeIndia's backlog with **RICE and MoSCoW** alongside a small A/B CTA test.`,
+        `[SLOW DOWN] **Third**, the outcome: both teams aligned around the evidence, cutting reporting costs by **60% at HCLTech** and lifting **DAU by 10% at TradeIndia**.`
       ].join('\n');
       return {
         isGap: false,
         hudScript,
-        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Behavioral STAR: Conflict &amp; Stakeholder Alignment (Grounded)</div>` +
-          `<div style="margin-bottom:6px;"><strong>Approach:</strong> Depersonalize disagreement by anchoring on shared metrics and a quick validation experiment.</div>` +
-          `<div><strong>Grounded Resume Evidence:</strong> "${escapeHtml(crossFuncBullet)}"</div>`
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Structured 3-Part Answer: Conflict &amp; Stakeholder Alignment</div>` +
+          `<div style="margin-bottom:4px;"><strong>First (Tension):</strong> Competing finance vs. engineering priorities at HCLTech &amp; 55 backlog items at TradeIndia.</div>` +
+          `<div style="margin-bottom:4px;"><strong>Second (Action):</strong> Depersonalized with ROI data, RICE/MoSCoW scoring, and pre-prod CTA validation.</div>` +
+          `<div><strong>Third (Outcome):</strong> −60% reporting cost at HCLTech and +10% DAU lift at TradeIndia.</div>`
       };
     }
 
     // CASE B3: Behavioral — Failure / Mistake / Tough Trade-off / Lesson Learned
     if (/failure|failed|mistake|wrong|regret|tough decision|trade-off|tradeoff|learned|shortcoming/i.test(qLower)) {
       const hudScript = [
-        `[SLIDE 1: 🔄 BEHAVIORAL STAR — TRADE-OFF & LEARNING]`,
-        `Early on while building **${techBullet.replace(/^(Built|Led|Improved|Created)\s+/i, '')}**, I initially optimized for model complexity before validating how quickly end-users could act on the output.`,
-        `[PAUSE 2s] I recognized the gap early, pivoted to explainability and simpler self-serve workflows, and ultimately **${metricBullet.replace(/^(Built|Led|Improved|Created)\s+/i, m => m.toLowerCase())}**`,
-        `[SLOW DOWN] My takeaway: always pair technical accuracy with clear user explainability from day one.`
+        `[SLIDE 1: 🔄 TRADE-OFF & LEARNING — 3-PART STRUCTURE]`,
+        `**Three parts.** **First**, the early mistake: when building **Sentinel** (my travel-fraud platform) and scoping the **TradeIndia** computer-vision pipeline, I initially over-indexed on raw model complexity before simplifying how analysts and FPO teams would act on low-confidence cases.`,
+        `[PAUSE 2s] **Second**, the pivot: I course-corrected early by adding **human-in-the-loop review queues, policy rules, and citation guardrails** instead of forcing 100% automation.`,
+        `[SLOW DOWN] **Third**, the result: that trade-off cut FPO onboarding verification time by **40% at TradeIndia** and reached **83.9% precision on 15,000 bookings** in Sentinel.`
       ].join('\n');
       return {
         isGap: false,
         hudScript,
-        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Behavioral STAR: Trade-off, Course-Correction &amp; Takeaway (Grounded)</div>` +
-          `<div style="margin-bottom:6px;"><strong>Real Project Context:</strong> "${escapeHtml(techBullet)}"</div>` +
-          `<div><strong>Course-Correction &amp; Result:</strong> Pivoted to explainability &amp; user adoption — "${escapeHtml(metricBullet)}"</div>`
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Structured 3-Part Answer: Trade-off, Pivot &amp; Result</div>` +
+          `<div style="margin-bottom:4px;"><strong>First (Initial Mistake):</strong> Over-indexing on model complexity before designing the human review workflow.</div>` +
+          `<div style="margin-bottom:4px;"><strong>Second (Course-Correction):</strong> Added human-in-the-loop queues, policy rules, and confidence guardrails.</div>` +
+          `<div><strong>Third (Measurable Result):</strong> −40% onboarding time at TradeIndia and 83.9% precision across 15,000 bookings in Sentinel.</div>`
       };
     }
 
@@ -5279,153 +5280,160 @@ endstream endobj
 
       if (asksWeakness && !asksStrength) {
         const hudScript = [
-          `[SLIDE 1: 💡 MY WEAKNESS & HOW I MANAGE IT — GROUNDED]`,
-          `A genuine weakness I actively manage is tending to **dive too deep into technical implementation and edge-case modeling** myself rather than delegating early.`,
-          `[PAUSE 2s] For example, when I **${techBullet.replace(/^(Built|Led|Improved|Created)\s+/i, m => m.toLowerCase())}**, I realized early on that spending extra cycles tuning the pipeline myself could bottleneck the broader team.`,
-          `[SLOW DOWN] To fix this, I now set **time-boxed architectural checkpoints and clear KPI contracts** upfront so I stay focused on high-leverage product impact.`
+          `[SLIDE 1: 💡 MY WEAKNESS — 3-PART STRUCTURE]`,
+          `**Three things.** **First**, the weakness: because I have a hands-on engineering and analytics background (**Python, SQL, FastAPI, React**), I can dive too deep into debugging technical edge cases myself instead of delegating early.`,
+          `[PAUSE 2s] **Second**, where I noticed it: while managing **3 product lines and 136 PRDs at TradeIndia**, spending extra cycles inspecting pipeline edge cases myself risked slowing down backlog grooming.`,
+          `[SLOW DOWN] **Third**, how I fix it: I now set **time-boxed architectural checkpoints and crisp acceptance criteria** upfront in Jira so engineering owns the implementation while I drive discovery and roadmap velocity.`
         ].join('\n');
         return {
           isGap: false,
           hudScript,
-          summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Authentic Weakness + Concrete Remediation (Grounded in Your Resume)</div>` +
-            `<div style="margin-bottom:6px;"><strong>1. Real Weakness:</strong> Diving too deep into hands-on technical/modeling details before delegating.</div>` +
-            `<div style="margin-bottom:6px;"><strong>2. Real Resume Context:</strong> "${escapeHtml(techBullet)}"</div>` +
-            `<div><strong>3. Actionable Fix:</strong> Time-boxed design reviews and upfront KPI/API contracts with engineering.</div>`
+          summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Structured 3-Part Weakness Answer</div>` +
+            `<div style="margin-bottom:4px;"><strong>First (The Weakness):</strong> Diving too deep into technical/data edge cases myself.</div>` +
+            `<div style="margin-bottom:4px;"><strong>Second (Real Context):</strong> Managing 3 product lines &amp; 136 PRDs simultaneously at TradeIndia.</div>` +
+            `<div><strong>Third (The Fix):</strong> Time-boxed technical reviews + crisp acceptance criteria &amp; KPI contracts in Jira.</div>`
         };
       }
 
       if (asksStrength && !asksWeakness) {
         const hudScript = [
-          `[SLIDE 1: 💪 MY CORE STRENGTH — GROUNDED IN RESUME]`,
-          `My greatest strength is bridging **hands-on technical execution (${matchedRoleSkillsStr})** with **quantified business outcomes**.`,
-          `[PAUSE 2s] For instance, I **${metricBullet.replace(/^(Built|Led|Improved|Created)\s+/i, m => m.toLowerCase())}**`,
-          `[SLOW DOWN] Because I can both build the technical prototype and own the business KPI, I help teams ship faster with fewer handoff gaps.`
+          `[SLIDE 1: 💪 MY CORE STRENGTH — 3-PART STRUCTURE]`,
+          `**Three things.** **First**, I turn user research into shipped product: at **TradeIndia**, I uncovered **55 UX gaps**, authored **136 PRDs**, and optimized CTAs to lift **DAU by 10%**.`,
+          `[PAUSE 2s] **Second**, I pair product sense with hard analytics: at **HCLTech**, I automated **Python & SQL** reporting (−60% cost) and built **Power BI** dashboards (+25% faster response time).`,
+          `[SLOW DOWN] **Third**, I build 0→1 AI products end-to-end—shipping **Echo** (Whisper + LangChain RAG) and **Sentinel** (fraud detection at 83.9% precision) with real anti-hallucination guardrails.`
         ].join('\n');
         return {
           isGap: false,
           hudScript,
-          summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Grounded Core Strength (Backed by Quantified Resume Impact)</div>` +
-            `<div style="margin-bottom:6px;"><strong>Core Strength:</strong> Combining technical depth (${escapeHtml(facts.matchedSkills.slice(0, 4).join(', '))}) with measurable product KPIs.</div>` +
-            `<div><strong>Proof Point:</strong> "${escapeHtml(metricBullet)}"</div>`
+          summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Structured 3-Part Strength Answer</div>` +
+            `<div style="margin-bottom:4px;"><strong>First (Product Execution):</strong> TradeIndia — 55 gaps found, 136 PRDs shipped, +10% DAU lift.</div>` +
+            `<div style="margin-bottom:4px;"><strong>Second (Analytical Rigour):</strong> HCLTech — Python/SQL automation (−60% cost) &amp; Power BI dashboards.</div>` +
+            `<div><strong>Third (0→1 AI Builder):</strong> Shipped Echo (Whisper + RAG) and Sentinel (83.9% precision fraud workbench).</div>`
         };
       }
 
       const hudScript = [
-        `[SLIDE 1: 💡 STRENGTH & WEAKNESS — GROUNDED IN RESUME]`,
-        `My core strength is bridging deep technical execution with measurable product outcomes — for example: **${metricBullet}**`,
-        `[PAUSE 2s] A weakness I actively manage is tending to dive too deep into technical implementation myself; I counter that by setting time-boxed checkpoints and clear KPI contracts with the team.`,
-        `That balance lets me move fast on ${matchedRoleSkillsStr} while empowering the broader team.`
+        `[SLIDE 1: 💡 STRENGTH & WEAKNESS — STRUCTURED]`,
+        `**First, my core strength:** I bridge 0→1 product ownership with technical and data rigour—authoring **136 PRDs** and lifting **DAU by 10% at TradeIndia**, automating **Python & SQL** reporting (−60% cost at **HCLTech**), and building AI apps like **Echo** and **Sentinel**.`,
+        `[PAUSE 2s] **Second, my weakness:** because I can code and query data myself, I sometimes dive too deep into technical edge cases—which I noticed while juggling **3 product lines at TradeIndia**.`,
+        `[SLOW DOWN] **Third, how I manage it:** I set time-boxed design checkpoints and clear acceptance criteria upfront so I stay focused on roadmap impact.`
       ].join('\n');
       return {
         isGap: false,
         hudScript,
-        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Open-Ended: Grounded Strength &amp; Honest Weakness</div>` +
-          `<div style="margin-bottom:6px;"><strong>Verified Strength:</strong> Bridging technical depth (${escapeHtml(facts.matchedSkills.slice(0, 3).join(', '))}) with business outcomes: "${escapeHtml(metricBullet)}"</div>` +
-          `<div><strong>Authentic Weakness &amp; Fix:</strong> Managing hands-on technical deep-dives by establishing time-boxed reviews and clear KPI contracts early.</div>`
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Structured 3-Part Strength &amp; Weakness</div>` +
+          `<div style="margin-bottom:4px;"><strong>First (Strength):</strong> TradeIndia (136 PRDs, +10% DAU) + HCLTech (−60% cost via Python/SQL) + Echo/Sentinel.</div>` +
+          `<div style="margin-bottom:4px;"><strong>Second (Weakness):</strong> Diving too deep into technical implementation details yourself.</div>` +
+          `<div><strong>Third (Fix):</strong> Time-boxed checkpoints and clear acceptance criteria.</div>`
       };
     }
 
     // CASE B5: Open-Ended — Prioritization / Ambiguity / 30-60-90 Day Plan / Product Strategy
     if (/prioriti|ambigui|30.*60.*90|first.*90.*days|first.*month|roadmap|strategy|how would you approach/i.test(qLower)) {
       const hudScript = [
-        `[SLIDE 1: 🗺️ OPEN-ENDED — PRIORITIZATION & 30-60-90 PLAN]`,
-        `I prioritize by scoring initiatives on **user pain severity, measurable KPI lift, and engineering effort**, validated with fast prototypes.`,
-        `[PAUSE 2s] That's the exact framework I used when I **${crossFuncBullet.replace(/^(Built|Led|Improved|Created)\s+/i, m => m.toLowerCase())}**`,
-        `[SLOW DOWN] In my first 30–60–90 days here, I'd audit the current funnel & data pipeline, ship one high-leverage win around ${matchedRoleSkillsStr}, and lock in the quarterly roadmap.`
+        `[SLIDE 1: 🗺️ PRIORITIZATION & 30-60-90 PLAN — 3 STEPS]`,
+        `**Three steps.** **First**, I diagnose with data and discovery: at **TradeIndia**, I interviewed buyers and sellers to surface **55 bugs and feature gaps** and mapped funnel drop-offs in SQL and Power BI.`,
+        `[PAUSE 2s] **Second**, I prioritize ruthlessly with **RICE and MoSCoW**: separating quick, high-conviction wins—like our CTA optimization (**PBR, Call Now, WhatsApp**) that drove **+10% DAU**—from long-term bets like our **Sentinel-2 CV pipeline** (−40% onboarding time).`,
+        `[SLOW DOWN] **Third**, in my first 30–60–90 days here: I'd audit the funnel and stakeholder pain points in Month 1, ship a quick conversion or workflow win in Month 2, and scale the AI/product roadmap in Month 3.`
       ].join('\n');
       return {
         isGap: false,
         hudScript,
-        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Open-Ended: Prioritization Framework &amp; 30-60-90 Day Plan</div>` +
-          `<div style="margin-bottom:6px;"><strong>Framework:</strong> Impact × Confidence ÷ Effort, backed by your real execution: "${escapeHtml(crossFuncBullet)}"</div>` +
-          `<div><strong>30-60-90 Tie-Back:</strong> Audit baseline metrics → ship quick win in ${escapeHtml(facts.matchedSkills.slice(0, 3).join(', '))} → scale roadmap.</div>`
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Structured 3-Step Prioritization &amp; 30-60-90 Plan</div>` +
+          `<div style="margin-bottom:4px;"><strong>First (Diagnose):</strong> Customer discovery + SQL/Power BI funnel analysis (55 gaps surfaced at TradeIndia).</div>` +
+          `<div style="margin-bottom:4px;"><strong>Second (Prioritize with RICE/MoSCoW):</strong> Quick CTA wins (+10% DAU) vs. big bets (−40% FPO onboarding time).</div>` +
+          `<div><strong>Third (30-60-90 Execution):</strong> Audit funnel → ship quick win → scale roadmap.</div>`
       };
     }
 
     // CASE B6: Behavioral — Challenging Problem / Obstacle / Proud Accomplishment / Leadership
     if (/challeng|obstacle|difficult problem|proud|accomplish|complex|hardest|tight deadline|pressure|leadership|led a/i.test(qLower)) {
       const hudScript = [
-        `[SLIDE 1: 🏆 BEHAVIORAL STAR — KEY CHALLENGE & IMPACT]`,
-        `One of the most rewarding challenges I tackled was when I **${metricBullet.replace(/^(Built|Led|Improved|Created)\s+/i, m => m.toLowerCase())}**`,
-        topBullet2 && topBullet2 !== metricBullet ? `[PAUSE 2s] I also **${topBullet2.replace(/^(Built|Led|Improved|Created)\s+/i, m => m.toLowerCase())}**` : '',
-        `[SLOW DOWN] By breaking the problem into measurable milestones and iterating with real data, we delivered lasting impact.`
-      ].filter(Boolean).join('\n');
+        `[SLIDE 1: 🏆 KEY CHALLENGE & IMPACT — 3-PART STRUCTURE]`,
+        `**Three things.** **First**, the problem: at **TradeIndia**, manual FPO onboarding verification was bottlenecking our agritech MVP, and at **HCLTech**, manual financial reporting across 3 departments was slow and error-prone.`,
+        `[PAUSE 2s] **Second**, the execution: I managed a **Sentinel-2 + Google Earth Engine computer-vision pipeline** at TradeIndia to automate tree-canopy detection, and built **Python/SQL automation and Power BI dashboards** at HCLTech.`,
+        `[SLOW DOWN] **Third**, the measurable impact: we cut FPO onboarding verification time by **40% at TradeIndia**, reduced reporting cost by **60% at HCLTech**, and improved financial response time by **25%**.`
+      ].join('\n');
       return {
         isGap: false,
         hudScript,
-        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Behavioral STAR: High-Impact Challenge (Grounded in Resume)</div>` +
-          `<div style="margin-bottom:6px;"><strong>Primary Story:</strong> "${escapeHtml(metricBullet)}"</div>` +
-          (topBullet2 && topBullet2 !== metricBullet ? `<div><strong>Supporting Story:</strong> "${escapeHtml(topBullet2)}"</div>` : '')
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Structured 3-Part Challenge &amp; Impact Answer</div>` +
+          `<div style="margin-bottom:4px;"><strong>First (Problem):</strong> Manual FPO verification bottleneck at TradeIndia &amp; manual reporting across 3 departments at HCLTech.</div>` +
+          `<div style="margin-bottom:4px;"><strong>Second (Action):</strong> Sentinel-2 + Google Earth Engine CV pipeline &amp; Python/SQL/Power BI automation.</div>` +
+          `<div><strong>Third (Impact):</strong> −40% onboarding time at TradeIndia, −60% cost &amp; +25% response speed at HCLTech.</div>`
       };
     }
 
     // CASE B6b: Logistics / Notice Period / Joining Date / WFO vs. Remote Availability
     if (/notice period|when can you join|joining date|start date|work from office|wfo|on-site|onsite|remote|relocat|availability|available to join/i.test(qLower)) {
       const hudScript = [
-        `[SLIDE 1: 📅 AVAILABILITY — IMMEDIATE REMOTE OR LATE-JUNE ON-SITE]`,
-        `I can **start immediately in a remote capacity** while completing my final MBA trimester at NMIMS Hyderabad, which wraps up at the **end of June**.`,
-        `[PAUSE 2s] Starting **late June / early July**, I am **100% available for full-time, 5-days-a-week Work From Office** on-site.`,
-        `[SLOW DOWN] That means I can begin onboarding, owning PRDs, and contributing to sprints right away with zero ramp-up delay.`
+        `[SLIDE 1: 📅 AVAILABILITY — 3-PART STRUCTURE]`,
+        `**Three things.** **First**, for **remote work**, I can **join immediately** with zero notice period while completing my final MBA trimester at **NMIMS Hyderabad**.`,
+        `[PAUSE 2s] **Second**, for **on-site Work From Office**, my final MBA exams finish at the **end of June**, so I can be in the office full-time 5 days a week starting **late June / early July**.`,
+        `[SLOW DOWN] **Third**, if this is an on-site role, I can start onboarding and owning PRDs remotely right now and transition seamlessly into the office at the end of June.`
       ].join('\n');
       return {
         isGap: false,
         hudScript,
-        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Joining Timeline &amp; WFO / Remote Bridge</div>` +
-          `<div style="margin-bottom:6px;"><strong>Immediate Remote Start:</strong> Available right now for remote onboarding, PRD authoring, and sprint execution.</div>` +
-          `<div><strong>Full-Time On-Site (WFO):</strong> Available full-time in-office starting end of June (as soon as final NMIMS MBA exams conclude).</div>`
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Structured 3-Part Availability Answer</div>` +
+          `<div style="margin-bottom:4px;"><strong>First (Remote):</strong> Immediate joiner (0 notice period).</div>` +
+          `<div style="margin-bottom:4px;"><strong>Second (On-Site WFO):</strong> Full-time in office right after final NMIMS exams at the end of June.</div>` +
+          `<div><strong>Third (Bridge Option):</strong> Start remotely immediately, then switch to 5-day WFO at the end of June.</div>`
       };
     }
 
     // CASE B7: Open-Ended — "Do you have any questions for us?" (Reverse Interview Questions)
     if (/questions for us|questions for me|anything.*ask us|your questions/i.test(qLower)) {
       const hudScript = [
-        `[SLIDE 1: ❓ HIGH-SIGNAL QUESTIONS TO ASK THE INTERVIEWER]`,
-        `Yes, I have two quick questions around **${roleTitleLine}**:`,
-        `First: Looking ahead 6 months, what is the **single most important metric or milestone** that would make this hire a home run for your team?`,
-        `[PAUSE 2s] Second: How do product, engineering, and data science currently collaborate when shipping features around ${matchedRoleSkillsStr}?`
+        `[SLIDE 1: ❓ 3 QUESTIONS FOR THE INTERVIEWER]`,
+        `**Yes, three quick questions.** **First**, looking ahead 6 months, what is the **single most important product metric or milestone** that would make this hire a home run for you?`,
+        `[PAUSE 2s] **Second**, how do product, engineering, and analytics currently partner when taking features from PRD to release around ${matchedRoleSkillsStr}?`,
+        `[SLOW DOWN] **Third**, what is the biggest customer or technical bottleneck on the roadmap that you'd want this person to tackle in their first 60 days?`
       ].join('\n');
       return {
         isGap: false,
         hudScript,
-        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Tailored Reverse-Interview Questions (Grounded in JD)</div>` +
-          `<div style="margin-bottom:6px;"><strong>Question 1 (Success Metric):</strong> "What is the single most important metric in the first 6 months that defines success in ${escapeHtml(roleTitleLine)}?"</div>` +
-          `<div><strong>Question 2 (Team Workflow):</strong> "How do product and engineering partner today around ${escapeHtml(facts.matchedSkills.slice(0, 3).join(', '))}?"</div>`
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Structured 3-Part Reverse-Interview Questions</div>` +
+          `<div style="margin-bottom:4px;"><strong>First:</strong> 6-month success metric / milestone for this role.</div>` +
+          `<div style="margin-bottom:4px;"><strong>Second:</strong> How PM, engineering, and analytics collaborate from PRD to release.</div>` +
+          `<div><strong>Third:</strong> Biggest customer or roadmap bottleneck for the first 60 days.</div>`
       };
     }
 
-    // CASE C: Specific Behavioral / Technical Question matched to Resume Bullets (STAR Format)
+    // CASE C: Specific Behavioral / Technical Question matched to Resume Bullets (Structured 3-Part Answer)
     if (scoredBullets[0] && scoredBullets[0].qMatchScore >= 2.0) {
       const primary = scoredBullets[0].line;
-      const secondary = (scoredBullets[1] && scoredBullets[1].qMatchScore >= 2.0) ? scoredBullets[1].line : '';
+      const secondary = (scoredBullets[1] && scoredBullets[1].qMatchScore >= 2.0) ? scoredBullets[1].line : crossFuncBullet;
       const hudScript = [
-        `[SLIDE 1: ⭐ STAR ANSWER — GROUNDED IN RESUME]`,
-        `A great example from my experience is when I **${primary.replace(/^(Built|Led|Improved|Created)\s+/i, m => m.toLowerCase())}**`,
-        secondary ? `[PAUSE 2s] Additionally, I **${secondary.replace(/^(Built|Led|Improved|Created)\s+/i, m => m.toLowerCase())}**` : '',
-        `[SLOW DOWN] I focused on measurable business impact and explainability, which maps directly to what you need in this role.`
-      ].filter(Boolean).join('\n');
+        `[SLIDE 1: ⭐ STRUCTURED 3-PART ANSWER — GROUNDED IN RESUME]`,
+        `**Three things.** **First**, my direct hands-on execution: **${primary}**`,
+        `[PAUSE 2s] **Second**, how I back it with data and systems: **${secondary}**`,
+        `[SLOW DOWN] **Third**, why it transfers directly here: I combine product ownership (**136 PRDs at TradeIndia**), **Python/SQL/Power BI** rigour from **HCLTech**, and business grounding from **NMIMS, Bloomberg, and Finlatics**.`
+      ].join('\n');
       return {
         isGap: false,
         hudScript,
-        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Grounded STAR Answer (Cited from Resume)</div>` +
-          `<div style="margin-bottom:6px;"><strong>Situation &amp; Action:</strong> "${escapeHtml(primary)}"</div>` +
-          (secondary ? `<div style="margin-bottom:6px;"><strong>Supporting Evidence:</strong> "${escapeHtml(secondary)}"</div>` : '') +
-          `<div><strong>Role Tie-Back:</strong> Connects directly to JD priorities (${escapeHtml(facts.matchedSkills.slice(0, 3).join(', ') || 'core role requirements')}).</div>`
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Structured 3-Part Answer (Cited from Resume)</div>` +
+          `<div style="margin-bottom:4px;"><strong>First (Direct Execution):</strong> "${escapeHtml(primary)}"</div>` +
+          `<div style="margin-bottom:4px;"><strong>Second (Data &amp; Systems):</strong> "${escapeHtml(secondary)}"</div>` +
+          `<div><strong>Third (Role Tie-Back):</strong> TradeIndia product ownership + HCLTech analytics + NMIMS/Bloomberg/Finlatics grounding.</div>`
       };
     }
 
-    // CASE D: General Open-Ended / Situational Question — Synthesize a structured answer anchored in the candidate's #1 quantified resume achievement
+    // CASE D: General Open-Ended / Situational Question — Structured 3-Part Answer
     const hudScript = [
-      `[SLIDE 1: 💡 OPEN-ENDED & BEHAVIORAL — GROUNDED IN RESUME]`,
-      `My approach to that is grounded in data, clear user outcomes, and rapid iteration.`,
-      `[PAUSE 2s] For instance, in my recent work: **${metricBullet}**`,
-      `[SLOW DOWN] I would bring that same structured, metric-driven execution to **${roleTitleLine}** focusing on ${matchedRoleSkillsStr}.`
+      `[SLIDE 1: 💡 STRUCTURED 3-PART ANSWER — GROUNDED IN RESUME]`,
+      `**Three things.** **First**, I've executed on this in production: at **TradeIndia** I owned **3 product lines**, authored **136 PRDs**, and lifted **DAU by 10%**; at **Prudent** and the **NMIMS Placement Committee**, I led stakeholder and partner outreach.`,
+      `[PAUSE 2s] **Second**, I'm analytical: at **HCLTech** I automated reporting in **Python & SQL** (−60% cost), built **Power BI** dashboards (+25% faster response time), and presented ROI to senior leaders.`,
+      `[SLOW DOWN] **Third**, I'm a collaborative builder: I work across finance, design, and engineering, ship AI tools like **Echo** and **Sentinel**, and bring financial markets grounding from **Bloomberg and Finlatics**.`
     ].join('\n');
     return {
       isGap: false,
       hudScript,
-      summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Open-Ended / Situational Response (Grounded in Your Top Resume Achievement)</div>` +
-        `<div style="margin-bottom:6px;"><strong>Core Principle:</strong> Data-informed, outcome-driven execution.</div>` +
-        `<div><strong>Grounded Proof Point:</strong> "${escapeHtml(metricBullet)}"</div>`
+      summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Structured 3-Part Open-Ended Response</div>` +
+        `<div style="margin-bottom:4px;"><strong>First (Product &amp; Stakeholder Execution):</strong> TradeIndia (3 product lines, 136 PRDs, +10% DAU) + Prudent &amp; Placement Committee.</div>` +
+        `<div style="margin-bottom:4px;"><strong>Second (Analytical Depth):</strong> HCLTech Python/SQL automation (−60% cost), Power BI dashboards, and ROI cases.</div>` +
+        `<div><strong>Third (Culture &amp; Domain):</strong> Cross-functional builder (Echo, Sentinel) with NMIMS MBA + Bloomberg/Finlatics grounding.</div>`
     };
   }
 
@@ -5475,12 +5483,22 @@ endstream endobj
 
   async function streamCloudLlmInterviewAnswer(question, resumeText, jdText, provider, apiKey, onDelta) {
     const sysPrompt = [
-      'You are GhostCue, a real-time interview co-pilot generating natural, first-person ("I...") spoken answers for a candidate to read aloud from a webcam teleprompter.',
-      'RULES FOR GROUNDING, BEHAVIORAL & OPEN-ENDED QUESTIONS:',
-      '1. Ground all project examples, metrics, companies, and technical skills 100% in the supplied RESUME and JOB DESCRIPTION. Never invent employers, metrics, or tools.',
-      '2. For open-ended or behavioral questions (such as "What is your weakness?", "Tell me about a failure/conflict/challenge", "How do you prioritize?", or "Why should we hire you?") that are not literally written word-for-word on a resume: NEVER refuse to answer and NEVER flag them as a gap! Instead, craft a natural, authentic first-person behavioral answer (e.g., a real, constructive weakness + how the candidate manages it) anchored in the real projects and role context from the RESUME.',
-      '3. ONLY start with "[SLIDE 1: ⚠️ HONEST GAP — NOT IN RESUME]" when the interviewer asks if the candidate has experience with a specific hard technical tool, programming language, certification, or domain (e.g. Kubernetes, Rust, SAP) that is absent from the RESUME.',
-      '4. For all other questions, start with "[SLIDE 1: 🎯 GROUNDED INTERVIEW ANSWER]" and write 3 short, conversational sentences (60–90 words total) with **bold** around key phrases/metrics so it is effortless to say aloud.'
+      'You are GhostCue, a real-time interview co-pilot writing crisp, structured, first-person ("I...") spoken answers for Aastha Saini to read aloud from a webcam teleprompter.',
+      'MANDATORY VOICE & SIGNPOSTING STYLE (FOLLOW THIS EXACT STRUCTURE):',
+      '- Always open with a clear signposted hook like "**Three things.**" (or "**Three steps.**") and structure the answer into "**First**, ...", "**Second**, ...", and "**Third**, ...".',
+      '- Use short, punchy, conversational sentences with active verbs and concrete names/numbers from the RESUME (TradeIndia, HCLTech, Prudent, NMIMS Placement Committee, Echo, Sentinel, Power BI, Python/SQL, Bloomberg, Finlatics). Never use generic corporate fluff.',
+      '- FEW-SHOT STYLE EXAMPLE (match this exact tone, rhythm, and specificity):',
+      '  Question: "Why are you a good fit for this role?"',
+      '  Answer:',
+      '  [SLIDE 1: 🎯 STRUCTURED 3-PART ANSWER]',
+      '  **Three things.** **First**, I\'ve done the work this role needs: relationship-building at **Prudent** and the **placement committee**, and lead-conversion and product ownership across 3 product lines (**136 PRDs, +10% DAU**) at **TradeIndia**.',
+      '  [PAUSE 2s] **Second**, I\'m analytical and technical. I can read a **Power BI** dashboard, automate reporting in **Python & SQL** (−60% cost at **HCLTech**), and explain ROI to senior stakeholders—plus I ship AI products like **Echo** and **Sentinel**.',
+      '  **Third**, I fit the culture: I work across teams (finance and engineering at **HCLTech**), I take ownership early, and I care about doing right by the customer—backed by my **NMIMS MBA** and financial markets grounding from **Bloomberg and Finlatics**.',
+      'GROUNDING & HONESTY RULES:',
+      '1. Ground every project, metric, company, and tool 100% in the supplied RESUME and JOB DESCRIPTION. Never invent employers or metrics.',
+      '2. For open-ended or behavioral questions ("What is your weakness?", "Tell me about a failure/conflict/challenge", "How do you prioritize?"), NEVER refuse to answer—use the same "**Three things. First... Second... Third...**" structure anchored in real projects from the RESUME.',
+      '3. ONLY start with "[SLIDE 1: ⚠️ HONEST GAP — NOT IN RESUME]" when asked about a hard technical tool/language absent from the RESUME (e.g. Kubernetes, Rust), still using "**Three things. First** (honest gap)... **Second** (adjacent proof)... **Third** (fast ramp-up)...".',
+      '4. Keep total length to 65–95 words across 3 lines so it is effortless to read aloud.'
     ].join('\n');
 
     const userPrompt = `CANDIDATE RESUME:\n${resumeText}\n\nTARGET JOB DESCRIPTION:\n${jdText}\n\nINTERVIEWER QUESTION:\n"${question}"\n\nWrite the concise, grounded spoken response now:`;
