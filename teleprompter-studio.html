@@ -5267,8 +5267,8 @@ endstream endobj
       };
     }
 
-    // CASE B_WHY_MBA: "Why MBA?" / "Why did you switch from engineering/analytics to MBA/Product/Business?"
-    if (/why mba|why did you do an mba|why switch from|why product|why transition/i.test(qLower)) {
+    // CASE B_WHY_MBA: "Why MBA?" / "Why did you decide to do an MBA?" / "Why switch from engineering/analytics to MBA/Product/Business?"
+    if (/why.*mba|why did you.*mba|why switch from|why product|why transition/i.test(qLower)) {
       const hudScript = [
         `[SLIDE 1: 🎓 WHY MBA / WHY THIS TRANSITION]`,
         `After my B.Tech, I worked as an **Analyst at HCLTech**, where I led a project automating reporting between finance and engineering and presented the business case to leadership.`,
@@ -5299,9 +5299,9 @@ endstream endobj
       };
     }
 
-    // CASE B2: Behavioral — Disagreement / Conflict / Convincing Resistant Stakeholders / Unhappy Client
-    if (/disagree|conflict|pushback|difficult stakeholder|unhappy client|convince|persuade|without.*authority|influence|align.*team|cross-functional/i.test(qLower)) {
-      if (/unhappy|churn|paid|unpaid/i.test(qLower)) {
+    // CASE B2: Behavioral — Disagreement / Conflict / Convincing Resistant Stakeholders / Unhappy Client or Stakeholder
+    if (/disagree|conflict|pushback|difficult stakeholder|unhappy|churn|convince|persuade|without.*authority|influence|align.*team|align.*leadership|cross-functional/i.test(qLower)) {
+      if (/unhappy|churn|paid|unpaid|align.*leadership/i.test(qLower)) {
         const hudScript = [
           `[SLIDE 1: 🤝 ALIGNING STAKEHOLDERS ON RETENTION — TRADEINDIA]`,
           `At **TradeIndia**, we faced rising churn and leadership initially wanted to focus retention efforts solely on **paid accounts**—but I saw a big risk in overlooking our **unpaid user base**, which was the majority of our funnel.`,
@@ -5437,7 +5437,9 @@ endstream endobj
     }
 
     // CASE B_PROJECTS: Direct questions about TradeIndia, HCLTech, Prudent CSR, EchoPRD, PayEase, Hackathon, or Hobbies/Extracurriculars
-    if (/echoprd|echo\b|payease|prudent|csr internship|tradeindia|55 bugs|discovery interview|hcltech|60% cost|hackathon|spot award|returnproof|hobbies|hobby|outside of work|3.*5 years|five years/i.test(qLower)) {
+    // Note: Only match here if the question wasn't already handled by a specific behavioral/framework rule above,
+    // and don't let "Why MBA after HCLTech?" get hijacked before CASE B_WHY_MBA!
+    if (/echoprd|echo\b|payease|prudent|csr internship|55 bugs|discovery interview|increase dau|hcltech|60% cost|hackathon|spot award|returnproof|hobbies|hobby|outside of work|3.*5 years|five years/i.test(qLower) && !/why.*mba|why did you.*mba/i.test(qLower)) {
       if (/echoprd|echo\b/i.test(qLower)) {
         const hudScript = [
           `[SLIDE 1: 🎙️ ECHOPRD — VOICE-TO-ROADMAP AI COPILOT]`,
