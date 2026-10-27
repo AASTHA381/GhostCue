@@ -2182,7 +2182,10 @@
       <!-- Simulated macOS Menu Bar -->
       <div class="Stage-menubar">
         <span> &nbsp; <strong>Keynote</strong> &nbsp; File &nbsp; Edit &nbsp; Play &nbsp; Window</span>
-        <span>🟢 Zoom Screen Share &nbsp; · &nbsp; Wi-Fi &nbsp; 100% &nbsp; Thu 9:41 AM</span>
+        <span style="display:flex;align-items:center;gap:10px;">
+          <button id="stageAudioTourBtn" onclick="toggleStageAudioTour()" style="background:linear-gradient(135deg,#0284c7,#7c3aed);color:#fff;border:1px solid rgba(125,211,252,0.6);border-radius:999px;padding:1px 10px;font-size:10.5px;font-weight:700;cursor:pointer;box-shadow:0 0 12px rgba(56,189,248,0.4);">🔊 Explain Stage (Audio Tour)</button>
+          <span>🟢 Zoom Screen Share &nbsp; · &nbsp; Wi-Fi &nbsp; 100% &nbsp; Thu 9:41 AM</span>
+        </span>
       </div>
 
       <!-- Physical MacBook Pro Notch -->
@@ -2238,9 +2241,9 @@
         <!-- LEFT WING: OPTICAL EYE-LINE GEOMETRY + OS STEALTH ARCHITECTURE -->
         <div class="stage-wing-panel stage-wing-left" id="stageWingLeft">
           <!-- Card 1: Optical Eye-Line Geometry Diagram -->
-          <div class="stage-diag-card active-glow" id="stageCardEyeline">
+          <div class="stage-diag-card active-glow" id="stageCardEyeline" onclick="speakStageCardExplanation('eyeline')" style="cursor:pointer;" title="Click to hear audio explanation of Optical Eye-Line Geometry">
             <div class="stage-card-head">
-              <span class="stage-card-title">👁️ Optical Eye-Line Geometry</span>
+              <span class="stage-card-title">👁️ Optical Eye-Line Geometry 🔊</span>
               <span class="stage-card-pill" id="stageEyelineAngleBadge">1.8° Camera Lock</span>
             </div>
             <div style="display:flex;align-items:center;gap:10px;">
@@ -2272,9 +2275,9 @@
           </div>
 
           <!-- Card 2: OS Window-Server Screen-Share Stealth Pipeline -->
-          <div class="stage-diag-card active-emerald" id="stageCardStealth" onclick="document.getElementById('stealthTestBtn').click()" style="cursor:pointer;" title="Click to test Audience Screen-Share View">
+          <div class="stage-diag-card active-emerald" id="stageCardStealth" onclick="speakStageCardExplanation('stealth'); document.getElementById('stealthTestBtn').click()" style="cursor:pointer;" title="Click to test Audience Screen-Share View & hear audio explanation">
             <div class="stage-card-head">
-              <span class="stage-card-title">🛡️ OS Capture Filter Pipeline</span>
+              <span class="stage-card-title">🛡️ OS Capture Filter Pipeline 🔊</span>
               <span class="stage-card-pill" id="stageStealthPipeBadge">NSWindowSharingNone</span>
             </div>
             <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px;font-size:9.5px;margin-top:2px;">
@@ -2299,8 +2302,8 @@
         <div class="stage-wing-panel stage-wing-right" id="stageWingRight">
           <!-- Card 3: Interactive 3-Engine Live Flowchart -->
           <div class="stage-diag-card active-glow" id="stageCardPipeline">
-            <div class="stage-card-head">
-              <span class="stage-card-title">⚡ Live Engine Architecture</span>
+            <div class="stage-card-head" onclick="speakStageCardExplanation('pipeline')" style="cursor:pointer;" title="Click to hear audio explanation of Live Engine Architecture">
+              <span class="stage-card-title">⚡ Live Engine Architecture 🔊</span>
               <span class="stage-card-pill" id="stageActiveEngineBadge" style="background:rgba(56,189,248,0.18);color:#7dd3fc;border-color:rgba(56,189,248,0.45);">Constant WPM</span>
             </div>
             <!-- Row 1: Constant WPM -->
@@ -2331,8 +2334,8 @@
 
           <!-- Card 4: Live Interactive HUD Telemetry Matrix -->
           <div class="stage-diag-card" id="stageCardTelemetry">
-            <div class="stage-card-head">
-              <span class="stage-card-title">🎛️ Live HUD Telemetry &amp; Controls</span>
+            <div class="stage-card-head" onclick="speakStageCardExplanation('telemetry')" style="cursor:pointer;" title="Click to hear audio explanation of Live HUD Telemetry">
+              <span class="stage-card-title">🎛️ Live HUD Telemetry &amp; Controls 🔊</span>
               <span class="stage-card-pill" id="stageHudStatePill">Ready</span>
             </div>
             <div class="stage-telemetry-grid">
@@ -7173,6 +7176,81 @@ endstream endobj
     }
   }
   setInterval(updateStageInteractiveVisuals, 140);
+
+  // Interactive Spoken Audio Explanation Engine for Stage Visuals & Guided Tour
+  let stageAudioTourActive = false;
+  let stageAudioTourTimer = null;
+
+  function showStageAudioCaption(text) {
+    let cap = document.getElementById('stageLiveAudioCaption');
+    if (!cap) {
+      cap = document.createElement('div');
+      cap.id = 'stageLiveAudioCaption';
+      cap.style.cssText = 'position:absolute;bottom:10px;left:50%;transform:translateX(-50%);z-index:260;background:rgba(15,23,42,0.95);border:1.5px solid #38bdf8;border-radius:999px;padding:6px 18px;font-size:12px;font-weight:700;color:#f8fafc;box-shadow:0 12px 30px rgba(0,0,0,0.75),0 0 18px rgba(56,189,248,0.35);white-space:nowrap;pointer-events:none;transition:opacity 0.2s ease;';
+      const stg = document.getElementById('stageContainer');
+      if (stg) stg.appendChild(cap);
+    }
+    if (!text) {
+      cap.style.opacity = '0';
+      return;
+    }
+    cap.textContent = '🔊 ' + text;
+    cap.style.opacity = '1';
+  }
+
+  window.speakStageCardExplanation = function(topic, onDone) {
+    const scripts = {
+      eyeline: 'Optical Eye-Line Geometry: Docking the Notch HUD directly beneath your MacBook camera keeps your reading gaze within 1.8 degrees of the lens, compared to an 18-degree eye drop with side notes.',
+      stealth: 'OS Capture Filter Pipeline: GhostCue enables macOS setContentProtection and Windows WDA Exclude From Capture, stripping the teleprompter from Zoom, Google Meet, and Teams screen shares.',
+      pipeline: 'Live Engine Architecture: Switch seamlessly between Constant WPM pacing, On-Device Apple Speech word-by-word voice scrolling, and the Real-Time AI Interview Co-Pilot.',
+      telemetry: 'Live HUD Telemetry: Monitors mouse pass-through lock, live spoken word progress, eyeglass anti-glare optics, and 100% Resume and JD grounding.'
+    };
+    const msg = scripts[topic] || scripts.eyeline;
+    showStageAudioCaption(msg);
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(msg);
+      utter.rate = 1.04;
+      utter.onend = () => {
+        if (!stageAudioTourActive) showStageAudioCaption('');
+        if (typeof onDone === 'function') onDone();
+      };
+      window.speechSynthesis.speak(utter);
+    } else if (typeof onDone === 'function') {
+      setTimeout(onDone, 3500);
+    }
+  };
+
+  window.toggleStageAudioTour = function() {
+    const btn = document.getElementById('stageAudioTourBtn');
+    if (stageAudioTourActive) {
+      stageAudioTourActive = false;
+      if (stageAudioTourTimer) clearTimeout(stageAudioTourTimer);
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      showStageAudioCaption('');
+      if (btn) btn.textContent = '🔊 Explain Stage (Audio Tour)';
+      return;
+    }
+    stageAudioTourActive = true;
+    if (btn) btn.textContent = '⏹ Stop Audio Tour';
+    const steps = ['eyeline', 'stealth', 'pipeline', 'telemetry'];
+    let idx = 0;
+    function nextStep() {
+      if (!stageAudioTourActive || idx >= steps.length) {
+        stageAudioTourActive = false;
+        showStageAudioCaption('');
+        if (btn) btn.textContent = '🔊 Explain Stage (Audio Tour)';
+        return;
+      }
+      const topic = steps[idx++];
+      window.speakStageCardExplanation(topic, () => {
+        if (stageAudioTourActive) {
+          stageAudioTourTimer = setTimeout(nextStep, 450);
+        }
+      });
+    }
+    nextStep();
+  };
 
   // Initialize from LocalStorage or Default Seed
   loadStateFromStorage();
