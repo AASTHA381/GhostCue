@@ -112,7 +112,7 @@ function startNativeMacOsSpeechHelper() {
           overlayWindow.webContents.executeJavaScript(`
             if (typeof window.onNativeTranscript === 'function') window.onNativeTranscript(${safeJson});
           `).catch(() => {});
-          if (studioWindow && !studioWindow.isDestroyed() && studioWindow.isVisible()) {
+          if (studioWindow && !studioWindow.isDestroyed()) {
             studioWindow.webContents.executeJavaScript(`
               if (typeof window.onNativeTranscript === 'function') window.onNativeTranscript(${safeJson});
             `).catch(() => {});
@@ -130,7 +130,7 @@ function startNativeMacOsSpeechHelper() {
           const pct = parseInt(trimmed.split(':')[1] || '65', 10) || 65;
           overlayWindow.webContents.executeJavaScript(`
             (function() {
-              if (scrollMode !== 'voice') return;
+              if ((scrollMode !== 'voice' && scrollMode !== 'interview') || (typeof isVoicePaused !== 'undefined' && isVoicePaused)) return;
               window.__externalVoiceActive = true;
               isVoiceSpeaking = true;
               clearTimeout(window.__nativeSpeechTimer);
@@ -138,8 +138,8 @@ function startNativeMacOsSpeechHelper() {
                 window.__externalVoiceActive = false;
                 isVoiceSpeaking = false;
                 if (typeof window.onNativeVoicePhraseEnd === 'function') window.onNativeVoicePhraseEnd();
-                if (scrollMode === 'voice') {
-                  hudModeStatus.textContent = '🎙️ Voice Flow Paused · Speak Script Words to Scroll';
+                if (scrollMode === 'voice' && (!isVoicePaused)) {
+                  hudModeStatus.textContent = '🎙️ Voice Flow Ready · Speak Script Words to Scroll';
                 }
               }, 340);
             })();
@@ -147,7 +147,7 @@ function startNativeMacOsSpeechHelper() {
           if (studioWindow && !studioWindow.isDestroyed() && studioWindow.isVisible()) {
             studioWindow.webContents.executeJavaScript(`
               (function() {
-                if (scrollMode !== 'voice') return;
+                if ((scrollMode !== 'voice' && scrollMode !== 'interview') || (typeof isVoicePaused !== 'undefined' && isVoicePaused)) return;
                 window.__externalVoiceActive = true;
                 isVoiceSpeaking = true;
                 const bar = document.getElementById('micLevelBarFill');
@@ -238,7 +238,7 @@ async function createWindows() {
   });
 
   // 2. Floating Notch-Docked Stealth Teleprompter HUD
-  const hudWidth = 600;
+  const hudWidth = 650;
   const hudHeight = 360;
 
   overlayWindow = new BrowserWindow({

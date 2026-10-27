@@ -26,7 +26,7 @@
     --amber-soft: rgba(245, 158, 11, 0.16);
     --rose: #e11d48;
     --violet: #7c3aed;
-    --hud-width: 550px;
+    --hud-width: 600px;
     --hud-opacity: 0.84;
     --hud-font-size: 20px;
     --hud-text-color: #ffffff;
@@ -135,15 +135,16 @@
     padding: 2px;
     border-radius: 8px;
     gap: 2px;
+    flex-shrink: 0;
   }
   .hud-seg-mode-btn {
     background: transparent;
     border: none;
     color: #94a3b8;
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', sans-serif;
-    font-size: 10.5px;
+    font-size: 10px;
     font-weight: 600;
-    padding: 3px 8px;
+    padding: 3px 6px;
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.14s ease;
@@ -1063,11 +1064,12 @@
     font-family: 'JetBrains Mono', monospace;
     font-size: 10px;
     font-weight: 600;
-    padding: 2px 6px;
+    padding: 2px 5px;
     border-radius: 5px;
     cursor: pointer;
     line-height: 1.2;
     transition: all 0.14s ease;
+    flex-shrink: 0;
   }
   .hud-header-btn:hover {
     background: var(--cyan);
@@ -1078,9 +1080,9 @@
     background: #ef4444;
     border: 1px solid #f87171;
     color: #ffffff;
-    font-size: 11px;
+    font-size: 10.5px;
     font-weight: 700;
-    padding: 2px 8px;
+    padding: 2px 7px;
     border-radius: 6px;
     cursor: pointer;
     line-height: 1.25;
@@ -1177,30 +1179,28 @@
     justify-content: space-between;
     width: 100%;
     box-sizing: border-box;
-    padding: 7px 14px;
+    padding: 6px 10px;
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, rgba(0, 0, 0, 0.35) 100%);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    font-size: 11px;
+    font-size: 10.5px;
     color: var(--text-muted);
     cursor: grab;
     pointer-events: auto;
-    gap: 8px;
+    gap: 5px;
     white-space: nowrap;
   }
 
   .hud-stealth-indicator {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: 4px;
     color: #34d399;
     font-weight: 600;
-    font-size: 10.5px;
+    font-size: 10px;
     letter-spacing: -0.01em;
     text-shadow: 0 0 12px rgba(16, 185, 129, 0.45);
-    flex-shrink: 1;
+    flex-shrink: 0;
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
   .privacy-shield-icon {
@@ -1214,20 +1214,20 @@
   .hud-meta-group {
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 4px;
     flex-shrink: 0;
-    margin-right: 2px;
+    margin-right: 0;
   }
-
   .hud-slide-pill {
-    padding: 2px 8px;
+    padding: 2px 6px;
     border-radius: 999px;
     background: rgba(56, 189, 248, 0.14);
     border: 1px solid rgba(56, 189, 248, 0.35);
     color: #7dd3fc;
     font-weight: 600;
-    font-size: 10.5px;
+    font-size: 10px;
     letter-spacing: 0.01em;
+    flex-shrink: 0;
   }
 
   /* Subtle Audio Waveform Indicator in Micro Status Bar */
@@ -2202,9 +2202,9 @@
         <div class="control-group">
           <div class="control-label-row">
             <span>HUD Width</span>
-            <span class="control-val" id="widthValLabel">550px</span>
+            <span class="control-val" id="widthValLabel">600px</span>
           </div>
-          <input type="range" id="widthSlider" min="480" max="580" step="10" value="550" />
+          <input type="range" id="widthSlider" min="560" max="640" step="10" value="600" />
         </div>
 
         <div class="control-group">
@@ -2607,7 +2607,9 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
         document.getElementById('fontValLabel').textContent = fs + 'px';
       }
       if (state.hudWidth !== undefined) {
-        const clampedW = Math.round(clampTo(state.hudWidth, 540, 580, 550));
+        const rawW = parseFloat(state.hudWidth);
+        const migratedW = (Number.isFinite(rawW) && rawW <= 550) ? 600 : rawW;
+        const clampedW = Math.round(clampTo(migratedW, 560, 640, 600));
         document.documentElement.style.setProperty('--hud-width', clampedW + 'px');
         document.getElementById('widthSlider').value = clampedW;
         document.getElementById('widthValLabel').textContent = clampedW + 'px';
@@ -3084,8 +3086,8 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
 
     const shouldAdvanceByWpm = isPlaying && scrollMode === 'wpm';
 
-    if (scrollMode === 'voice') {
-      // In Voice Flow, scrolling is strictly driven by matched script words (__voiceTargetScrollY),
+    if ((scrollMode === 'voice' || scrollMode === 'interview') && !isVoicePaused) {
+      // In Voice Flow / Interview AI, scrolling is strictly driven by matched script words (__voiceTargetScrollY),
       // NEVER by generic microphone volume or random off-script speech!
       if (typeof window.__voiceTargetScrollY === 'number' && Math.abs(window.__voiceTargetScrollY - scrollY) > 0.4) {
         const maxScroll = getMaxScroll();
@@ -3163,11 +3165,12 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
   // On-demand scroll loop: runs ONLY when actively scrolling in WPM or Voice Flow (0% CPU when paused/idle)
   let scrollRafId = null;
   let scrollBackupTimer = null;
+  let isVoicePaused = false;
 
   function isScrollLoopNeeded() {
     if (document.body.classList.contains('studio-only-mode')) return false;
     if (isPlaying && scrollMode === 'wpm') return true;
-    if (scrollMode === 'voice' && typeof window.__voiceTargetScrollY === 'number' && Math.abs(window.__voiceTargetScrollY - scrollY) > 0.4) {
+    if ((scrollMode === 'voice' || scrollMode === 'interview') && !isVoicePaused && typeof window.__voiceTargetScrollY === 'number' && Math.abs(window.__voiceTargetScrollY - scrollY) > 0.4) {
       return true;
     }
     return false;
@@ -3223,11 +3226,15 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
     wpmSeg.classList.remove('active-wpm');
     voiceSeg.classList.remove('active-voice');
     if (ivSeg) ivSeg.classList.remove('active-interview');
-    // Label shows the action the button will perform so it always acts as a Play/Pause toggle
-    const canPause = isPlaying || scrollMode === 'voice' || scrollMode === 'interview';
+    const isVoiceOrInterviewActive = (scrollMode === 'voice' || scrollMode === 'interview') && !isVoicePaused;
+    const canPause = (scrollMode === 'wpm' && isPlaying) || isVoiceOrInterviewActive;
     pauseSeg.textContent = canPause ? '⏸ Pause' : '▶ Play';
     pauseSeg.title = canPause ? 'Pause Teleprompter (Shortcut: Option+Space)' : 'Resume Teleprompter (Shortcut: Option+Space)';
-    if (scrollMode === 'interview') {
+    playIcon.textContent = canPause ? '⏸' : '▶';
+    playText.textContent = canPause ? 'Pause' : 'Start';
+    if (!canPause) {
+      pauseSeg.classList.add('active-pause');
+    } else if (scrollMode === 'interview') {
       if (ivSeg) ivSeg.classList.add('active-interview');
     } else if (scrollMode === 'voice') {
       voiceSeg.classList.add('active-voice');
@@ -3235,6 +3242,72 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
       wpmSeg.classList.add('active-wpm');
     } else {
       pauseSeg.classList.add('active-pause');
+    }
+  }
+
+  function setVoicePaused(paused, shouldBroadcast = true) {
+    isVoicePaused = Boolean(paused);
+    if (isVoicePaused) {
+      console.log('__GHOSTCUE_IPC__:VOICE_MODE_STOP');
+      stopLiveAudioVad();
+      isVoiceSpeaking = false;
+      window.__externalVoiceActive = false;
+      clearTimeout(window.__nativeSpeechTimer);
+      clearTimeout(window.__studioMicTimer);
+      if (typeof ivSilenceDebounceTimer !== 'undefined') clearTimeout(ivSilenceDebounceTimer);
+      if (recognition) {
+        try { recognition.onresult = null; recognition.onend = null; recognition.abort(); } catch (e) {}
+        recognition = null;
+      }
+      if (scrollMode === 'interview') {
+        if (typeof ivListening !== 'undefined') ivListening = false;
+        const listenBtn = document.getElementById('ivListenToggleBtn');
+        if (listenBtn) {
+          listenBtn.textContent = '🎙️ Auto-Listen: OFF';
+          listenBtn.style.background = '#ede9fe';
+          listenBtn.style.borderColor = '#8b5cf6';
+          listenBtn.style.color = '#5b21b6';
+        }
+        hudModeStatus.textContent = '⏸ Interview AI Paused · Click ▶ Play to Resume Speech Sync';
+      } else {
+        hudModeStatus.textContent = '⏸ Voice Flow Paused · Click ▶ Play to Resume Speech Sync';
+      }
+    } else {
+      resetVoiceTranscriptTracker();
+      setOverlayVisible(true);
+      console.log('__GHOSTCUE_IPC__:SHOW_OVERLAY');
+      console.log('__GHOSTCUE_IPC__:VOICE_MODE_START');
+      initWebSpeechRecognition();
+      if (scrollMode === 'interview') {
+        if (typeof ivListening !== 'undefined') ivListening = true;
+        const listenBtn = document.getElementById('ivListenToggleBtn');
+        if (listenBtn) {
+          listenBtn.textContent = '🟢 Auto-Listen: ON';
+          listenBtn.style.background = '#dcfce7';
+          listenBtn.style.borderColor = '#10b981';
+          listenBtn.style.color = '#065f46';
+        }
+        hudModeStatus.textContent = '🎯 Interview AI Active · Speak Script or Ask Question';
+      } else {
+        const words = cachedScriptWords.length ? cachedScriptWords : hudScrollTrack.querySelectorAll('.script-word');
+        const nextWord = words[spokenWordIndex] ? words[spokenWordIndex].textContent : '';
+        hudModeStatus.textContent = nextWord
+          ? `🎙️ Voice Flow Ready · Speak "${nextWord}..." to Advance`
+          : '🎙️ Voice Tracking ON · Speak Script Words to Scroll';
+      }
+    }
+    syncHudSegmentedModePill();
+    ensureScrollLoopState();
+    if (shouldBroadcast) {
+      broadcastState('VOICE_PAUSE_CHANGE', { isVoicePaused });
+    }
+  }
+
+  function toggleHudPlayPause() {
+    if (scrollMode === 'voice' || scrollMode === 'interview') {
+      setVoicePaused(!isVoicePaused, true);
+    } else {
+      togglePlay();
     }
   }
 
@@ -3410,8 +3483,8 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
   }
 
   function advanceToWordIndex(idx) {
-    // Late speech-recognition results must never move the script once the user has paused / left Voice mode
-    if (scrollMode !== 'voice') return;
+    // Late speech-recognition results must never move the script once the user has paused / left Voice or Interview mode
+    if ((scrollMode !== 'voice' && scrollMode !== 'interview') || isVoicePaused) return;
     const words = cachedScriptWords.length ? cachedScriptWords : hudScrollTrack.querySelectorAll('.script-word');
     if (!words.length) return;
     spokenWordIndex = Math.min(words.length - 1, Math.max(0, idx));
@@ -3455,11 +3528,17 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
   }
 
   window.onNativeTranscript = function(transcriptText) {
+    if (isVoicePaused) return;
     if (scrollMode === 'interview' && typeof window.onInterviewTranscript === 'function') {
       window.onInterviewTranscript(transcriptText);
       return;
     }
     if (scrollMode !== 'voice') return;
+    window.matchAndAdvanceHudWordsFromTranscript(transcriptText);
+  };
+
+  window.matchAndAdvanceHudWordsFromTranscript = function(transcriptText) {
+    if ((scrollMode !== 'voice' && scrollMode !== 'interview') || isVoicePaused) return;
     const words = cachedScriptWords.length ? cachedScriptWords : hudScrollTrack.querySelectorAll('.script-word');
     if (!words.length) return;
 
@@ -3566,11 +3645,12 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
   };
 
   window.onNativeVoicePhraseEnd = function() {
-    if (scrollMode === 'interview' && typeof window.onInterviewPhraseEnd === 'function') {
+    if (isVoicePaused) return;
+    if (scrollMode === 'interview' && phraseMatchedWords < 2 && typeof window.onInterviewPhraseEnd === 'function') {
       window.onInterviewPhraseEnd();
       return;
     }
-    if (scrollMode !== 'voice') return;
+    if (scrollMode !== 'voice' && scrollMode !== 'interview') return;
     const words = cachedScriptWords.length ? cachedScriptWords : hudScrollTrack.querySelectorAll('.script-word');
     if (!words.length) return;
     const activeWord = words[spokenWordIndex];
@@ -3626,6 +3706,7 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
 
   function setScrollMode(mode) {
     scrollMode = mode;
+    isVoicePaused = false;
     document.getElementById('modeWpmBtn').classList.toggle('active', mode === 'wpm');
     document.getElementById('modeVoiceBtn').classList.toggle('active', mode === 'voice');
     const statusBox = document.getElementById('voiceStatusBox');
@@ -3635,6 +3716,7 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
 
     if (mode === 'voice') {
       togglePlay(false);
+      isVoicePaused = false;
       resetVoiceTranscriptTracker();
       window.__voiceTargetScrollY = scrollY;
       setOverlayVisible(true);
@@ -3662,10 +3744,19 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
       initWebSpeechRecognition();
     } else if (mode === 'interview') {
       togglePlay(false);
+      isVoicePaused = false;
+      resetVoiceTranscriptTracker();
+      window.__voiceTargetScrollY = scrollY;
       setOverlayVisible(true);
       console.log('__GHOSTCUE_IPC__:SHOW_OVERLAY');
       console.log('__GHOSTCUE_IPC__:VOICE_MODE_START');
-      hudModeStatus.textContent = '🎯 Interview AI Active · Listening for Interviewer Question';
+      const words = cachedScriptWords.length ? cachedScriptWords : hudScrollTrack.querySelectorAll('.script-word');
+      if (words.length > 0) {
+        spokenWordIndex = Math.min(words.length - 1, Math.max(0, spokenWordIndex));
+        lastHighlightedWordIdx = -1;
+        updateWordHighlightClasses(spokenWordIndex);
+      }
+      hudModeStatus.textContent = '🎯 Interview AI Active · Speak Script or Ask Question';
       syncHudSegmentedModePill();
       ensureScrollLoopState();
       initWebSpeechRecognition();
@@ -3899,8 +3990,7 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
 
   // Event Listeners
   playPauseBtn.onclick = () => {
-    if (scrollMode === 'voice') setScrollMode('wpm');
-    togglePlay();
+    toggleHudPlayPause();
   };
   document.getElementById('resetBtn').onclick = resetPrompter;
   document.getElementById('voiceSimBtn').onclick = startVoiceSim;
@@ -4039,11 +4129,11 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
         teleprompterHud.style.top = newTop + 'px';
       }
     } else if (isResizingHud) {
-      const newW = Math.max(380, Math.min(580, startWidth + (e.screenX - resizeStartX)));
+      const newW = Math.max(560, Math.min(640, startWidth + (e.screenX - resizeStartX)));
       const newH = Math.max(200, Math.min(340, startHeight + (e.screenY - resizeStartY)));
       document.documentElement.style.setProperty('--hud-width', newW + 'px');
       teleprompterHud.style.height = newH + 'px';
-      document.getElementById('widthSlider').value = Math.min(560, Math.round(newW));
+      document.getElementById('widthSlider').value = Math.min(640, Math.round(newW));
       document.getElementById('widthValLabel').textContent = Math.round(newW) + 'px';
       console.log(`__GHOSTCUE_IPC__:RESIZE_OVERLAY:${Math.round(newW + 30)}:${Math.round(newH + 55)}`);
       broadcastState('STYLE_CHANGE', { prop: '--hud-width', val: Math.round(newW) + 'px' });
@@ -4065,8 +4155,7 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
   // Mini buttons inside Interactive Bar & Always-Clickable Top Header Bar
   document.getElementById('hudMiniPlayBtn').onclick = (e) => {
     e.stopPropagation();
-    if (scrollMode === 'voice') setScrollMode('wpm');
-    togglePlay();
+    toggleHudPlayPause();
   };
   document.getElementById('hudSnapNotchBtn').onclick = (e) => {
     e.stopPropagation();
@@ -4079,20 +4168,13 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
   // Top Header Direct Controls (3-State Mode Pill: Pause / WPM / Voice Flow, Slide ◀/▶, Quick Drawer 📂, and ✕ Close)
   document.getElementById('hudHeaderPlayBtn').onclick = (e) => {
     e.stopPropagation();
-    if (scrollMode === 'voice') setScrollMode('wpm');
-    togglePlay();
+    toggleHudPlayPause();
   };
   const hudSegPauseBtn = document.getElementById('hudSegPauseBtn');
   if (hudSegPauseBtn) {
     hudSegPauseBtn.onclick = (e) => {
       e.stopPropagation();
-      if (scrollMode === 'voice' || scrollMode === 'interview') {
-        if (scrollMode === 'interview' && typeof stopInterviewListening === 'function') stopInterviewListening();
-        setScrollMode('wpm');
-        togglePlay(false);
-      } else {
-        togglePlay();
-      }
+      toggleHudPlayPause();
     };
   }
   const hudSegWpmBtn = document.getElementById('hudSegWpmBtn');
@@ -4985,8 +5067,7 @@ endstream endobj
     if (activeEl === scriptEditorEl || activeEl === scriptTitleInput || tag === 'INPUT' || tag === 'TEXTAREA') return;
     if (e.code === 'Space') {
       e.preventDefault();
-      if (scrollMode === 'voice') setScrollMode('wpm');
-      togglePlay();
+      toggleHudPlayPause();
     } else if (e.code === 'ArrowRight') {
       e.preventDefault();
       triggeredSlideBoundaries.add(currentSlideIndex + 2);
@@ -5041,6 +5122,8 @@ endstream endobj
       document.documentElement.style.setProperty(payload.prop, payload.val);
     } else if (type === 'MODE_CHANGE') {
       setScrollMode(payload.mode);
+    } else if (type === 'VOICE_PAUSE_CHANGE') {
+      setVoicePaused(Boolean(payload.isVoicePaused), false);
     } else if (type === 'VOICE_SIM') {
       if (payload.active && !voiceSimInterval) startVoiceSim();
       else if (!payload.active && voiceSimInterval) stopVoiceSim();
@@ -5052,7 +5135,11 @@ endstream endobj
       setClickThroughMode(payload.locked, false);
     } else if (type === 'SCROLL_SYNC') {
       scrollY = payload.scrollY || 0;
-      if (typeof payload.spokenWordIndex === 'number') spokenWordIndex = payload.spokenWordIndex;
+      window.__voiceTargetScrollY = scrollY;
+      if (typeof payload.spokenWordIndex === 'number') {
+        spokenWordIndex = payload.spokenWordIndex;
+        updateWordHighlightClasses(spokenWordIndex);
+      }
       pruneTriggersAfterScrollRewind(scrollY);
       hudScrollTrack.style.transform = `translateY(${-scrollY}px)`;
       updateActiveEyeline();
@@ -5175,7 +5262,7 @@ endstream endobj
   const ivLatencyBadge = document.getElementById('ivLatencyBadge');
   const ivGroundingBanner = document.getElementById('ivGroundingStatusBanner');
 
-  window.switchStudioWorkspace = function(tab) {
+  window.switchStudioWorkspace = function(tab, fromInit = false) {
     const shell = document.getElementById('quickDrawerShell');
     const tBtn = document.getElementById('tabTeleprompterBtn');
     const iBtn = document.getElementById('tabInterviewBtn');
@@ -5184,12 +5271,11 @@ endstream endobj
     if (tBtn) tBtn.classList.toggle('active', !isIv);
     if (iBtn) iBtn.classList.toggle('active', isIv);
     try { localStorage.setItem('ghostcue_active_tab', tab); } catch (e) {}
-    if (isIv) {
-      // Automatically turn on Interviewer Question Listener when entering the AI Interview Co-Pilot tab
+    if (isIv && !fromInit) {
+      // Automatically turn on Interviewer Question Listener when the user explicitly clicks the AI Interview Co-Pilot tab
       togglePlay(false);
-      scrollMode = 'interview';
-      syncHudSegmentedModePill();
-      broadcastState('MODE_CHANGE', { mode: 'interview' });
+      isVoicePaused = false;
+      setScrollMode('interview');
       if (!ivListening) {
         window.toggleInterviewListening(true);
       }
@@ -5197,11 +5283,12 @@ endstream endobj
   };
 
   window.activateInterviewCoPilotMode = function() {
-    window.switchStudioWorkspace('interview');
+    isVoicePaused = false;
+    window.switchStudioWorkspace('interview', false);
     setOverlayVisible(true);
     console.log('__GHOSTCUE_IPC__:SHOW_OVERLAY');
     ensureScrollLoopState();
-    hudModeStatus.textContent = '🎯 Interview AI Active · Listening for Interviewer Question';
+    hudModeStatus.textContent = '🎯 Interview AI Active · Speak Script or Ask Question';
   };
 
   function extractStructuredFacts(resumeText, jdText) {
@@ -6121,6 +6208,7 @@ endstream endobj
       ivListenBtn.style.color = ivListening ? '#065f46' : '#5b21b6';
     }
     if (ivListening) {
+      isVoicePaused = false;
       scrollMode = 'interview';
       syncHudSegmentedModePill();
       console.log('__GHOSTCUE_IPC__:VOICE_MODE_START');
@@ -6129,6 +6217,8 @@ endstream endobj
     } else {
       clearTimeout(ivSilenceDebounceTimer);
       if (scrollMode === 'interview') {
+        isVoicePaused = true;
+        syncHudSegmentedModePill();
         console.log('__GHOSTCUE_IPC__:VOICE_MODE_STOP');
         stopLiveAudioVad();
       }
@@ -6141,15 +6231,24 @@ endstream endobj
 
   // Speaker Discrimination & Question Intent Detector:
   // Distinguishes whether the spoken audio is:
-  //  (A) The Candidate reading the suggested answer aloud on the HUD -> advances word highlight & NEVER triggers a new answer
+  //  (A) The Candidate reading the current HUD script or answer aloud -> advances word highlight & NEVER triggers a new answer
   //  (B) The Interviewer asking a question -> triggers a new grounded answer when the interviewer pauses
   function isCandidateReadingCurrentHudAnswer(spokenTokens) {
-    if (!ivCurrentHudsonScript || spokenTokens.length < 2) return false;
+    if (!spokenTokens || spokenTokens.length < 1) return false;
     const hudWords = cachedScriptWords.length ? cachedScriptWords : Array.from(hudScrollTrack.querySelectorAll('.script-word'));
-    if (hudWords.length < 4) return false;
+    if (hudWords.length < 2) return false;
 
-    // Check if the last 3 spoken words match the current HUD answer around spokenWordIndex
-    const recent = spokenTokens.slice(-3);
+    // Immediate match if the latest spoken word matches the current expected word or +1 word on the HUD
+    const lastTok = spokenTokens[spokenTokens.length - 1];
+    if (spokenWordIndex < hudWords.length && tokensMatch(lastTok, hudWords[spokenWordIndex].textContent)) {
+      return true;
+    }
+    if (!COMMON_FILLER_WORDS.has(lastTok) && spokenWordIndex + 1 < hudWords.length && tokensMatch(lastTok, hudWords[spokenWordIndex + 1].textContent)) {
+      return true;
+    }
+
+    // Check if recent spoken words match the current HUD script around spokenWordIndex
+    const recent = spokenTokens.slice(-4);
     let matchesInHud = 0;
     const searchStart = Math.max(0, spokenWordIndex - 2);
     const searchEnd = Math.min(hudWords.length, spokenWordIndex + 14);
@@ -6170,7 +6269,7 @@ endstream endobj
     const words = lower.split(/\s+/).filter(Boolean);
     if (words.length < 2) return false;
     // Direct interview topic keywords always trigger even on short 2-3 word voice prompts (e.g. "my weakness", "greatest strength")
-    if (/\b(weakness|weaknesses|strength|strengths|conflict|disagree|failure|mistake|challenge|obstacle|prioritize|roadmap|yourself|introduce|questions for us|hire you|why this role)\b/i.test(lower)) {
+    if (/\b(weakness|weaknesses|strength|strengths|conflict|disagree|failure|mistake|challenge|obstacle|prioritize|roadmap|yourself|introduce|questions for us|hire you|why this role|good fit|relocate|notice period|join|five years|5 years|work from office)\b/i.test(lower)) {
       return true;
     }
     if (/\?$/.test(lower)) return true;
@@ -6185,42 +6284,37 @@ endstream endobj
   }
 
   window.onInterviewTranscript = function(transcriptText) {
-    if (!ivListening && scrollMode !== 'interview') return;
-    // Only the Studio window (or standalone browser window) runs the question->LLM generator;
-    // the Overlay window receives the synced result via INTERVIEW_QA_SYNC so both windows never fire duplicate API calls.
-    if (document.body.classList.contains('overlay-only-mode')) return;
+    if (isVoicePaused || (!ivListening && scrollMode !== 'interview')) return;
 
     const cleaned = String(transcriptText || '').trim();
-    if (!cleaned || cleaned === ivLastTranscript) return;
-
-    // Extract only the newly spoken segment since the last answered question
-    // Use word-count offset rather than exact prefix string match because SFSpeechRecognizer
-    // frequently revises capitalization/punctuation of earlier words in the session!
+    if (!cleaned) return;
     const allWords = cleaned.split(/\s+/).filter(Boolean);
     if (allWords.length + 2 < ivConsumedQuestionWordCount) {
-      // SFSpeechRecognizer rolled over to a fresh session
       ivConsumedQuestionWordCount = 0;
     }
     const newWords = allWords.slice(ivConsumedQuestionWordCount);
     const activeUtterance = newWords.join(' ').trim();
-    ivLastTranscript = cleaned;
     if (!activeUtterance) return;
 
     const spokenTokens = activeUtterance.toLowerCase().split(/\s+/).map(normalizeTokenForMatch).filter(Boolean);
     if (!spokenTokens.length) return;
 
     // SPEAKER DISCRIMINATION:
-    // Only treat as Candidate reading the HUD if the spoken phrase does NOT contain an explicit interview question trigger
+    // If the user is reading the script/answer currently displayed on the HUD (and not asking an explicit interview question),
+    // advance the HUD script words smoothly with their speech in BOTH Studio and Overlay windows!
     const hasQuestionIntent = /\b(tell me|what is|what's|what are|how do|how did|how would|why do|why should|walk me|describe a|weakness|strength|conflict|failure|mistake|questions for us)\b/i.test(activeUtterance);
     if (!hasQuestionIntent && isCandidateReadingCurrentHudAnswer(spokenTokens)) {
       clearTimeout(ivSilenceDebounceTimer);
-      hudModeStatus.textContent = '🗣️ Candidate Speaking (Reading Answer Aloud) · Auto-Scrolling HUD';
-      const prevMode = scrollMode;
-      scrollMode = 'voice';
-      window.onNativeTranscript(activeUtterance);
-      scrollMode = prevMode;
+      hudModeStatus.textContent = '🗣️ Speaking Script Aloud · Auto-Scrolling with Your Voice';
+      window.matchAndAdvanceHudWordsFromTranscript(transcriptText);
       return;
     }
+
+    // Only the Studio window (or standalone browser window) runs the question->LLM generator;
+    // the Overlay window receives the synced result via INTERVIEW_QA_SYNC so both windows never fire duplicate API calls.
+    if (document.body.classList.contains('overlay-only-mode')) return;
+    if (cleaned === ivLastTranscript) return;
+    ivLastTranscript = cleaned;
 
     // Otherwise, this is incoming Interviewer speech (or a new question)!
     const recentClause = newWords.slice(-24).join(' ');
@@ -6241,7 +6335,7 @@ endstream endobj
   };
 
   window.onInterviewPhraseEnd = function() {
-    if (!ivListening && scrollMode !== 'interview') return;
+    if (isVoicePaused || (!ivListening && scrollMode !== 'interview')) return;
     if (document.body.classList.contains('overlay-only-mode')) return;
     // Wait 260ms after acoustic silence so SFSpeechRecognizer's final trailing word ("weak" -> "weakness")
     // arrives before we snapshot the question, and always read the live ivQuestionEl.value!
@@ -6339,7 +6433,7 @@ endstream endobj
   selectScript(currentScriptId);
   try {
     const savedTab = localStorage.getItem('ghostcue_active_tab');
-    if (savedTab === 'interview') window.switchStudioWorkspace('interview');
+    if (savedTab === 'interview') window.switchStudioWorkspace('interview', true);
   } catch (e) {}
   window.scrollTo(0, 0);
 </script>
