@@ -389,6 +389,14 @@ async function createWindows() {
       startNativeMacOsSpeechHelper();
     } else if (message === '__GHOSTCUE_IPC__:VOICE_MODE_STOP') {
       stopNativeMacOsSpeechHelper();
+    } else if (message.startsWith('__GHOSTCUE_IPC__:SET_STEALTH_PROTECTION:')) {
+      const enabled = message.endsWith(':true');
+      try {
+        overlayWindow.setContentProtection(enabled);
+        if (studioWindow && !studioWindow.isDestroyed()) {
+          studioWindow.setContentProtection(enabled);
+        }
+      } catch (e) {}
     }
   };
   overlayWindow.webContents.on('console-message', handleRendererIpc);

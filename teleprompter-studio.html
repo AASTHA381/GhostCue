@@ -1921,7 +1921,7 @@
       <!-- THE INVISIBLE TELEPROMPTER HUD OVERLAY (DOCKED UNDER WEBCAM) -->
       <div class="teleprompter-hud click-through-locked" id="teleprompterHud">
         <div class="hud-header" id="hudDragHandle" title="Always-clickable top bar: 1-Click Mode Switcher, Prev/Next Slide, Quick Drawer, or ✕ Close">
-          <div class="hud-stealth-indicator">
+          <div class="hud-stealth-indicator" id="hudStealthBadgeBtn" onclick="toggleStealthProtectionMode()" style="cursor:pointer;" title="Click to toggle Screen-Share Invisibility ON/OFF">
             <svg class="privacy-shield-icon" viewBox="0 0 24 24">
               <path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm-1.06 13.54L7.4 12l1.41-1.41 2.12 2.12 4.24-4.24 1.41 1.41-5.64 5.66z"/>
             </svg>
@@ -2045,7 +2045,7 @@
             <button class="studio-tab-btn active" id="tabTeleprompterBtn" onclick="switchStudioWorkspace('teleprompter')">📜 Pitch Teleprompter</button>
             <button class="studio-tab-btn interview-tab" id="tabInterviewBtn" onclick="switchStudioWorkspace('interview')">🎯 AI Interview Co-Pilot</button>
           </div>
-          <span class="qd-status-pill">🛡️ Screen-Share Invisible</span>
+          <button type="button" class="qd-status-pill" id="stealthProtectionPillBtn" onclick="toggleStealthProtectionMode()" style="cursor:pointer;" title="Click to toggle OS Screen-Share Invisibility ON/OFF (or right-click for Stealth Diagnostic)">🛡️ Screen-Share Invisible: ON</button>
           <button class="qd-btn" id="presentNowBtn" style="background:#e0f2fe;border-color:#0284c7;color:#0369a1;font-weight:700;" title="Hide Quick Drawer & Present with Only the Floating Notch HUD">
             🚀 Hide Drawer
           </button>
@@ -4852,9 +4852,45 @@ endstream endobj
     URL.revokeObjectURL(url);
   };
 
-  // Pre-Flight Stealth & HDMI Mirroring Guard Modal
+  // Pre-Flight Stealth & HDMI Mirroring Guard Modal + Interactive Stealth Protection Toggle
   const preflightModal = document.getElementById('preflightModal');
   let simulatedMirrorWarning = false;
+  let stealthProtectionActive = true;
+
+  function applyStealthProtectionUi(enabled, shouldBroadcast = true) {
+    stealthProtectionActive = Boolean(enabled);
+    const pillBtn = document.getElementById('stealthProtectionPillBtn');
+    const hudTitle = document.getElementById('hudHeaderTitle');
+    const hudIndicator = document.getElementById('hudStealthBadgeBtn');
+    const capStatus = document.getElementById('diagCaptureStatus');
+
+    if (pillBtn) {
+      pillBtn.textContent = stealthProtectionActive
+        ? '🛡️ Screen-Share Invisible: ON'
+        : '⚠️ Screen-Share Visible (Demo/Screenshot Mode)';
+      pillBtn.style.background = stealthProtectionActive ? '#ecfdf5' : '#fef3c7';
+      pillBtn.style.borderColor = stealthProtectionActive ? 'rgba(5, 150, 105, 0.3)' : '#f59e0b';
+      pillBtn.style.color = stealthProtectionActive ? '#047857' : '#b45309';
+    }
+    if (hudTitle) {
+      hudTitle.textContent = stealthProtectionActive ? 'Stealth' : 'Visible';
+    }
+    if (hudIndicator) {
+      hudIndicator.style.color = stealthProtectionActive ? '#34d399' : '#fbbf24';
+    }
+    if (capStatus) {
+      capStatus.className = stealthProtectionActive ? 'diag-badge diag-pass' : 'diag-badge diag-warn';
+      capStatus.textContent = stealthProtectionActive ? '✓ VERIFIED (INVISIBLE)' : '⚠️ VISIBLE TO CAPTURE';
+    }
+    console.log('__GHOSTCUE_IPC__:SET_STEALTH_PROTECTION:' + (stealthProtectionActive ? 'true' : 'false'));
+    if (shouldBroadcast) {
+      broadcastState('STEALTH_PROTECTION_CHANGE', { enabled: stealthProtectionActive });
+    }
+  }
+
+  window.toggleStealthProtectionMode = function() {
+    applyStealthProtectionUi(!stealthProtectionActive, true);
+  };
 
   function updatePreflightDiagnostics() {
     const isExtended = window.screen && window.screen.isExtended;
@@ -5022,6 +5058,8 @@ endstream endobj
       updateActiveEyeline();
     } else if (type === 'AUDIENCE_PREVIEW_CHANGE') {
       document.body.classList.toggle('audience-view-active', Boolean(payload.active));
+    } else if (type === 'STEALTH_PROTECTION_CHANGE') {
+      applyStealthProtectionUi(Boolean(payload.enabled), false);
     } else if (type === 'INTERVIEW_QA_SYNC') {
       if (payload.hudScript) {
         scriptEditorEl.value = payload.hudScript;
