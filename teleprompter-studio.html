@@ -210,7 +210,7 @@
   }
   .interview-grid {
     display: none;
-    grid-template-columns: 280px minmax(0, 1fr) 270px;
+    grid-template-columns: 300px minmax(0, 1fr) 275px;
     gap: 12px;
     flex: 1;
     min-height: 0;
@@ -239,18 +239,22 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
+    gap: 6px;
     padding-bottom: 6px;
     border-bottom: 1px solid rgba(226, 232, 240, 0.9);
     flex-shrink: 0;
+    min-width: 0;
   }
   .iv-section-title {
-    font-size: 11px;
+    font-size: 10.5px;
     font-weight: 800;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.03em;
     text-transform: uppercase;
     color: #1e3a8a;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
   }
   .iv-field-label {
     display: flex;
@@ -264,15 +268,15 @@
   }
   .iv-textarea {
     width: 100%;
-    min-height: 82px;
-    max-height: 115px;
+    flex: 1;
+    min-height: 90px;
     resize: vertical;
     border: 1px solid rgba(148, 163, 184, 0.45);
     border-radius: 8px;
-    padding: 7px 9px;
+    padding: 8px 10px;
     font-family: 'Inter', -apple-system, sans-serif;
     font-size: 11px;
-    line-height: 1.42;
+    line-height: 1.45;
     color: #0f172a;
     background: #f8fafc;
   }
@@ -2227,8 +2231,8 @@
       <!-- Column 1: Candidate Resume & Job Description Grounding Knowledge Base -->
       <div class="iv-card">
         <div class="iv-section-header">
-          <span class="iv-section-title">1. Resume &amp; Job Description</span>
-          <span id="ivFactsBadge" class="iv-badge-grounded">✓ Grounded</span>
+          <span class="iv-section-title">1. Resume &amp; Target JD</span>
+          <span id="ivFactsBadge" class="iv-badge-grounded" style="flex-shrink:0;">✓ Grounded</span>
         </div>
 
         <div class="iv-field-label">
@@ -2256,7 +2260,7 @@
         </div>
         <textarea class="iv-textarea" id="interviewJdInput" placeholder="Paste the target role Job Description (skills, responsibilities, requirements)..."></textarea>
 
-        <div id="ivSkillGapSummary" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:7px 9px;font-size:10px;color:#334155;line-height:1.45;margin-top:auto;">
+        <div id="ivSkillGapSummary" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:7px 9px;font-size:10px;color:#334155;line-height:1.45;flex-shrink:0;">
           <div><strong style="color:#0f172a;">Matched JD Skills:</strong> <span id="ivMatchedSkillsList" style="color:#047857;font-weight:600;">—</span></div>
           <div style="margin-top:2px;"><strong style="color:#0f172a;">Gap Alert:</strong> <span id="ivMissingSkillsList" style="color:#b45309;">None detected</span></div>
         </div>
