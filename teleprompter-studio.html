@@ -2165,7 +2165,8 @@
         <!-- 1-Click Common, Behavioral & Open-Ended Interview Question Chips -->
         <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;">
           <span style="font-size:9.5px;font-weight:700;color:#64748b;">Quick Questions:</span>
-          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Tell me about yourself and why you fit this role.')">Intro / Fit</button>
+          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Tell me about yourself and walk me through your background.')">About Yourself</button>
+          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Why are you a good fit for this role?')">Why Good Fit?</button>
           <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Tell me about a challenging problem or obstacle you solved and how you handled it.')">Challenge / Obstacle</button>
           <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Tell me about a time you disagreed with a stakeholder or aligned cross-functional teams.')">Conflict / Alignment</button>
           <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Tell me about a failure, mistake, or tough trade-off and what you learned.')">Failure / Trade-off</button>
@@ -5219,21 +5220,39 @@ endstream endobj
       };
     }
 
-    // CASE B: "Tell me about yourself" / Role Fit / Why are you a good fit / Why this role / Why hire you
-    if (/tell me about yourself|walk me through your resume|introduce yourself|why.*fit|good fit|why.*role|why.*hire|why.*company|why.*join|background/i.test(qLower)) {
+    // CASE B1: "Why are you a good fit for this role?" / "Why should we hire you?" / "Why this role?" (Value-Proposition Match)
+    if (/why.*fit|good fit|why.*role|why.*hire|why.*company|why.*join|what makes you a good|what do you bring/i.test(qLower) && !/^tell me about yourself|^walk me through your resume|^introduce yourself/i.test(qLower)) {
       const hudScript = [
-        `[SLIDE 1: 🎯 WHY I'M A STRONG FIT — 3-PART STRUCTURE]`,
-        `**Three things.** **First**, I've done the work this role needs: owning **3 product lines and 136 PRDs** at **TradeIndia** (+10% DAU lift via CTA optimization and −40% onboarding time via a computer-vision pipeline), plus relationship-building at **Prudent** and the **NMIMS Placement Committee**.`,
-        `[PAUSE 2s] **Second**, I'm analytical and technical. At **HCLTech**, I automated reporting in **Python & SQL** (−60% manual cost), built **Power BI & Tableau** dashboards (+25% faster response time), and presented ROI cases to senior stakeholders—and I've shipped AI apps like **Echo** and **Sentinel**.`,
-        `[SLOW DOWN] **Third**, I fit the culture: I work seamlessly across teams (finance and engineering at HCLTech, design and QA at TradeIndia), I take ownership early, and I bring strong business and financial markets grounding from my **NMIMS MBA**, **Bloomberg**, and **Finlatics**.`
+        `[SLIDE 1: 🎯 WHY I'M A GOOD FIT FOR THIS ROLE — 3 PILLARS]`,
+        `**Three things.** **First**, I've done the work this role needs: relationship-building at **Prudent** and the **placement committee**, and lead-conversion and product ownership across **3 product lines and 136 PRDs** (+10% DAU) at **TradeIndia**.`,
+        `[PAUSE 2s] **Second**, I'm analytical. I can read a **Power BI** dashboard, automate reporting in **Python & SQL** (−60% cost at **HCLTech**), and explain ROI to senior stakeholders, which helps when mapping client and product outcomes.`,
+        `[SLOW DOWN] **Third**, I fit the culture: I work across teams (finance and engineering at **HCLTech**), I take ownership early, and I care about doing right by the customer. I also have the MBA's financial markets grounding from **Bloomberg and Finlatics**.`
       ].join('\n');
       return {
         isGap: false,
         hudScript,
-        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Structured 3-Part Role-Fit Answer</div>` +
-          `<div style="margin-bottom:4px;"><strong>First (Done the Work):</strong> TradeIndia (3 product lines, 136 PRDs, +10% DAU, −40% CV onboarding) + Prudent &amp; Placement Committee relationship-building.</div>` +
-          `<div style="margin-bottom:4px;"><strong>Second (Analytical &amp; AI Builder):</strong> HCLTech Python/SQL automation (−60% cost), Power BI dashboards (+25% response time), ROI cases, and Echo/Sentinel AI apps.</div>` +
-          `<div><strong>Third (Culture &amp; Business Grounding):</strong> Cross-functional execution (finance + engineering), early ownership, and NMIMS MBA + Bloomberg/Finlatics grounding.</div>`
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ "Why Are You a Good Fit?" — 3-Pillar Value Match</div>` +
+          `<div style="margin-bottom:4px;"><strong>First (Done the Work):</strong> Relationship-building at Prudent &amp; Placement Committee + lead-conversion &amp; 136 PRDs (+10% DAU) at TradeIndia.</div>` +
+          `<div style="margin-bottom:4px;"><strong>Second (Analytical):</strong> Power BI dashboards, Python/SQL reporting automation (−60% cost at HCLTech), and senior stakeholder ROI cases.</div>` +
+          `<div><strong>Third (Culture &amp; Domain):</strong> Cross-team execution (finance &amp; engineering at HCLTech), early ownership, customer focus, and NMIMS MBA + Bloomberg/Finlatics grounding.</div>`
+      };
+    }
+
+    // CASE B2_INTRO: "Tell me about yourself" / "Walk me through your resume" / "Introduce yourself" (Career Arc & Story)
+    if (/tell me about yourself|walk me through your resume|introduce yourself|your background|your journey|who are you/i.test(qLower)) {
+      const hudScript = [
+        `[SLIDE 1: 👋 TELL ME ABOUT YOURSELF — MY 3-PART CAREER ARC]`,
+        `**My journey has three chapters.** **First**, I started in engineering and analytics—after my **B.Tech in ECE**, I spent **nearly 3 years as an Analyst at HCLTech**, where I built **Python & SQL** pipelines and **Power BI** dashboards that cut reporting costs by **60%** across 3 departments.`,
+        `[PAUSE 2s] **Second**, I transitioned into product and business through my **MBA at NMIMS Hyderabad**: at **TradeIndia**, I owned **3 product lines**, authored **136 PRDs**, lifted **DAU by 10%**, and managed a **Sentinel-2 computer-vision pipeline** (−40% onboarding time); at **Prudent**, I led CSR analytics and **9+ partnerships**.`,
+        `[SLOW DOWN] **Third**, outside the classroom I'm a 0→1 AI builder—I've shipped **Echo** (a Whisper + LangChain RAG copilot) and **Sentinel** (an explainable fraud workbench at **83.9% precision**), and now I'm looking to bring that blend of analytics, product ownership, and AI execution into this role.`
+      ].join('\n');
+      return {
+        isGap: false,
+        hudScript,
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ "Tell Me About Yourself" — 3-Chapter Career Story</div>` +
+          `<div style="margin-bottom:4px;"><strong>Chapter 1 (Foundation — B.Tech + HCLTech, 2.8 yrs):</strong> Python/SQL automation (−60% cost across 3 depts) &amp; Power BI dashboards (+25% speed).</div>` +
+          `<div style="margin-bottom:4px;"><strong>Chapter 2 (Product &amp; Business — NMIMS MBA, TradeIndia, Prudent):</strong> Owned 3 product lines, 136 PRDs, +10% DAU, −40% CV onboarding time, 9+ partnerships.</div>` +
+          `<div><strong>Chapter 3 (0→1 AI Builder &amp; What's Next):</strong> Shipped Echo (Whisper + RAG) &amp; Sentinel (83.9% precision fraud platform).</div>`
       };
     }
 
@@ -5487,7 +5506,10 @@ endstream endobj
       'MANDATORY VOICE & SIGNPOSTING STYLE (FOLLOW THIS EXACT STRUCTURE):',
       '- Always open with a clear signposted hook like "**Three things.**" (or "**Three steps.**") and structure the answer into "**First**, ...", "**Second**, ...", and "**Third**, ...".',
       '- Use short, punchy, conversational sentences with active verbs and concrete names/numbers from the RESUME (TradeIndia, HCLTech, Prudent, NMIMS Placement Committee, Echo, Sentinel, Power BI, Python/SQL, Bloomberg, Finlatics). Never use generic corporate fluff.',
-      '- FEW-SHOT STYLE EXAMPLE (match this exact tone, rhythm, and specificity):',
+      '- Keep "Tell me about yourself" and "Why are you a good fit for this role?" DISTINCT:',
+      '  • When asked "Tell me about yourself / Walk me through your resume", tell Aastha\'s 3-chapter chronological career arc ("**My journey has three chapters.** **First**, my foundation in engineering and analytics at **HCLTech**... **Second**, my pivot into product and business during my **NMIMS MBA** at **TradeIndia** and **Prudent**... **Third**, my 0→1 AI product building with **Echo** and **Sentinel**...").',
+      '  • When asked "Why are you a good fit for this role? / Why should we hire you?", pitch her 3 role-aligned value pillars ("**Three things.** **First**, I\'ve done the work this role needs... **Second**, I\'m analytical... **Third**, I fit the culture...").',
+      '- FEW-SHOT STYLE EXAMPLE FOR "Why are you a good fit for this role?":',
       '  Question: "Why are you a good fit for this role?"',
       '  Answer:',
       '  [SLIDE 1: 🎯 STRUCTURED 3-PART ANSWER]',
