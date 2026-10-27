@@ -2167,15 +2167,15 @@
           <span style="font-size:9.5px;font-weight:700;color:#64748b;">Quick Questions:</span>
           <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Tell me about yourself and walk me through your background.')">About Yourself</button>
           <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Why are you a good fit for this role?')">Why Good Fit?</button>
-          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Tell me about a challenging problem or obstacle you solved and how you handled it.')">Challenge / Obstacle</button>
-          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Tell me about a time you disagreed with a stakeholder or aligned cross-functional teams.')">Conflict / Alignment</button>
-          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Tell me about a failure, mistake, or tough trade-off and what you learned.')">Failure / Trade-off</button>
+          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Why MBA?')">Why MBA?</button>
+          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('What are your 3 main strengths?')">3 Strengths</button>
           <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('What is your biggest weakness and how are you working to improve it?')">My Weakness</button>
-          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('What is your greatest strength?')">My Strength</button>
-          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('How do you prioritize your roadmap and what would your first 30-60-90 days look like?')">Prioritization / 90-Day Plan</button>
-          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('When can you join full-time and are you available for on-site work from office vs remote?')">Joining / WFO vs Remote</button>
-          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Do you have any questions for us?')">Questions to Ask</button>
-          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Do you have 5 years of production Kubernetes and Rust kernel experience?')">Gap / Unlisted Skill</button>
+          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Explain RICE and MoSCoW and when you would use one over the other.')">RICE vs MoSCoW</button>
+          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Tell me about a time you influenced or convinced a resistant stakeholder.')">Convince Stakeholder</button>
+          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Tell me about a failure or setback and what you learned.')">Setback / Failure</button>
+          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('How do you prioritize your time when multiple stakeholders have urgent needs?')">Multi-Priority</button>
+          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Explain EchoPRD and PayEase.')">EchoPRD / PayEase</button>
+          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('When can you join full-time and are you available for on-site work from office vs remote?')">Joining / WFO</button>
         </div>
 
         <!-- Grounding Verification Banner -->
@@ -4971,19 +4971,16 @@ endstream endobj
   // PHASE 2: AI-POWERED REAL-TIME INTERVIEW CO-PILOT (GROUNDED RAG + STREAMING)
   // ============================================================================
   const IV_STORAGE_KEY = 'ghostcue_interview_v1';
-  const IV_RESUME_SEED_VERSION = 'aastha_real_resume_v3';
+  const IV_RESUME_SEED_VERSION = 'aastha_real_resume_v4';
   const DEFAULT_SAMPLE_RESUME = [
-    'Aastha Saini — Associate Product Manager · Analytics & AI Products (MBA Marketing & Analytics, NMIMS Hyderabad 2025–2027 | B.Tech ECE 2018–2022)',
-    '• Product Intern at TradeIndia.com (Apr 2026 – Jun 2026): Owned the end-to-end product lifecycle across 3 B2B marketplace product lines from user research and ideation through launch and iteration; authored 136 PRDs, BRDs, FSDs, user stories, and acceptance criteria shipped to production.',
-    '• AI & Computer Vision Delivery at TradeIndia: Managed a computer-vision pipeline for an agritech MVP integrating Sentinel-2 satellite imagery and Google Earth Engine APIs to automate tree-canopy detection, cutting FPO onboarding verification time by 40%.',
-    '• Growth, Funnel Analytics & User Discovery at TradeIndia: Conducted customer discovery interviews surfacing 55 bugs and feature gaps, prioritized the backlog with RICE and MoSCoW, and optimized core marketplace CTAs (PBR, Call Now, WhatsApp, Send Inquiry) across prod and pre-prod to drive a 10% increase in DAU and stronger retention.',
-    '• Analyst at HCLTech (Aug 2022 – May 2025, 2.8 years): Led end-to-end cross-functional implementation of an automated financial reporting system across finance and engineering teams, delivering a 60% cost reduction and improved accuracy across 3 departments.',
-    '• Data Automation & BI Dashboards at HCLTech: Spearheaded a Python & SQL ETL and data-collection automation initiative achieving a 15% efficiency gain (presented ROI business case to senior leadership) and built interactive Power BI and Tableau dashboards that improved financial response time by 25%.',
-    '• CSR Intern at Prudent Corporate Advisory Services (Jan 2026 – Feb 2026) & NMIMS Placement Committee: Built an MIS Excel master tracker from scratch for FY 2026–27, compiled a 5-year CSR Impact Report, drove 9+ retail/exhibition and college partnerships for Project Samarth, and built recruiter relationships on the NMIMS Placement Committee.',
-    '• Shipped AI & Product Portfolio: Built Echo (Voice-to-Roadmap AI Copilot using Whisper ASR + LangChain RAG + transcript citation guardrails), Sentinel (Explainable Travel Booking Fraud & Risk Platform evaluated on 15,000 bookings at 83.9% precision), GhostCue (Stealth Electron + On-Device ASR Teleprompter), and PayEase (28-page Digital Payments PRD & GTM model).',
-    '• Certifications & Accolades: Bloomberg Markets Concepts (BMC), Financial Markets Analyst (Finlatics), Google Data Analytics Professional Certificate, Microsoft Power BI Data Analyst Associate, HCL Annual Hackathon Winner & 2x HCL Spot Award.',
-    '• Availability & Notice Period: Can join IMMEDIATELY for remote roles (or remote-first transitions), and available full-time on-site (Work From Office) starting late June / July right after completing final MBA exams at NMIMS Hyderabad.',
-    '• Core Skills: Product Management, PRDs/BRDs/FSDs, User Stories, Agile/Scrum, Jira, Confluence, Figma, RICE & MoSCoW Prioritization, User Research, A/B & CTA Testing, SQL, Python, Power BI, Tableau, Excel, LLM Prompting, RAG, LangChain, Whisper ASR, Guardrail Design, React, FastAPI, REST APIs, CI/CD.'
+    'Aastha Saini — MBA in Marketing & Analytics (NMIMS Hyderabad, 2025–2027) | B.Tech in Electronics & Communication Engineering (2018–2022)',
+    '• Product Intern at TradeIndia.com (Apr 2026 – Jun 2026): Owned the product lifecycle across 3 product lines on both buyer and seller sides. Conducted task-based user journey interviews and found 55 bugs, friction points, and feature gaps. Worked on CTA optimization (Call Now, WhatsApp, PBR, Send Inquiry) which drove a 10% increase in DAU and improved retention (also proved to leadership with data that fixing unpaid user friction supports long-term paid conversion). Prioritized with RICE (numeric order) and MoSCoW (v1 scope cutoff); wrote 136 PRDs, BRDs, FSDs, and use-case diagrams; managed a Sentinel-2 + Google Earth Engine computer-vision pipeline cutting FPO onboarding verification time by 40%.',
+    '• Analyst at HCLTech (Aug 2022 – May 2025, 2.8 years): Led end-to-end implementation of an automated reporting system spanning finance and engineering, cutting reporting costs by 60% and improving accuracy across 3 departments. Overcame initial engineering resistance by building an ROI analysis showing engineering\'s own downstream time savings, not just finance\'s. Managed timeline/resources for a data automation initiative (+15% efficiency), automated data collection with Python (−15% time), built Power BI and Tableau dashboards (+25% response speed), and used Jira and ServiceNow.',
+    '• CSR Intern at Prudent Corporate Advisory Services (Jan 2026 – Feb 2026): Built an MIS Excel master dashboard from scratch for FY 2026–27, compiled a 5-year CSR Impact Report, and led the Project Samarth exhibition—coordinating 5+ colleges and the Central Bank of India\'s Chief Manager (front-loading the slowest-moving stakeholder first) and exploring 9+ retail partnerships.',
+    '• NMIMS Placement Committee & Leadership: Student Representative on the Placement Committee—building recruiter relationships, coordinating end-to-end interview scheduling, and leading the data vertical. Finance & Marketing core team for college fest (2 years); conducted rural computer-literacy sessions (HCL Committee & Rotary Club).',
+    '• Independent Projects & Hackathons: Built EchoPRD (Whisper ASR + LangChain RAG + vector search copilot that turns user interviews into cited, confidence-scored RICE/MoSCoW backlogs and refuses to guess when evidence is missing), PayEase (28-page PRD for India\'s $500B+ digital payments market with UPI, merchant analytics, multilingual Tier-2/3 support, API specs, and 18-month GTM), Sentinel (Explainable Travel Risk Platform at 83.9% precision), and ReturnProof (Aspire For Her × Logitech Women Who Master Hackathon 2026 National Finalist, 3rd in Hyderabad Zonal Round). Published smart-home Cisco Packet Tracer paper (ICEESC 2021).',
+    '• Certifications & Accolades: Won HCL Annual Hackathon & earned 2x HCL Spot Awards; Bloomberg Markets Analyst (BMC), Financial Markets Analyst (Finlatics), Google Data Analytics Professional Certificate (2024), Microsoft Power BI Data Analyst Associate (2023).',
+    '• Availability: Immediate joiner for remote roles (zero notice period); available full-time on-site (Work From Office / field / relocation) starting end of June right after final MBA exams at NMIMS Hyderabad.'
   ].join('\n');
 
   const DEFAULT_SAMPLE_JD = [
@@ -5220,170 +5217,327 @@ endstream endobj
       };
     }
 
-    // CASE B1: "Why are you a good fit for this role?" / "Why should we hire you?" / "Why this role?" (Value-Proposition Match)
-    if (/why.*fit|good fit|why.*role|why.*hire|why.*company|why.*join|what makes you a good|what do you bring/i.test(qLower) && !/^tell me about yourself|^walk me through your resume|^introduce yourself/i.test(qLower)) {
+    // CASE B1: "Why are you a good fit for this role?" / "Why should we hire you?" / "Why pick you?"
+    if (/why.*fit|good fit|best fit|why.*role|why.*hire|why.*pick you|what makes you a good|what do you bring/i.test(qLower) && !/^tell me about yourself|^walk me through your resume|^introduce yourself/i.test(qLower)) {
       const hudScript = [
-        `[SLIDE 1: 🎯 WHY I'M A GOOD FIT FOR THIS ROLE — 3 PILLARS]`,
-        `**Three things.** **First**, I've done the work this role needs: relationship-building at **Prudent** and the **placement committee**, and lead-conversion and product ownership across **3 product lines and 136 PRDs** (+10% DAU) at **TradeIndia**.`,
+        `[SLIDE 1: 🎯 WHY I'M A GOOD FIT FOR THIS ROLE]`,
+        `**Three things.** **First**, I've done the work this role needs: relationship-building at **Prudent** and the **placement committee**, and lead-conversion and product ownership across **3 product lines** (+10% DAU) at **TradeIndia**.`,
         `[PAUSE 2s] **Second**, I'm analytical. I can read a **Power BI** dashboard, automate reporting in **Python & SQL** (−60% cost at **HCLTech**), and explain ROI to senior stakeholders, which helps when mapping client and product outcomes.`,
         `[SLOW DOWN] **Third**, I fit the culture: I work across teams (finance and engineering at **HCLTech**), I take ownership early, and I care about doing right by the customer. I also have the MBA's financial markets grounding from **Bloomberg and Finlatics**.`
       ].join('\n');
       return {
         isGap: false,
         hudScript,
-        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ "Why Are You a Good Fit?" — 3-Pillar Value Match</div>` +
-          `<div style="margin-bottom:4px;"><strong>First (Done the Work):</strong> Relationship-building at Prudent &amp; Placement Committee + lead-conversion &amp; 136 PRDs (+10% DAU) at TradeIndia.</div>` +
-          `<div style="margin-bottom:4px;"><strong>Second (Analytical):</strong> Power BI dashboards, Python/SQL reporting automation (−60% cost at HCLTech), and senior stakeholder ROI cases.</div>` +
-          `<div><strong>Third (Culture &amp; Domain):</strong> Cross-team execution (finance &amp; engineering at HCLTech), early ownership, customer focus, and NMIMS MBA + Bloomberg/Finlatics grounding.</div>`
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ "Why Are You a Good Fit?" — Your Exact 3-Part Style</div>` +
+          `<div style="margin-bottom:4px;"><strong>First (Done the Work):</strong> Relationship-building at Prudent &amp; the placement committee + lead-conversion &amp; 3 product lines (+10% DAU) at TradeIndia.</div>` +
+          `<div style="margin-bottom:4px;"><strong>Second (Analytical):</strong> Power BI dashboards, Python reporting automation (−60% cost at HCLTech), and explaining ROI to senior stakeholders.</div>` +
+          `<div><strong>Third (Culture &amp; Grounding):</strong> Cross-team work (finance &amp; engineering at HCL), early ownership, customer focus, and Bloomberg + Finlatics grounding.</div>`
       };
     }
 
-    // CASE B2_INTRO: "Tell me about yourself" / "Walk me through your resume" / "Introduce yourself" (Career Arc & Story)
-    if (/tell me about yourself|walk me through your resume|introduce yourself|your background|your journey|who are you/i.test(qLower)) {
+    // CASE B2_INTRO: "Tell me about yourself" / "Walk me through your resume" / "Introduce yourself" / "What's unique about you?"
+    if (/tell me about yourself|walk me through your resume|introduce yourself|your background|your journey|who are you|describe yourself|unique about you/i.test(qLower)) {
+      if (/unique about you|describe yourself/i.test(qLower) && !/tell me about yourself|walk me through/i.test(qLower)) {
+        const hudScript = [
+          `[SLIDE 1: ✨ WHAT'S UNIQUE ABOUT ME]`,
+          `I'm someone who naturally sits between **technical and business thinking**. I have an engineering degree, but I've spent my career translating technical work into business outcomes.`,
+          `[PAUSE 2s] For example, turning a Python and SQL automation project into a **60% cost-saving story** for leadership at **HCLTech**, or turning user interviews into **55 prioritized fixes and a 10% DAU lift** at **TradeIndia**.`,
+          `[SLOW DOWN] What's unique is that I don't need a technical translator to talk to engineers, and I don't need a business translator to talk to leadership — I move between both naturally.`
+        ].join('\n');
+        return {
+          isGap: false,
+          hudScript,
+          summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ "Describe Yourself / What's Unique About You"</div>` +
+            `<div><strong>Core Hook:</strong> No technical translator needed for engineers, and no business translator needed for leadership (60% cost-saving story at HCLTech; 55 user gaps -> 10% DAU lift at TradeIndia).</div>`
+        };
+      }
       const hudScript = [
-        `[SLIDE 1: 👋 TELL ME ABOUT YOURSELF — MY 3-PART CAREER ARC]`,
-        `**My journey has three chapters.** **First**, I started in engineering and analytics—after my **B.Tech in ECE**, I spent **nearly 3 years as an Analyst at HCLTech**, where I built **Python & SQL** pipelines and **Power BI** dashboards that cut reporting costs by **60%** across 3 departments.`,
-        `[PAUSE 2s] **Second**, I transitioned into product and business through my **MBA at NMIMS Hyderabad**: at **TradeIndia**, I owned **3 product lines**, authored **136 PRDs**, lifted **DAU by 10%**, and managed a **Sentinel-2 computer-vision pipeline** (−40% onboarding time); at **Prudent**, I led CSR analytics and **9+ partnerships**.`,
-        `[SLOW DOWN] **Third**, outside the classroom I'm a 0→1 AI builder—I've shipped **Echo** (a Whisper + LangChain RAG copilot) and **Sentinel** (an explainable fraud workbench at **83.9% precision**), and now I'm looking to bring that blend of analytics, product ownership, and AI execution into this role.`
+        `[SLIDE 1: 👋 TELL ME ABOUT YOURSELF — INTRODUCTION]`,
+        `I'm Aastha, currently pursuing my **MBA at NMIMS Hyderabad**, with an undergrad in **Electronics & Communication Engineering**. My career is a blend of technical execution, analytics, and product ownership.`,
+        `[PAUSE 2s] I started as an **Analyst at HCLTech**, where I led an automated reporting system that cut costs by **60% across three departments**, coordinating between finance and engineering and presenting the ROI case to senior stakeholders.`,
+        `[SLOW DOWN] During my MBA, I led a **CSR internship at Prudent** (coordinating **5+ colleges**, a bank's **Chief Manager**, and **9+ partnerships**), and most recently interned as a **Product Intern at TradeIndia**—owning **3 product lines**, lifting **DAU by 10%**, and building independent AI tools like **EchoPRD** and **PayEase**.`
       ].join('\n');
       return {
         isGap: false,
         hudScript,
-        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ "Tell Me About Yourself" — 3-Chapter Career Story</div>` +
-          `<div style="margin-bottom:4px;"><strong>Chapter 1 (Foundation — B.Tech + HCLTech, 2.8 yrs):</strong> Python/SQL automation (−60% cost across 3 depts) &amp; Power BI dashboards (+25% speed).</div>` +
-          `<div style="margin-bottom:4px;"><strong>Chapter 2 (Product &amp; Business — NMIMS MBA, TradeIndia, Prudent):</strong> Owned 3 product lines, 136 PRDs, +10% DAU, −40% CV onboarding time, 9+ partnerships.</div>` +
-          `<div><strong>Chapter 3 (0→1 AI Builder &amp; What's Next):</strong> Shipped Echo (Whisper + RAG) &amp; Sentinel (83.9% precision fraud platform).</div>`
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ "Tell Me About Yourself" — Your Exact Doc Introduction</div>` +
+          `<div style="margin-bottom:4px;"><strong>1. Identity:</strong> MBA at NMIMS Hyderabad + B.Tech in ECE — blend of technical execution and business strategy.</div>` +
+          `<div style="margin-bottom:4px;"><strong>2. HCLTech (Analyst):</strong> Automated reporting system cutting costs by 60% across 3 departments; presented ROI to senior stakeholders.</div>` +
+          `<div><strong>3. MBA (Prudent + TradeIndia + Projects):</strong> Prudent (5+ colleges, Chief Manager, 9+ partnerships), TradeIndia (3 product lines, +10% DAU), EchoPRD &amp; PayEase.</div>`
       };
     }
 
-    // CASE B2: Behavioral — Disagreement / Conflict / Stakeholder Alignment / Cross-Functional Influence
-    if (/disagree|conflict|pushback|difficult stakeholder|convince|persuade|influence|align.*team|cross-functional/i.test(qLower)) {
+    // CASE B_WHY_MBA: "Why MBA?" / "Why did you switch from engineering/analytics to MBA/Product/Business?"
+    if (/why mba|why did you do an mba|why switch from|why product|why transition/i.test(qLower)) {
       const hudScript = [
-        `[SLIDE 1: 🤝 STAKEHOLDER ALIGNMENT — 3-PART STRUCTURE]`,
-        `**Three steps.** **First**, the situation: at **HCLTech**, finance wanted custom manual reports across 3 departments while engineering wanted a standardized pipeline—and at **TradeIndia**, we had **55 competing backlog items** across buyer and seller teams.`,
-        `[PAUSE 2s] **Second**, how I aligned them: I depersonalized the debate using data—quantifying manual cost at HCLTech and scoring TradeIndia's backlog with **RICE and MoSCoW** alongside a small A/B CTA test.`,
-        `[SLOW DOWN] **Third**, the outcome: both teams aligned around the evidence, cutting reporting costs by **60% at HCLTech** and lifting **DAU by 10% at TradeIndia**.`
+        `[SLIDE 1: 🎓 WHY MBA / WHY THIS TRANSITION]`,
+        `After my B.Tech, I worked as an **Analyst at HCLTech**, where I led a project automating reporting between finance and engineering and presented the business case to leadership.`,
+        `[PAUSE 2s] That's when I realized I enjoyed the **business and product side** more — understanding the **'why' behind decisions** and working directly with stakeholders.`,
+        `[SLOW DOWN] Winning the **HCL hackathon** and earning **two spot awards** gave me the confidence that I could think beyond pure engineering, so I pursued my MBA at **NMIMS** to pair formal strategy and product skills with my technical foundation.`
       ].join('\n');
       return {
         isGap: false,
         hudScript,
-        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Structured 3-Part Answer: Conflict &amp; Stakeholder Alignment</div>` +
-          `<div style="margin-bottom:4px;"><strong>First (Tension):</strong> Competing finance vs. engineering priorities at HCLTech &amp; 55 backlog items at TradeIndia.</div>` +
-          `<div style="margin-bottom:4px;"><strong>Second (Action):</strong> Depersonalized with ROI data, RICE/MoSCoW scoring, and pre-prod CTA validation.</div>` +
-          `<div><strong>Third (Outcome):</strong> −60% reporting cost at HCLTech and +10% DAU lift at TradeIndia.</div>`
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ "Why MBA?" — Grounded in Your HCLTech Story</div>` +
+          `<div><strong>Story:</strong> Leading the finance-engineering automation business case at HCLTech (+ Hackathon win &amp; 2 spot awards) sparked the move to understand the 'why' behind decisions via an MBA.</div>`
       };
     }
 
-    // CASE B3: Behavioral — Failure / Mistake / Tough Trade-off / Lesson Learned
-    if (/failure|failed|mistake|wrong|regret|tough decision|trade-off|tradeoff|learned|shortcoming/i.test(qLower)) {
+    // CASE B_RICE: "Explain RICE and MoSCoW" / "How do you handle ambiguity?"
+    if (/rice.*moscow|moscow.*rice|difference between rice|how do you handle ambiguity|no clear playbook/i.test(qLower)) {
       const hudScript = [
-        `[SLIDE 1: 🔄 TRADE-OFF & LEARNING — 3-PART STRUCTURE]`,
-        `**Three parts.** **First**, the early mistake: when building **Sentinel** (my travel-fraud platform) and scoping the **TradeIndia** computer-vision pipeline, I initially over-indexed on raw model complexity before simplifying how analysts and FPO teams would act on low-confidence cases.`,
-        `[PAUSE 2s] **Second**, the pivot: I course-corrected early by adding **human-in-the-loop review queues, policy rules, and citation guardrails** instead of forcing 100% automation.`,
-        `[SLOW DOWN] **Third**, the result: that trade-off cut FPO onboarding verification time by **40% at TradeIndia** and reached **83.9% precision on 15,000 bookings** in Sentinel.`
+        `[SLIDE 1: 📊 RICE vs. MoSCoW & STRUCTURING AMBIGUITY]`,
+        `I default to structuring ambiguity rather than waiting for clarity. **RICE** — Reach, Impact, Confidence, Effort — gives a **numeric score**, which is useful when I need to defend a prioritization decision quantitatively.`,
+        `[PAUSE 2s] **MoSCoW** — Must, Should, Could, Won't have — is better for **scoping a release** and drawing a hard line on what goes into v1.`,
+        `[SLOW DOWN] At **TradeIndia** across **55 feature gaps** (and when writing the **28-page PayEase PRD**), I used **RICE to decide the priority order**, and **MoSCoW to decide the v1 cutoff**.`
       ].join('\n');
       return {
         isGap: false,
         hudScript,
-        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Structured 3-Part Answer: Trade-off, Pivot &amp; Result</div>` +
-          `<div style="margin-bottom:4px;"><strong>First (Initial Mistake):</strong> Over-indexing on model complexity before designing the human review workflow.</div>` +
-          `<div style="margin-bottom:4px;"><strong>Second (Course-Correction):</strong> Added human-in-the-loop queues, policy rules, and confidence guardrails.</div>` +
-          `<div><strong>Third (Measurable Result):</strong> −40% onboarding time at TradeIndia and 83.9% precision across 15,000 bookings in Sentinel.</div>`
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ RICE vs. MoSCoW &amp; Ambiguity</div>` +
+          `<div><strong>Distinction:</strong> RICE = numeric score to defend priority order quantitatively; MoSCoW = hard cutoff for v1 release scope.</div>`
       };
     }
 
-    // CASE B4: Open-Ended — Greatest Strength & Biggest Weakness (separates Weakness-only, Strength-only, or Both)
+    // CASE B2: Behavioral — Disagreement / Conflict / Convincing Resistant Stakeholders / Unhappy Client
+    if (/disagree|conflict|pushback|difficult stakeholder|unhappy client|convince|persuade|without.*authority|influence|align.*team|cross-functional/i.test(qLower)) {
+      if (/unhappy|churn|paid|unpaid/i.test(qLower)) {
+        const hudScript = [
+          `[SLIDE 1: 🤝 ALIGNING STAKEHOLDERS ON RETENTION — TRADEINDIA]`,
+          `At **TradeIndia**, we faced rising churn and leadership initially wanted to focus retention efforts solely on **paid accounts**—but I saw a big risk in overlooking our **unpaid user base**, which was the majority of our funnel.`,
+          `[PAUSE 2s] I ran independent user research across **both paid and unpaid users** and built a data-backed case showing how fixing free-tier friction directly drove long-term paid conversions.`,
+          `[SLOW DOWN] Presenting that clear business impact won full buy-in to fix both segments, lifting **DAU by 10%** and improving overall retention.`
+        ].join('\n');
+        return {
+          isGap: false,
+          hudScript,
+          summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Turning Around Stakeholder Pushback (TradeIndia Free vs. Paid Churn)</div>` +
+            `<div><strong>Story:</strong> Proved with user research &amp; funnel data that fixing unpaid-user friction drove long-term paid conversion (+10% DAU).</div>`
+        };
+      }
+      const hudScript = [
+        `[SLIDE 1: 🤝 CONVINCING RESISTANT STAKEHOLDERS — HCLTECH]`,
+        `At **HCLTech**, when I proposed automating our manual reporting process, the **engineering team was resistant initially** because automation meant extra upfront work for a benefit finance would see first.`,
+        `[PAUSE 2s] Instead of pushing from authority, I built the **ROI analysis specifically showing engineering's own downstream time savings**, not just finance's, and presented it as a **joint win**.`,
+        `[SLOW DOWN] Once they saw the shared benefit, they came on board — and together we delivered a **60% cost reduction** and **15% efficiency gain** across three departments.`
+      ].join('\n');
+      return {
+        isGap: false,
+        hudScript,
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Persuading Resistant Stakeholders Without Authority (HCLTech)</div>` +
+          `<div style="margin-bottom:4px;"><strong>Obstacle:</strong> Engineering resisted upfront automation work because finance saw the benefit first.</div>` +
+          `<div><strong>Action &amp; Result:</strong> Built ROI showing engineering's own downstream time savings → won buy-in → 60% cost reduction &amp; 15% efficiency gain.</div>`
+      };
+    }
+
+    // CASE B3: Behavioral — Failure / Setback / Challenge Overcome / Lesson Learned
+    if (/failure|failed|mistake|setback|wrong|regret|tough decision|trade-off|tradeoff|learned|shortcoming/i.test(qLower)) {
+      const hudScript = [
+        `[SLIDE 1: 🔄 A SETBACK & WHAT I LEARNED — TRADEINDIA]`,
+        `At **TradeIndia**, early on, some of the feature gaps I found through user research **didn't make the roadmap** because I led with the user pain point instead of backing it with hard numbers first.`,
+        `[PAUSE 2s] I learned that a good idea needs **quantified reach and effort** behind it to be taken seriously by leadership.`,
+        `[SLOW DOWN] After that, I systematically logged every gap and **paired every user insight with a RICE score and funnel data** before pitching — which is how my CTA optimizations got shipped and drove a **10% DAU lift**.`
+      ].join('\n');
+      return {
+        isGap: false,
+        hudScript,
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Setback &amp; Lesson Learned (TradeIndia Roadmap Pitch)</div>` +
+          `<div style="margin-bottom:4px;"><strong>Setback:</strong> Early user-research findings weren't picked up because they lacked quantified backing.</div>` +
+          `<div><strong>Lesson &amp; Fix:</strong> Always pair qualitative user pain points with a RICE score and funnel numbers before pitching (+10% DAU).</div>`
+      };
+    }
+
+    // CASE B4: Open-Ended — Greatest Strengths & 3 Real Weaknesses (from your Google Doc)
     if (/strength|weakness|superpower|area.*improve|improving|biggest flaw|development area/i.test(qLower)) {
       const asksWeakness = /weakness|improve|improving|flaw|development area|struggle/i.test(qLower);
       const asksStrength = /strength|superpower|best at|strongest/i.test(qLower);
 
       if (asksWeakness && !asksStrength) {
         const hudScript = [
-          `[SLIDE 1: 💡 MY WEAKNESS — 3-PART STRUCTURE]`,
-          `**Three things.** **First**, the weakness: because I have a hands-on engineering and analytics background (**Python, SQL, FastAPI, React**), I can dive too deep into debugging technical edge cases myself instead of delegating early.`,
-          `[PAUSE 2s] **Second**, where I noticed it: while managing **3 product lines and 136 PRDs at TradeIndia**, spending extra cycles inspecting pipeline edge cases myself risked slowing down backlog grooming.`,
-          `[SLOW DOWN] **Third**, how I fix it: I now set **time-boxed architectural checkpoints and crisp acceptance criteria** upfront in Jira so engineering owns the implementation while I drive discovery and roadmap velocity.`
+          `[SLIDE 1: 💡 MY WEAKNESS & HOW I FIX IT]`,
+          `Because my work at **HCLTech and TradeIndia** was data-heavy, I can **over-analyse before acting** — I naturally want to validate every number before I move.`,
+          `[PAUSE 2s] At **TradeIndia**, while managing **3 product lines**, I learned to set a **strict decision deadline**: I prioritized with **RICE and MoSCoW** and trained myself to **ship at 80% confidence** rather than waiting for 100%.`,
+          `[SLOW DOWN] I also used to **take on too many parallel commitments** (placement committee, hackathons, and projects), so I now check capacity upfront and lock in written weekly priorities.`
         ].join('\n');
         return {
           isGap: false,
           hudScript,
-          summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Structured 3-Part Weakness Answer</div>` +
-            `<div style="margin-bottom:4px;"><strong>First (The Weakness):</strong> Diving too deep into technical/data edge cases myself.</div>` +
-            `<div style="margin-bottom:4px;"><strong>Second (Real Context):</strong> Managing 3 product lines &amp; 136 PRDs simultaneously at TradeIndia.</div>` +
-            `<div><strong>Third (The Fix):</strong> Time-boxed technical reviews + crisp acceptance criteria &amp; KPI contracts in Jira.</div>`
+          summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Your Authentic Weaknesses &amp; Fixes (From Your Prep Doc)</div>` +
+            `<div style="margin-bottom:4px;"><strong>1. Over-analysing before acting:</strong> Fixed at TradeIndia by setting a decision deadline with RICE/MoSCoW and shipping at 80% confidence.</div>` +
+            `<div style="margin-bottom:4px;"><strong>2. Taking on too many things at once:</strong> Fixed by checking capacity upfront and locking written weekly priorities.</div>` +
+            `<div><strong>3. If Sales/Banking Role:</strong> No direct quota-carrying banking background → closed via Bloomberg, Finlatics, TradeIndia conversion funnels, and Prudent outreach.</div>`
         };
       }
 
       if (asksStrength && !asksWeakness) {
         const hudScript = [
-          `[SLIDE 1: 💪 MY CORE STRENGTH — 3-PART STRUCTURE]`,
-          `**Three things.** **First**, I turn user research into shipped product: at **TradeIndia**, I uncovered **55 UX gaps**, authored **136 PRDs**, and optimized CTAs to lift **DAU by 10%**.`,
-          `[PAUSE 2s] **Second**, I pair product sense with hard analytics: at **HCLTech**, I automated **Python & SQL** reporting (−60% cost) and built **Power BI** dashboards (+25% faster response time).`,
-          `[SLOW DOWN] **Third**, I build 0→1 AI products end-to-end—shipping **Echo** (Whisper + LangChain RAG) and **Sentinel** (fraud detection at 83.9% precision) with real anti-hallucination guardrails.`
+          `[SLIDE 1: 💪 MY 3 MAIN STRENGTHS]`,
+          `**First**, I translate between **technical and business language** — I have an ECE background, and I turn technical work into outcomes leadership cares about, like a **60% cost reduction at HCLTech**.`,
+          `[PAUSE 2s] **Second**, I'm strong at **structured prioritization under ambiguity** — **RICE and MoSCoW** aren't just frameworks I know, they're how I prioritized **55 feature gaps at TradeIndia** when there was no clear playbook.`,
+          `[SLOW DOWN] **Third**, I **build trust with people who have no reason to help me yet** — I did that with a bank's **Chief Manager at Prudent**, with resistant engineering teams at **HCLTech**, and with users in discovery interviews.`
         ].join('\n');
         return {
           isGap: false,
           hudScript,
-          summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Structured 3-Part Strength Answer</div>` +
-            `<div style="margin-bottom:4px;"><strong>First (Product Execution):</strong> TradeIndia — 55 gaps found, 136 PRDs shipped, +10% DAU lift.</div>` +
-            `<div style="margin-bottom:4px;"><strong>Second (Analytical Rigour):</strong> HCLTech — Python/SQL automation (−60% cost) &amp; Power BI dashboards.</div>` +
-            `<div><strong>Third (0→1 AI Builder):</strong> Shipped Echo (Whisper + RAG) and Sentinel (83.9% precision fraud workbench).</div>`
+          summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Your 3 Main Strengths (Exact From Your Prep Doc)</div>` +
+            `<div style="margin-bottom:4px;"><strong>First:</strong> Translating between technical &amp; business language (−60% cost at HCLTech).</div>` +
+            `<div style="margin-bottom:4px;"><strong>Second:</strong> Structured prioritization under ambiguity (RICE &amp; MoSCoW across 55 gaps at TradeIndia).</div>` +
+            `<div><strong>Third:</strong> Building trust from scratch (Central Bank Chief Manager, resistant HCL engineers, user interviews).</div>`
         };
       }
 
       const hudScript = [
-        `[SLIDE 1: 💡 STRENGTH & WEAKNESS — STRUCTURED]`,
-        `**First, my core strength:** I bridge 0→1 product ownership with technical and data rigour—authoring **136 PRDs** and lifting **DAU by 10% at TradeIndia**, automating **Python & SQL** reporting (−60% cost at **HCLTech**), and building AI apps like **Echo** and **Sentinel**.`,
-        `[PAUSE 2s] **Second, my weakness:** because I can code and query data myself, I sometimes dive too deep into technical edge cases—which I noticed while juggling **3 product lines at TradeIndia**.`,
-        `[SLOW DOWN] **Third, how I manage it:** I set time-boxed design checkpoints and clear acceptance criteria upfront so I stay focused on roadmap impact.`
+        `[SLIDE 1: 💡 MY STRENGTHS & WEAKNESS]`,
+        `**My three strengths:** **First**, translating between technical and business language (−60% cost at **HCLTech**); **second**, structuring ambiguity with **RICE and MoSCoW** (**55 gaps at TradeIndia**); and **third**, building trust from scratch with stakeholders like Central Bank's **Chief Manager**.`,
+        `[PAUSE 2s] **My weakness:** because my HCL and TradeIndia work was data-heavy, I can **over-analyse before acting**.`,
+        `[SLOW DOWN] **How I fix it:** at TradeIndia I learned to set a **strict decision deadline** using RICE and **ship at 80% confidence** instead of waiting for perfection.`
       ].join('\n');
       return {
         isGap: false,
         hudScript,
-        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Structured 3-Part Strength &amp; Weakness</div>` +
-          `<div style="margin-bottom:4px;"><strong>First (Strength):</strong> TradeIndia (136 PRDs, +10% DAU) + HCLTech (−60% cost via Python/SQL) + Echo/Sentinel.</div>` +
-          `<div style="margin-bottom:4px;"><strong>Second (Weakness):</strong> Diving too deep into technical implementation details yourself.</div>` +
-          `<div><strong>Third (Fix):</strong> Time-boxed checkpoints and clear acceptance criteria.</div>`
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Strengths + Weakness (From Your Prep Doc)</div>` +
+          `<div style="margin-bottom:4px;"><strong>Strengths:</strong> 1) Tech-to-business translation, 2) RICE/MoSCoW under ambiguity, 3) Building trust from scratch.</div>` +
+          `<div><strong>Weakness &amp; Fix:</strong> Over-analysing before acting → set decision deadlines &amp; ship at 80% confidence.</div>`
       };
     }
 
-    // CASE B5: Open-Ended — Prioritization / Ambiguity / 30-60-90 Day Plan / Product Strategy
-    if (/prioriti|ambigui|30.*60.*90|first.*90.*days|first.*month|roadmap|strategy|how would you approach/i.test(qLower)) {
+    // CASE B5: Open-Ended — Prioritizing Multiple Stakeholders / Tight Deadlines / 30-60-90 Day Plan
+    if (/prioriti|multiple.*stakeholder|multiple.*priorit|tight deadline|30.*60.*90|first.*90.*days|first.*month|roadmap|strategy|how would you approach/i.test(qLower)) {
       const hudScript = [
-        `[SLIDE 1: 🗺️ PRIORITIZATION & 30-60-90 PLAN — 3 STEPS]`,
-        `**Three steps.** **First**, I diagnose with data and discovery: at **TradeIndia**, I interviewed buyers and sellers to surface **55 bugs and feature gaps** and mapped funnel drop-offs in SQL and Power BI.`,
-        `[PAUSE 2s] **Second**, I prioritize ruthlessly with **RICE and MoSCoW**: separating quick, high-conviction wins—like our CTA optimization (**PBR, Call Now, WhatsApp**) that drove **+10% DAU**—from long-term bets like our **Sentinel-2 CV pipeline** (−40% onboarding time).`,
-        `[SLOW DOWN] **Third**, in my first 30–60–90 days here: I'd audit the funnel and stakeholder pain points in Month 1, ship a quick conversion or workflow win in Month 2, and scale the AI/product roadmap in Month 3.`
+        `[SLIDE 1: 🗺️ PRIORITIZING UNDER DEADLINES & AMBIGUITY]`,
+        `I use the same logic **RICE** taught me — I look at **impact and urgency together**, not just who is asking loudest, and sequence based on real constraints.`,
+        `[PAUSE 2s] During my **Prudent CSR internship**, I was simultaneously building an **MIS dashboard**, compiling a **5-year impact report**, and coordinating **5+ colleges and Central Bank's Chief Manager** for Project Samarth. I **front-loaded the slowest-moving stakeholder first**, time-boxed the dashboard to mornings, and handled live coordination in the afternoons — shipping all three on time.`,
+        `[SLOW DOWN] At **TradeIndia**, I applied that same discipline across **55 feature gaps** — using **RICE** for priority order and **MoSCoW** for the v1 cutoff to drive a **10% DAU lift**.`
       ].join('\n');
       return {
         isGap: false,
         hudScript,
-        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Structured 3-Step Prioritization &amp; 30-60-90 Plan</div>` +
-          `<div style="margin-bottom:4px;"><strong>First (Diagnose):</strong> Customer discovery + SQL/Power BI funnel analysis (55 gaps surfaced at TradeIndia).</div>` +
-          `<div style="margin-bottom:4px;"><strong>Second (Prioritize with RICE/MoSCoW):</strong> Quick CTA wins (+10% DAU) vs. big bets (−40% FPO onboarding time).</div>` +
-          `<div><strong>Third (30-60-90 Execution):</strong> Audit funnel → ship quick win → scale roadmap.</div>`
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Prioritizing Multiple Stakeholders &amp; Deadlines (Prudent + TradeIndia)</div>` +
+          `<div style="margin-bottom:4px;"><strong>Rule:</strong> Sequence by impact, urgency, and stakeholder cadence — not who emails last.</div>` +
+          `<div style="margin-bottom:4px;"><strong>Prudent Story:</strong> Front-loaded Central Bank's Chief Manager (slowest cadence), time-boxed MIS dashboard to mornings, afternoons for 5+ colleges.</div>` +
+          `<div><strong>TradeIndia Story:</strong> RICE for priority order + MoSCoW for v1 cutoff across 55 gaps (+10% DAU).</div>`
       };
     }
 
-    // CASE B6: Behavioral — Challenging Problem / Obstacle / Proud Accomplishment / Leadership
-    if (/challeng|obstacle|difficult problem|proud|accomplish|complex|hardest|tight deadline|pressure|leadership|led a/i.test(qLower)) {
+    // CASE B6: Behavioral — Challenging Problem / Initiative Without Being Asked / Difficult Stakeholder Cadence
+    if (/challeng|obstacle|difficult|initiative|without being asked|proud|accomplish|complex|hardest|pressure|leadership|led a/i.test(qLower)) {
       const hudScript = [
-        `[SLIDE 1: 🏆 KEY CHALLENGE & IMPACT — 3-PART STRUCTURE]`,
-        `**Three things.** **First**, the problem: at **TradeIndia**, manual FPO onboarding verification was bottlenecking our agritech MVP, and at **HCLTech**, manual financial reporting across 3 departments was slow and error-prone.`,
-        `[PAUSE 2s] **Second**, the execution: I managed a **Sentinel-2 + Google Earth Engine computer-vision pipeline** at TradeIndia to automate tree-canopy detection, and built **Python/SQL automation and Power BI dashboards** at HCLTech.`,
-        `[SLOW DOWN] **Third**, the measurable impact: we cut FPO onboarding verification time by **40% at TradeIndia**, reduced reporting cost by **60% at HCLTech**, and improved financial response time by **25%**.`
+        `[SLIDE 1: 🏆 TAKING INITIATIVE & SOLVING A HARD CHALLENGE]`,
+        `At **TradeIndia**, identifying the **55 bugs and feature gaps** wasn't assigned to me — the existing bug list was reactive, so I **took the initiative** to run task-based user journey interviews watching where buyers and sellers hesitated on **Call Now, WhatsApp, and Send Inquiry** buttons, which drove a **10% DAU increase**.`,
+        `[PAUSE 2s] And when coordinating **5+ colleges and Central Bank of India's Chief Manager** at **Prudent**, everyone operated on different cadences for one shared exhibition deadline — so I **front-loaded the slowest-moving stakeholder's requirements first** and sequenced faster teams around that.`,
+        `[SLOW DOWN] Both taught me to bring structure early and always back user insights with RICE data.`
       ].join('\n');
       return {
         isGap: false,
         hudScript,
-        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Structured 3-Part Challenge &amp; Impact Answer</div>` +
-          `<div style="margin-bottom:4px;"><strong>First (Problem):</strong> Manual FPO verification bottleneck at TradeIndia &amp; manual reporting across 3 departments at HCLTech.</div>` +
-          `<div style="margin-bottom:4px;"><strong>Second (Action):</strong> Sentinel-2 + Google Earth Engine CV pipeline &amp; Python/SQL/Power BI automation.</div>` +
-          `<div><strong>Third (Impact):</strong> −40% onboarding time at TradeIndia, −60% cost &amp; +25% response speed at HCLTech.</div>`
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Initiative &amp; Overcoming Challenges (TradeIndia + Prudent)</div>` +
+          `<div style="margin-bottom:4px;"><strong>Initiative (TradeIndia):</strong> Unassigned task-based user journey interviews surfaced 55 silent friction points → +10% DAU.</div>` +
+          `<div><strong>Stakeholder Challenge (Prudent):</strong> Managed Chief Manager vs. 5+ college coordinators by front-loading the slowest-moving stakeholder first.</div>`
       };
     }
 
-    // CASE B6b: Logistics / Notice Period / Joining Date / WFO vs. Remote Availability
+    // CASE B_PROJECTS: Direct questions about TradeIndia, HCLTech, Prudent CSR, EchoPRD, PayEase, Hackathon, or Hobbies/Extracurriculars
+    if (/echoprd|echo\b|payease|prudent|csr internship|tradeindia|55 bugs|discovery interview|hcltech|60% cost|hackathon|spot award|returnproof|hobbies|hobby|outside of work|3.*5 years|five years/i.test(qLower)) {
+      if (/echoprd|echo\b/i.test(qLower)) {
+        const hudScript = [
+          `[SLIDE 1: 🎙️ ECHOPRD — VOICE-TO-ROADMAP AI COPILOT]`,
+          `**EchoPRD** is an independent AI tool I built to solve a real PM gap — the friction between raw user interviews and a usable backlog. It transcribes interviews via **Whisper ASR**, then uses a **LangChain RAG pipeline with vector search** to pull out real feature requests and pain points.`,
+          `[PAUSE 2s] It's **strictly grounded**: every insight must point back to a real quote in the transcript, and I designed guardrails so it **refuses to answer rather than guess** when evidence is missing.`,
+          `[SLOW DOWN] It then hands you a **confidence-scored RICE and MoSCoW backlog** and a draft PRD.`
+        ].join('\n');
+        return {
+          isGap: false,
+          hudScript,
+          summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ EchoPRD (Exact From Your Prep Doc)</div>` +
+            `<div><strong>Key Points:</strong> Whisper ASR + LangChain RAG + vector search; refuses to guess when evidence is insufficient; outputs confidence-scored RICE/MoSCoW backlog &amp; draft PRD.</div>`
+        };
+      }
+      if (/payease/i.test(qLower)) {
+        const hudScript = [
+          `[SLIDE 1: 💳 PAYEASE — 28-PAGE DIGITAL PAYMENTS PRD]`,
+          `**PayEase** is an end-to-end **28-page PRD** I authored for a fintech app targeting India's **$500B+ digital payments market**, after identifying user pain points around transaction failures, cluttered UIs, and limited financial insights.`,
+          `[PAUSE 2s] I designed it to combine **UPI, bill payments, expense tracking, rewards, and AI financial insights** in one simple app, with **merchant analytics and multilingual support for Tier-2 and Tier-3 cities**.`,
+          `[SLOW DOWN] I covered the full stack — user research, **RICE and MoSCoW** prioritization, technical architecture, **API specs**, monetization, and an **18-month go-to-market roadmap**.`
+        ].join('\n');
+        return {
+          isGap: false,
+          hudScript,
+          summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ PayEase (Exact From Your Prep Doc)</div>` +
+            `<div><strong>Key Points:</strong> 28-page PRD for India's $500B+ payments space; UPI + expense tracking + AI insights + Tier-2/3 multilingual + API specs &amp; 18-month GTM.</div>`
+        };
+      }
+      if (/prudent|csr internship/i.test(qLower)) {
+        const hudScript = [
+          `[SLIDE 1: 🤝 CSR INTERNSHIP — PRUDENT CORPORATE ADVISORY]`,
+          `At **Prudent Corporate Advisory**, I built an **MIS Excel master dashboard from scratch for FY 2026–27** and compiled a verified **5-year CSR Impact Report**.`,
+          `[PAUSE 2s] I also led the **Project Samarth exhibition**, coordinating **5+ colleges and the Central Bank of India's Chief Manager** — front-loading the slowest-moving stakeholder's requirements first — and explored **9+ retail partnerships**.`,
+          `[SLOW DOWN] That was my first real outreach and relationship-building experience, and it gave me comfort approaching and working with senior leaders outside my own organization.`
+        ].join('\n');
+        return {
+          isGap: false,
+          hudScript,
+          summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Prudent CSR Internship (Exact From Your Prep Doc)</div>` +
+            `<div><strong>Key Points:</strong> FY26-27 MIS Excel dashboard, 5-year CSR Impact Report, Project Samarth exhibition (5+ colleges, Central Bank Chief Manager, 9+ retail partnerships).</div>`
+        };
+      }
+      if (/55 bugs|discovery interview|tradeindia/i.test(qLower)) {
+        const hudScript = [
+          `[SLIDE 1: 🚀 TRADEINDIA — 3 PRODUCT LINES & +10% DAU]`,
+          `At **TradeIndia**, I owned the product lifecycle across **3 product lines** on both buyer and seller sides. I structured discovery interviews around **real user journeys, not open-ended questions** — walking users through a real task, watching where they hesitated, and logging **55 bugs and feature gaps** systematically.`,
+          `[PAUSE 2s] I worked on **CTA optimization** — buttons like **Call Now, WhatsApp, PBR, and Send Inquiry** — since small friction there was hurting retention disproportionately. Removing those friction points drove a **10% DAU increase**.`,
+          `[SLOW DOWN] I prioritized the backlog with **RICE and MoSCoW**, wrote **136 PRDs, BRDs, FSDs, and use-case diagrams** for features that shipped, and managed a **Sentinel-2 CV pipeline** that cut FPO onboarding time by **40%**.`
+        ].join('\n');
+        return {
+          isGap: false,
+          hudScript,
+          summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ TradeIndia Role &amp; Discovery Interviews (Exact From Your Prep Doc)</div>` +
+            `<div><strong>Key Points:</strong> Task-based user journey interviews → 55 gaps logged → Call Now/WhatsApp/PBR/Send Inquiry CTA optimization → +10% DAU, 136 PRDs, −40% FPO CV onboarding.</div>`
+        };
+      }
+      if (/hcltech|60% cost|hackathon|spot award|returnproof/i.test(qLower)) {
+        const hudScript = [
+          `[SLIDE 1: ⚙️ HCLTECH — 60% COST REDUCTION & HACKATHON WIN]`,
+          `At **HCLTech**, there was a manual reporting process spanning **finance and engineering** that was slow and error-prone. I led the end-to-end implementation of an automated version, built the **ROI analysis showing both finance and engineering time savings**, and delivered a **60% cost reduction** across three departments.`,
+          `[PAUSE 2s] I also automated data collection in **Python** (−15% time), built **Power BI and Tableau** dashboards (+25% response speed), and delivered a **15% efficiency gain**.`,
+          `[SLOW DOWN] That same problem-solving earned me **two HCL spot awards**, the **HCL Annual Hackathon win**, and **National Finalist (3rd in Hyderabad Zonal)** at the **Aspire For Her × Logitech Hackathon** with **ReturnProof**.`
+        ].join('\n');
+        return {
+          isGap: false,
+          hudScript,
+          summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ HCLTech &amp; Hackathons (Exact From Your Prep Doc)</div>` +
+            `<div><strong>Key Points:</strong> Finance + engineering reporting automation (−60% cost across 3 depts), Python data collection (−15% time), Power BI/Tableau (+25% speed), HCL Hackathon winner + 2 spot awards + ReturnProof National Finalist.</div>`
+        };
+      }
+      if (/hobbies|hobby|outside of work/i.test(qLower)) {
+        const hudScript = [
+          `[SLIDE 1: 🎨 HOBBIES & INTERESTS OUTSIDE WORK]`,
+          `I have a few main interests outside work: I love reading — I recently finished **Amish Tripathi's Ram Chandra series** (the Ramayan retold as fantasy).`,
+          `[PAUSE 2s] I also enjoy **building Lego**, watching English series, and **travelling** — and in college I was active in **Rotary Club rural computer-literacy workshops** and product competitions.`,
+          `[SLOW DOWN] Together, they keep me curious, patient with first-time users, and open to different perspectives.`
+        ].join('\n');
+        return {
+          isGap: false,
+          hudScript,
+          summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Hobbies &amp; Extracurriculars (Exact From Your Prep Doc)</div>` +
+            `<div><strong>Key Points:</strong> Reading (Amish Tripathi's Ram Chandra series), building Lego, English series, travelling, and rural computer-literacy workshops.</div>`
+        };
+      }
+      if (/3.*5 years|five years/i.test(qLower)) {
+        const hudScript = [
+          `[SLIDE 1: 🚀 WHERE I SEE MYSELF IN 3–5 YEARS]`,
+          `In the next **3 to 5 years**, I see myself growing from owning individual product modules or client relationships into **owning an end-to-end product line or strategic account portfolio** across one or two core verticals where I've built deep expertise.`,
+          `[PAUSE 2s] I want to be the person who bridges **technical/AI capabilities, data analytics, and customer outcomes** to mentor junior teammates and drive measurable revenue and retention growth.`
+        ].join('\n');
+        return {
+          isGap: false,
+          hudScript,
+          summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Where Do You See Yourself in 3–5 Years?</div>` +
+            `<div><strong>Key Points:</strong> Grow from module/account execution into end-to-end product line or strategic portfolio leadership.</div>`
+        };
+      }
+    }
+
+    // CASE B6b: Logistics / Notice Period / Joining Date / WFO vs. Remote Availability / Relocation
     if (/notice period|when can you join|joining date|start date|work from office|wfo|on-site|onsite|remote|relocat|availability|available to join/i.test(qLower)) {
       const hudScript = [
         `[SLIDE 1: 📅 AVAILABILITY — 3-PART STRUCTURE]`,
@@ -5502,25 +5656,17 @@ endstream endobj
 
   async function streamCloudLlmInterviewAnswer(question, resumeText, jdText, provider, apiKey, onDelta) {
     const sysPrompt = [
-      'You are GhostCue, a real-time interview co-pilot writing crisp, structured, first-person ("I...") spoken answers for Aastha Saini to read aloud from a webcam teleprompter.',
-      'MANDATORY VOICE & SIGNPOSTING STYLE (FOLLOW THIS EXACT STRUCTURE):',
-      '- Always open with a clear signposted hook like "**Three things.**" (or "**Three steps.**") and structure the answer into "**First**, ...", "**Second**, ...", and "**Third**, ...".',
-      '- Use short, punchy, conversational sentences with active verbs and concrete names/numbers from the RESUME (TradeIndia, HCLTech, Prudent, NMIMS Placement Committee, Echo, Sentinel, Power BI, Python/SQL, Bloomberg, Finlatics). Never use generic corporate fluff.',
-      '- Keep "Tell me about yourself" and "Why are you a good fit for this role?" DISTINCT:',
-      '  • When asked "Tell me about yourself / Walk me through your resume", tell Aastha\'s 3-chapter chronological career arc ("**My journey has three chapters.** **First**, my foundation in engineering and analytics at **HCLTech**... **Second**, my pivot into product and business during my **NMIMS MBA** at **TradeIndia** and **Prudent**... **Third**, my 0→1 AI product building with **Echo** and **Sentinel**...").',
-      '  • When asked "Why are you a good fit for this role? / Why should we hire you?", pitch her 3 role-aligned value pillars ("**Three things.** **First**, I\'ve done the work this role needs... **Second**, I\'m analytical... **Third**, I fit the culture...").',
-      '- FEW-SHOT STYLE EXAMPLE FOR "Why are you a good fit for this role?":',
-      '  Question: "Why are you a good fit for this role?"',
-      '  Answer:',
-      '  [SLIDE 1: 🎯 STRUCTURED 3-PART ANSWER]',
-      '  **Three things.** **First**, I\'ve done the work this role needs: relationship-building at **Prudent** and the **placement committee**, and lead-conversion and product ownership across 3 product lines (**136 PRDs, +10% DAU**) at **TradeIndia**.',
-      '  [PAUSE 2s] **Second**, I\'m analytical and technical. I can read a **Power BI** dashboard, automate reporting in **Python & SQL** (−60% cost at **HCLTech**), and explain ROI to senior stakeholders—plus I ship AI products like **Echo** and **Sentinel**.',
-      '  **Third**, I fit the culture: I work across teams (finance and engineering at **HCLTech**), I take ownership early, and I care about doing right by the customer—backed by my **NMIMS MBA** and financial markets grounding from **Bloomberg and Finlatics**.',
-      'GROUNDING & HONESTY RULES:',
-      '1. Ground every project, metric, company, and tool 100% in the supplied RESUME and JOB DESCRIPTION. Never invent employers or metrics.',
-      '2. For open-ended or behavioral questions ("What is your weakness?", "Tell me about a failure/conflict/challenge", "How do you prioritize?"), NEVER refuse to answer—use the same "**Three things. First... Second... Third...**" structure anchored in real projects from the RESUME.',
-      '3. ONLY start with "[SLIDE 1: ⚠️ HONEST GAP — NOT IN RESUME]" when asked about a hard technical tool/language absent from the RESUME (e.g. Kubernetes, Rust), still using "**Three things. First** (honest gap)... **Second** (adjacent proof)... **Third** (fast ramp-up)...".',
-      '4. Keep total length to 65–95 words across 3 lines so it is effortless to read aloud.'
+      'You are GhostCue, a real-time interview co-pilot writing spoken answers in Aastha Saini\'s exact personal voice for her to read aloud from a webcam teleprompter.',
+      'AASTHA\'S PERSONAL VOICE & FRAMING RULES (LEARNED FROM HER INTERVIEW PREP DOC):',
+      '1. TONE & CADENCE: Direct, grounded, conversational, zero corporate buzzwords. Speak in natural first-person ("I..."). Use concrete facts, numbers, and plain English explanations.',
+      '2. MATCH THE STRUCTURE TO THE QUESTION TYPE (just like Aastha\'s own prep doc):',
+      '   • For "Why are you a good fit / Why pick you / What are your 3 strengths?": Use signposted "**Three things. First... Second... Third...**".',
+      '   • For "Tell me about yourself / Introduce yourself": Use Aastha\'s natural chronological narrative ("I\'m Aastha, currently pursuing my MBA at NMIMS Hyderabad, with an undergrad in ECE... I started as an Analyst at HCLTech (-60% cost)... During my MBA, I interned at Prudent (5-year CSR report, 5+ colleges, Chief Manager) and as a Product Intern at TradeIndia (3 product lines, +10% DAU, 55 gaps, 136 PRDs)... plus built EchoPRD and PayEase...").',
+      '   • For "How did you do X / Tell me about a challenge, conflict, or setback": Tell the specific story directly ("At HCLTech, the engineering team was resistant initially because automation meant extra upfront work for a benefit finance would see first. I built the ROI analysis showing engineering\'s own downstream time savings...").',
+      '   • For "RICE vs MoSCoW": "RICE gives a numeric score to defend priority order quantitatively; MoSCoW draws a hard line on the v1 cutoff."',
+      '   • For "Weakness": Use her real weaknesses from her doc ("I can over-analyse before acting because my HCL and TradeIndia work was data-heavy — at TradeIndia I fixed this by setting a decision deadline with RICE/MoSCoW and shipping at 80% confidence" OR "I take on too many things at once").',
+      '3. STRICT GROUNDING: Only use facts from Aastha\'s supplied RESUME and JOB DESCRIPTION. If asked about a hard technical tool absent from her resume (e.g. Kubernetes, Rust), start with "[SLIDE 1: ⚠️ HONEST GAP — NOT IN RESUME]", be honest ("That\'s a fair gap, and I\'d rather be honest about it than overstate my experience"), and give her 2-week / 4-week ramp-up plan.',
+      '4. Keep total length to 65–95 words across 3 lines with **bold** on key phrases so it is effortless to read aloud.'
     ].join('\n');
 
     const userPrompt = `CANDIDATE RESUME:\n${resumeText}\n\nTARGET JOB DESCRIPTION:\n${jdText}\n\nINTERVIEWER QUESTION:\n"${question}"\n\nWrite the concise, grounded spoken response now:`;
