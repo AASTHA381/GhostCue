@@ -2115,7 +2115,7 @@
             📄 Upload Resume (.PDF/.DOCX/.TXT)
             <input type="file" id="resumeFileUploadInput" accept=".pdf,.docx,.doc,.txt,.md,.rtf" style="display:none" />
           </label>
-          <button class="chip-btn" id="loadSampleResumeJdBtn" style="padding:5px 7px;font-size:10px;" title="Load sample PM/SWE Resume & Job Description">⚡ Sample</button>
+          <button class="chip-btn" id="loadSampleResumeJdBtn" style="padding:5px 7px;font-size:10px;" title="Restore Aastha Saini's pre-loaded Resume">↺ My Resume</button>
         </div>
 
         <div style="font-size:10.5px;font-weight:700;color:#334155;display:flex;justify-content:space-between;">
@@ -2126,10 +2126,13 @@
 
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px;">
           <span style="font-size:10.5px;font-weight:700;color:#334155;">Target Job Description (JD)</span>
-          <label class="chip-btn" for="jdFileUploadInput" style="cursor:pointer;padding:2px 6px;font-size:9.5px;">
-            📥 Upload JD
-            <input type="file" id="jdFileUploadInput" accept=".pdf,.docx,.doc,.txt,.md,.rtf" style="display:none" />
-          </label>
+          <div style="display:flex;gap:4px;">
+            <button class="chip-btn" id="clearJdBtn" type="button" style="padding:2px 6px;font-size:9.5px;" title="Clear JD to paste a new company/role Job Description">🧹 Clear JD</button>
+            <label class="chip-btn" for="jdFileUploadInput" style="cursor:pointer;padding:2px 6px;font-size:9.5px;">
+              📥 Upload JD
+              <input type="file" id="jdFileUploadInput" accept=".pdf,.docx,.doc,.txt,.md,.rtf" style="display:none" />
+            </label>
+          </div>
         </div>
         <textarea class="iv-textarea" id="interviewJdInput" placeholder="Paste the target role Job Description (skills, responsibilities, requirements)..."></textarea>
 
@@ -2169,6 +2172,7 @@
           <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('What is your biggest weakness and how are you working to improve it?')">My Weakness</button>
           <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('What is your greatest strength?')">My Strength</button>
           <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('How do you prioritize your roadmap and what would your first 30-60-90 days look like?')">Prioritization / 90-Day Plan</button>
+          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('When can you join full-time and are you available for on-site work from office vs remote?')">Joining / WFO vs Remote</button>
           <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Do you have any questions for us?')">Questions to Ask</button>
           <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Do you have 5 years of production Kubernetes and Rust kernel experience?')">Gap / Unlisted Skill</button>
         </div>
@@ -4966,29 +4970,31 @@ endstream endobj
   // PHASE 2: AI-POWERED REAL-TIME INTERVIEW CO-PILOT (GROUNDED RAG + STREAMING)
   // ============================================================================
   const IV_STORAGE_KEY = 'ghostcue_interview_v1';
+  const IV_RESUME_SEED_VERSION = 'aastha_real_resume_v2';
   const DEFAULT_SAMPLE_RESUME = [
-    'Aastha Saini — Product & Analytics / AI Systems Lead',
-    '• Built Sentinel Travel Risk Lab: explainable travel-booking payment fraud & inventory abuse detection using XGBoost, SHAP explainability, FastAPI, and React, reducing false-positive review time by 38%.',
-    '• Built Echo Voice-to-Roadmap & POM RAG Chatbot: end-to-end voice and retrieval-augmented generation (RAG) pipelines turning unstructured customer feedback and documents into prioritized product roadmaps.',
-    '• Built PrepVault MBA Finance & DCF Valuation Suite: local-first PWA with BYOK Groq AI integration, DCF & Market Multiples valuation models, and retail sensitivity forecasting.',
-    '• Led cross-functional product execution: improved enterprise cohort retention to 128% NDR and cut customer onboarding time by 40% through automated self-serve workflows.',
-    '• Core Skills: Product Management, Python, SQL, XGBoost, FastAPI, React, RAG / LLM Grounding, Financial Modeling (DCF), Risk & Fraud Analytics, A/B Testing.'
+    'Aastha Saini — Associate Product Manager · Analytics & AI Products (MBA Marketing & Analytics, NMIMS Hyderabad 2025–2027 | B.Tech ECE 2018–2022)',
+    '• Product Intern at TradeIndia.com (Apr 2026 – Jun 2026): Owned the end-to-end product lifecycle across 3 B2B marketplace product lines from user research and ideation through launch and iteration; authored 136 PRDs, BRDs, FSDs, user stories, and acceptance criteria shipped to production.',
+    '• AI & Computer Vision Delivery at TradeIndia: Managed a computer-vision pipeline for an agritech MVP integrating Sentinel-2 satellite imagery and Google Earth Engine APIs to automate tree-canopy detection, cutting FPO onboarding verification time by 40%.',
+    '• Growth, Funnel Analytics & User Discovery at TradeIndia: Conducted customer discovery interviews surfacing 55 bugs and feature gaps, prioritized the backlog with RICE and MoSCoW, and optimized core marketplace CTAs (PBR, Call Now, WhatsApp, Send Inquiry) across prod and pre-prod to drive a 10% increase in DAU and stronger retention.',
+    '• Analyst at HCLTech (Aug 2022 – May 2025, 2.8 years): Led end-to-end cross-functional implementation of an automated financial reporting system across finance and engineering teams, delivering a 60% cost reduction and improved accuracy across 3 departments.',
+    '• Data Automation & BI Dashboards at HCLTech: Spearheaded a Python & SQL ETL and data-collection automation initiative achieving a 15% efficiency gain (presented ROI business case to senior leadership) and built interactive Power BI and Tableau dashboards that improved financial response time by 25%.',
+    '• CSR Intern at Prudent Corporate Advisory Services (Jan 2026 – Feb 2026): Built an MIS Excel master tracker from scratch for FY 2026–27, compiled a verified 5-year CSR Impact Report, and drove 9+ retail/exhibition and college partnerships for Project Samarth.',
+    '• Shipped AI & Product Portfolio: Built Echo (Voice-to-Roadmap AI Copilot using Whisper ASR + LangChain RAG + transcript citation guardrails), Sentinel (Explainable Travel Booking Fraud & Risk Platform evaluated on 15,000 bookings at 83.9% precision), GhostCue (Stealth Electron + On-Device ASR Teleprompter), and PayEase (28-page Digital Payments PRD & GTM model).',
+    '• Availability & Notice Period: Can join IMMEDIATELY for remote roles (or remote-first transitions), and available full-time on-site (Work From Office) starting late June / July right after completing final MBA exams at NMIMS Hyderabad.',
+    '• Core Skills: Product Management, PRDs/BRDs/FSDs, User Stories, Agile/Scrum, Jira, Confluence, Figma, RICE & MoSCoW Prioritization, User Research, A/B & CTA Testing, SQL, Python, Power BI, Tableau, Excel, LLM Prompting, RAG, LangChain, Whisper ASR, Guardrail Design, React, FastAPI, REST APIs, CI/CD.'
   ].join('\n');
 
   const DEFAULT_SAMPLE_JD = [
-    'Role: Senior AI Product Manager / Applied AI Engineer',
-    'Responsibilities:',
-    '• Own end-to-end AI product strategy, roadmapping, and KPI delivery (retention, onboarding velocity, conversion).',
-    '• Partner with engineering and data science to ship low-latency LLM/RAG features and explainable ML risk models (Python, SQL, FastAPI, React).',
-    '• Drive data-informed decisions through A/B testing, cohort retention analysis, and financial ROI modeling.',
-    'Preferred / Bonus Qualifications:',
-    '• Experience with Kubernetes cluster administration, Rust kernel development, or Terraform multi-region infra.'
+    'Paste the target company Job Description (JD) here before your interview (or click 📥 Upload JD).',
+    '• Example Target Role: Associate Product Manager / Product Manager / AI Product Manager / Product Analyst',
+    '• Key Responsibilities: Own features end-to-end from requirement gathering (PRDs, BRDs, user stories, acceptance criteria) through sprint execution and release; collaborate with engineering, design, QA, and business teams; track product KPIs (DAU, retention, conversion); build AI-driven solutions using SQL, Python, APIs, and LLMs.'
   ].join('\n');
 
   const KNOWN_TECH_AND_DOMAIN_SKILLS = [
     'python', 'sql', 'xgboost', 'fastapi', 'react', 'rag', 'llm', 'product management',
     'roadmap', 'retention', 'onboarding', 'fraud', 'risk', 'dcf', 'valuation', 'finance',
-    'a/b testing', 'analytics', 'streamlit', 'langchain', 'electron', 'swift',
+    'a/b testing', 'analytics', 'streamlit', 'langchain', 'electron', 'swift', 'jira', 'confluence',
+    'figma', 'agile', 'scrum', 'power bi', 'tableau', 'whisper', 'prd', 'brd', 'api',
     'kubernetes', 'rust', 'terraform', 'golang', 'kafka', 'solidity', 'sap', 'cobol'
   ];
 
@@ -5109,6 +5115,7 @@ endstream endobj
         }
       }
       const data = {
+        seedVersion: IV_RESUME_SEED_VERSION,
         resume: ivResumeEl ? ivResumeEl.value : '',
         jd: ivJdEl ? ivJdEl.value : '',
         provider: ivProviderEl ? ivProviderEl.value : 'auto',
@@ -5124,8 +5131,15 @@ endstream endobj
       const raw = localStorage.getItem(IV_STORAGE_KEY);
       if (raw) {
         const data = JSON.parse(raw);
-        if (ivResumeEl && data.resume) ivResumeEl.value = data.resume;
-        if (ivJdEl && data.jd) ivJdEl.value = data.jd;
+        // Upgrade older synthetic placeholder resume to Aastha's real TradeIndia + HCLTech resume automatically
+        if (ivResumeEl && data.resume && data.seedVersion === IV_RESUME_SEED_VERSION) {
+          ivResumeEl.value = data.resume;
+        } else if (ivResumeEl) {
+          ivResumeEl.value = DEFAULT_SAMPLE_RESUME;
+        }
+        if (ivJdEl && data.jd && data.seedVersion === IV_RESUME_SEED_VERSION) {
+          ivJdEl.value = data.jd;
+        }
         if (ivProviderEl && data.provider) ivProviderEl.value = data.provider;
         if (ivApiKeyEl && typeof data.apiKey === 'string') ivApiKeyEl.value = sanitizeApiKey(data.apiKey);
       }
@@ -5339,6 +5353,23 @@ endstream endobj
         summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Behavioral STAR: High-Impact Challenge (Grounded in Resume)</div>` +
           `<div style="margin-bottom:6px;"><strong>Primary Story:</strong> "${escapeHtml(metricBullet)}"</div>` +
           (topBullet2 && topBullet2 !== metricBullet ? `<div><strong>Supporting Story:</strong> "${escapeHtml(topBullet2)}"</div>` : '')
+      };
+    }
+
+    // CASE B6b: Logistics / Notice Period / Joining Date / WFO vs. Remote Availability
+    if (/notice period|when can you join|joining date|start date|work from office|wfo|on-site|onsite|remote|relocat|availability|available to join/i.test(qLower)) {
+      const hudScript = [
+        `[SLIDE 1: 📅 AVAILABILITY — IMMEDIATE REMOTE OR LATE-JUNE ON-SITE]`,
+        `I can **start immediately in a remote capacity** while completing my final MBA trimester at NMIMS Hyderabad, which wraps up at the **end of June**.`,
+        `[PAUSE 2s] Starting **late June / early July**, I am **100% available for full-time, 5-days-a-week Work From Office** on-site.`,
+        `[SLOW DOWN] That means I can begin onboarding, owning PRDs, and contributing to sprints right away with zero ramp-up delay.`
+      ].join('\n');
+      return {
+        isGap: false,
+        hudScript,
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Joining Timeline &amp; WFO / Remote Bridge</div>` +
+          `<div style="margin-bottom:6px;"><strong>Immediate Remote Start:</strong> Available right now for remote onboarding, PRD authoring, and sprint execution.</div>` +
+          `<div><strong>Full-Time On-Site (WFO):</strong> Available full-time in-office starting end of June (as soon as final NMIMS MBA exams conclude).</div>`
       };
     }
 
@@ -5933,7 +5964,17 @@ endstream endobj
   if (loadSampleResumeJdBtn) {
     loadSampleResumeJdBtn.onclick = () => {
       if (ivResumeEl) ivResumeEl.value = DEFAULT_SAMPLE_RESUME;
-      if (ivJdEl) ivJdEl.value = DEFAULT_SAMPLE_JD;
+      window.saveInterviewSettings();
+    };
+  }
+
+  const clearJdBtn = document.getElementById('clearJdBtn');
+  if (clearJdBtn) {
+    clearJdBtn.onclick = () => {
+      if (ivJdEl) {
+        ivJdEl.value = '';
+        ivJdEl.focus();
+      }
       window.saveInterviewSettings();
     };
   }
