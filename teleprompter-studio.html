@@ -178,22 +178,25 @@
   /* Phase 2: Studio Mode Switcher Tabs & Interview Co-Pilot Workspace */
   .studio-mode-tabs {
     display: inline-flex;
+    align-items: center;
     background: rgba(37, 99, 235, 0.08);
     border: 1px solid rgba(37, 99, 235, 0.2);
     border-radius: 10px;
     padding: 3px;
     gap: 4px;
+    flex-shrink: 0;
   }
   .studio-tab-btn {
     border: none;
     background: transparent;
     color: #334155;
-    font-size: 11.5px;
+    font-size: 11px;
     font-weight: 700;
-    padding: 5px 12px;
+    padding: 5px 11px;
     border-radius: 7px;
     cursor: pointer;
     transition: all 0.15s ease;
+    white-space: nowrap;
   }
   .studio-tab-btn.active {
     background: #2563eb;
@@ -207,8 +210,8 @@
   }
   .interview-grid {
     display: none;
-    grid-template-columns: 315px 1fr 295px;
-    gap: 14px;
+    grid-template-columns: 280px minmax(0, 1fr) 270px;
+    gap: 12px;
     flex: 1;
     min-height: 0;
   }
@@ -219,26 +222,57 @@
     display: grid;
   }
   .iv-card {
-    background: rgba(255, 255, 255, 0.88);
-    border: 1px solid rgba(99, 102, 241, 0.22);
+    background: rgba(255, 255, 255, 0.94);
+    border: 1px solid rgba(99, 102, 241, 0.20);
     border-radius: 14px;
-    padding: 12px;
+    padding: 12px 14px;
     display: flex;
     flex-direction: column;
     gap: 8px;
     min-height: 0;
+    min-width: 0;
     overflow-y: auto;
+    overflow-x: hidden;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
+  }
+  .iv-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+    flex-shrink: 0;
+  }
+  .iv-section-title {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #1e3a8a;
+    white-space: nowrap;
+  }
+  .iv-field-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #334155;
+    flex-shrink: 0;
   }
   .iv-textarea {
     width: 100%;
-    min-height: 92px;
+    min-height: 82px;
+    max-height: 115px;
     resize: vertical;
     border: 1px solid rgba(148, 163, 184, 0.45);
     border-radius: 8px;
     padding: 7px 9px;
     font-family: 'Inter', -apple-system, sans-serif;
-    font-size: 11.5px;
-    line-height: 1.45;
+    font-size: 11px;
+    line-height: 1.42;
     color: #0f172a;
     background: #f8fafc;
   }
@@ -246,6 +280,85 @@
     outline: none;
     border-color: #6366f1;
     background: #ffffff;
+  }
+  .iv-question-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    min-width: 0;
+    flex-shrink: 0;
+  }
+  .iv-question-input {
+    flex: 1;
+    min-width: 0;
+    height: 34px;
+    border: 1.5px solid rgba(99, 102, 241, 0.35);
+    border-radius: 9px;
+    padding: 0 11px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #0f172a;
+    background: #ffffff;
+  }
+  .iv-question-input:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.14);
+  }
+  .iv-ask-btn {
+    flex-shrink: 0;
+    height: 34px;
+    padding: 0 13px;
+    border: none;
+    border-radius: 9px;
+    background: linear-gradient(135deg, #7c3aed, #4f46e5);
+    color: #ffffff;
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.28);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  .iv-ask-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.38);
+  }
+  .iv-chips-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .iv-q-chip {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    color: #334155;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.12s ease;
+  }
+  .iv-q-chip:hover {
+    background: #eef2ff;
+    border-color: #818cf8;
+    color: #312e81;
+  }
+  .iv-status-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 5px 10px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    flex-shrink: 0;
   }
   .iv-badge-grounded {
     display: inline-flex;
@@ -258,6 +371,7 @@
     background: #dcfce7;
     color: #166534;
     border: 1px solid #86efac;
+    white-space: nowrap;
   }
   .iv-badge-gap {
     display: inline-flex;
@@ -270,26 +384,29 @@
     background: #fef3c7;
     color: #92400e;
     border: 1px solid #fcd34d;
+    white-space: nowrap;
   }
   .iv-answer-preview {
     flex: 1;
+    min-height: 120px;
     background: #0f172a;
     color: #f8fafc;
     border-radius: 10px;
-    padding: 11px 13px;
+    padding: 12px 14px;
     font-size: 12.5px;
     line-height: 1.55;
     overflow-y: auto;
     border: 1px solid rgba(139, 92, 246, 0.4);
   }
   .iv-qa-history-item {
-    background: #f1f5f9;
-    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
     border-radius: 8px;
     padding: 6px 8px;
     font-size: 10.5px;
     color: #1e293b;
     cursor: pointer;
+    transition: all 0.12s ease;
   }
   .iv-qa-history-item:hover {
     border-color: #6366f1;
@@ -2105,30 +2222,29 @@
     <div class="interview-grid" id="interviewWorkspaceGrid">
       <!-- Column 1: Candidate Resume & Job Description Grounding Knowledge Base -->
       <div class="iv-card">
-        <div class="qd-col-header" style="margin-bottom:2px;">
-          <span class="qd-col-title">1. Resume &amp; Job Description</span>
+        <div class="iv-section-header">
+          <span class="iv-section-title">1. Resume &amp; Job Description</span>
           <span id="ivFactsBadge" class="iv-badge-grounded">✓ Grounded</span>
         </div>
 
-        <div style="display:flex;gap:5px;">
-          <label class="chip-btn" for="resumeFileUploadInput" style="flex:1;text-align:center;cursor:pointer;padding:5px 6px;font-size:10px;background:#eef2ff;border-color:#818cf8;color:#3730a3;font-weight:700;">
-            📄 Upload Resume (.PDF/.DOCX/.TXT)
-            <input type="file" id="resumeFileUploadInput" accept=".pdf,.docx,.doc,.txt,.md,.rtf" style="display:none" />
-          </label>
-          <button class="chip-btn" id="loadSampleResumeJdBtn" style="padding:5px 7px;font-size:10px;" title="Restore Aastha Saini's pre-loaded Resume">↺ My Resume</button>
-        </div>
-
-        <div style="font-size:10.5px;font-weight:700;color:#334155;display:flex;justify-content:space-between;">
-          <span>Candidate Resume / Experience</span>
-          <span id="resumeCharStat" style="color:#64748b;font-weight:500;">Loaded</span>
-        </div>
-        <textarea class="iv-textarea" id="interviewResumeInput" placeholder="Paste your resume or upload a PDF/DOCX above..."></textarea>
-
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px;">
-          <span style="font-size:10.5px;font-weight:700;color:#334155;">Target Job Description (JD)</span>
+        <div class="iv-field-label">
+          <span>Candidate Resume</span>
           <div style="display:flex;gap:4px;">
-            <button class="chip-btn" id="clearJdBtn" type="button" style="padding:2px 6px;font-size:9.5px;" title="Clear JD to paste a new company/role Job Description">🧹 Clear JD</button>
-            <label class="chip-btn" for="jdFileUploadInput" style="cursor:pointer;padding:2px 6px;font-size:9.5px;">
+            <label class="chip-btn" for="resumeFileUploadInput" style="cursor:pointer;padding:2px 7px;font-size:9.5px;background:#eef2ff;border-color:#818cf8;color:#3730a3;font-weight:700;" title="Upload .PDF, .DOCX, or .TXT Resume">
+              📄 Upload
+              <input type="file" id="resumeFileUploadInput" accept=".pdf,.docx,.doc,.txt,.md,.rtf" style="display:none" />
+            </label>
+            <button class="chip-btn" id="loadSampleResumeJdBtn" type="button" style="padding:2px 7px;font-size:9.5px;" title="Restore Aastha Saini's pre-loaded Resume">↺ My Resume</button>
+          </div>
+        </div>
+        <div id="resumeCharStat" style="font-size:9.5px;color:#64748b;margin-top:-4px;">Loaded</div>
+        <textarea class="iv-textarea" id="interviewResumeInput" placeholder="Paste your resume or click 📄 Upload above..."></textarea>
+
+        <div class="iv-field-label" style="margin-top:2px;">
+          <span>Target Job Description (JD)</span>
+          <div style="display:flex;gap:4px;">
+            <button class="chip-btn" id="clearJdBtn" type="button" style="padding:2px 7px;font-size:9.5px;" title="Clear JD to paste a new company/role Job Description">🧹 Clear</button>
+            <label class="chip-btn" for="jdFileUploadInput" style="cursor:pointer;padding:2px 7px;font-size:9.5px;" title="Upload .PDF, .DOCX, or .TXT Job Description">
               📥 Upload JD
               <input type="file" id="jdFileUploadInput" accept=".pdf,.docx,.doc,.txt,.md,.rtf" style="display:none" />
             </label>
@@ -2136,92 +2252,90 @@
         </div>
         <textarea class="iv-textarea" id="interviewJdInput" placeholder="Paste the target role Job Description (skills, responsibilities, requirements)..."></textarea>
 
-        <div id="ivSkillGapSummary" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:7px 9px;font-size:10.5px;color:#334155;line-height:1.4;">
-          <strong>Matched Role Skills:</strong> <span id="ivMatchedSkillsList">—</span><br/>
-          <strong>Honest Gap Alert (Not in Resume):</strong> <span id="ivMissingSkillsList" style="color:#b45309;">None detected</span>
+        <div id="ivSkillGapSummary" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:7px 9px;font-size:10px;color:#334155;line-height:1.45;margin-top:auto;">
+          <div><strong style="color:#0f172a;">Matched JD Skills:</strong> <span id="ivMatchedSkillsList" style="color:#047857;font-weight:600;">—</span></div>
+          <div style="margin-top:2px;"><strong style="color:#0f172a;">Gap Alert:</strong> <span id="ivMissingSkillsList" style="color:#b45309;">None detected</span></div>
         </div>
       </div>
 
       <!-- Column 2: Live Interviewer Question Listener + Grounded Answer Generator -->
       <div class="iv-card">
-        <div class="qd-col-header" style="margin-bottom:2px;">
-          <span class="qd-col-title">2. Live Interviewer Question &amp; Grounded Answer</span>
-          <div style="display:flex;gap:5px;align-items:center;">
-            <span id="ivLatencyBadge" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#4f46e5;font-weight:700;">⚡ Ready</span>
-            <button class="chip-btn" id="ivListenToggleBtn" onclick="toggleInterviewListening()" style="padding:4px 9px;font-size:10.5px;background:#ede9fe;border-color:#8b5cf6;color:#5b21b6;font-weight:700;">
-              🎙️ Listen to Interviewer: OFF
+        <div class="iv-section-header">
+          <span class="iv-section-title">2. Live Interviewer Question &amp; Answer</span>
+          <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
+            <span id="ivLatencyBadge" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#4f46e5;font-weight:700;white-space:nowrap;">⚡ Ready</span>
+            <button class="chip-btn" id="ivListenToggleBtn" onclick="toggleInterviewListening()" style="padding:3px 9px;font-size:10px;background:#ede9fe;border-color:#8b5cf6;color:#5b21b6;font-weight:700;white-space:nowrap;">
+              🎙️ Auto-Listen: OFF
             </button>
           </div>
         </div>
 
-        <!-- Live Question Input + Instant Trigger -->
-        <div style="display:flex;gap:6px;align-items:center;">
-          <input type="text" id="ivQuestionInput" class="script-title-input" value="Tell me about yourself and why you fit this role." placeholder="Interviewer question appears here live (or type/paste any question & press Enter)..." style="flex:1;font-size:12px;padding:7px 10px;background:#ffffff;" />
-          <button class="qd-btn qd-btn-primary" id="ivAskBtn" onclick="generateInterviewAnswerFromInput()" style="padding:6px 12px;font-size:11.5px;background:linear-gradient(135deg,#7c3aed,#4f46e5);">
+        <!-- Live Question Input + Instant Trigger (Never Clips!) -->
+        <div class="iv-question-bar">
+          <input type="text" id="ivQuestionInput" class="iv-question-input" value="Tell me about yourself and why you fit this role." placeholder="Interviewer question appears here live (or type/paste any question & press Enter)..." />
+          <button class="iv-ask-btn" id="ivAskBtn" onclick="generateInterviewAnswerFromInput()">
             ✨ Answer Now
           </button>
         </div>
 
         <!-- 1-Click Common, Behavioral & Open-Ended Interview Question Chips -->
-        <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;">
-          <span style="font-size:9.5px;font-weight:700;color:#64748b;">Quick Questions:</span>
-          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Tell me about yourself and walk me through your background.')">About Yourself</button>
-          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Why are you a good fit for this role?')">Why Good Fit?</button>
-          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Why MBA?')">Why MBA?</button>
-          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('What are your 3 main strengths?')">3 Strengths</button>
-          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('What is your biggest weakness and how are you working to improve it?')">My Weakness</button>
-          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Explain RICE and MoSCoW and when you would use one over the other.')">RICE vs MoSCoW</button>
-          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Tell me about a time you influenced or convinced a resistant stakeholder.')">Convince Stakeholder</button>
-          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Tell me about a failure or setback and what you learned.')">Setback / Failure</button>
-          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('How do you prioritize your time when multiple stakeholders have urgent needs?')">Multi-Priority</button>
-          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('Explain EchoPRD and PayEase.')">EchoPRD / PayEase</button>
-          <button class="chip-btn" style="padding:2px 6px;font-size:9.5px;" onclick="askPresetInterviewQuestion('When can you join full-time and are you available for on-site work from office vs remote?')">Joining / WFO</button>
+        <div class="iv-chips-wrap">
+          <span style="font-size:9.5px;font-weight:700;color:#64748b;margin-right:2px;">Prompts:</span>
+          <button class="iv-q-chip" onclick="askPresetInterviewQuestion('Tell me about yourself and walk me through your background.')">About Yourself</button>
+          <button class="iv-q-chip" onclick="askPresetInterviewQuestion('Why are you a good fit for this role?')">Why Good Fit?</button>
+          <button class="iv-q-chip" onclick="askPresetInterviewQuestion('Why MBA?')">Why MBA?</button>
+          <button class="iv-q-chip" onclick="askPresetInterviewQuestion('What are your 3 main strengths?')">3 Strengths</button>
+          <button class="iv-q-chip" onclick="askPresetInterviewQuestion('What is your biggest weakness and how are you working to improve it?')">My Weakness</button>
+          <button class="iv-q-chip" onclick="askPresetInterviewQuestion('Explain RICE and MoSCoW and when you would use one over the other.')">RICE vs MoSCoW</button>
+          <button class="iv-q-chip" onclick="askPresetInterviewQuestion('Tell me about a time you influenced or convinced a resistant stakeholder.')">Convince Stakeholder</button>
+          <button class="iv-q-chip" onclick="askPresetInterviewQuestion('Tell me about a failure or setback and what you learned.')">Setback / Failure</button>
+          <button class="iv-q-chip" onclick="askPresetInterviewQuestion('How do you prioritize your time when multiple stakeholders have urgent needs?')">Multi-Priority</button>
+          <button class="iv-q-chip" onclick="askPresetInterviewQuestion('Explain EchoPRD and PayEase.')">EchoPRD / PayEase</button>
+          <button class="iv-q-chip" onclick="askPresetInterviewQuestion('When can you join full-time and are you available for on-site work from office vs remote?')">Joining / WFO</button>
         </div>
 
         <!-- Grounding Verification Banner -->
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;background:#f1f5f9;border-radius:7px;font-size:10.5px;">
-          <span id="ivGroundingStatusBanner" class="iv-badge-grounded">✓ 100% Grounded in Uploaded Resume &amp; JD</span>
-          <button class="chip-btn" style="padding:2px 8px;font-size:9.5px;" onclick="pushInterviewAnswerToHud()">📺 Send to Notch HUD</button>
+        <div class="iv-status-strip">
+          <span id="ivGroundingStatusBanner" class="iv-badge-grounded">✓ 100% Grounded in Resume &amp; JD</span>
+          <button class="chip-btn" style="padding:3px 9px;font-size:10px;white-space:nowrap;font-weight:600;" onclick="pushInterviewAnswerToHud()">📺 Send to Notch HUD</button>
         </div>
 
         <!-- Live Spoken-Style Suggested Answer Preview -->
         <div class="iv-answer-preview" id="ivAnswerPreviewBox">
-          Click <strong>✨ Answer Now</strong>, pick a Quick Question chip above, or turn on <strong>🎙️ Listen to Interviewer</strong>. Suggested answers stream directly into your invisible webcam HUD so you can speak naturally while maintaining eye contact.
+          Click <strong>✨ Answer Now</strong>, pick a Prompt chip above, or speak a question with <strong>🟢 Auto-Listen: ON</strong>. Your structured, grounded answer streams directly into the webcam HUD so you can read naturally while maintaining eye contact.
         </div>
       </div>
 
       <!-- Column 3: AI Engine Settings (BYOK Groq/OpenAI/Gemini + Zero-Key Grounded Engine) & Q&A Log -->
       <div class="iv-card">
-        <div class="qd-col-header" style="margin-bottom:2px;">
-          <span class="qd-col-title">3. AI Engine &amp; Privacy</span>
+        <div class="iv-section-header">
+          <span class="iv-section-title">3. AI Engine &amp; Q&amp;A Log</span>
+          <span id="ivKeySavedStatus" style="font-size:9.5px;color:#059669;font-weight:700;white-space:nowrap;">🔒 Stored Locally</span>
         </div>
 
-        <div style="font-size:10.5px;font-weight:700;color:#334155;">Response Engine</div>
-        <select id="ivProviderSelect" class="script-title-input" style="font-size:11px;padding:5px 8px;background:#fff;" onchange="saveInterviewSettings()">
-          <option value="auto">⚡ Auto (Cloud LLM Stream if Key Set + Instant Local Grounded Engine)</option>
-          <option value="local">🛡️ Local Grounded STAR Engine Only (100% Offline · Zero Network · <15ms)</option>
-          <option value="groq">🚀 Groq Llama-3.3-70B Streaming (~220ms First Token)</option>
-          <option value="openai">🧠 OpenAI GPT-4o-mini Streaming</option>
-          <option value="gemini">✨ Google Gemini 2.0 Flash Streaming</option>
+        <div class="iv-field-label"><span>Response Engine</span></div>
+        <select id="ivProviderSelect" class="script-title-input" style="width:100%;font-size:11px;padding:5px 8px;background:#fff;" onchange="saveInterviewSettings()">
+          <option value="auto">⚡ Auto (Groq/Cloud Stream + Local)</option>
+          <option value="local">🛡️ Local Grounded Engine (&lt;15ms)</option>
+          <option value="groq">🚀 Groq Llama / GPT-OSS Stream</option>
+          <option value="openai">🧠 OpenAI GPT-4o-mini Stream</option>
+          <option value="gemini">✨ Google Gemini 2.0 Flash</option>
         </select>
 
-        <div style="font-size:10.5px;font-weight:700;color:#334155;display:flex;justify-content:space-between;align-items:center;">
-          <span>API Key (Groq <code>gsk_...</code> / OpenAI / Gemini)</span>
-          <span id="ivKeySavedStatus" style="font-size:9.5px;color:#059669;font-weight:700;">🔒 Stored Locally</span>
-        </div>
-        <div style="display:flex;gap:5px;align-items:center;">
-          <input type="password" id="ivApiKeyInput" class="script-title-input" placeholder="Paste gsk_... key here" style="flex:1;font-size:11px;padding:5px 8px;background:#fff;" oninput="saveInterviewSettings()" />
-          <button class="chip-btn" id="ivTestKeyBtn" onclick="testInterviewApiKey()" style="padding:5px 8px;font-size:10px;white-space:nowrap;font-weight:700;background:#eef2ff;border-color:#6366f1;color:#3730a3;" title="Verify your Groq/OpenAI/Gemini API key live">🔌 Test Key</button>
+        <div class="iv-field-label"><span>API Key (Groq / OpenAI / Gemini)</span></div>
+        <div style="display:flex;gap:5px;align-items:center;width:100%;">
+          <input type="password" id="ivApiKeyInput" class="script-title-input" placeholder="Paste gsk_... key" style="flex:1;min-width:0;font-size:11px;padding:5px 8px;background:#fff;" oninput="saveInterviewSettings()" />
+          <button class="chip-btn" id="ivTestKeyBtn" onclick="testInterviewApiKey()" style="padding:5px 8px;font-size:10px;white-space:nowrap;font-weight:700;background:#eef2ff;border-color:#6366f1;color:#3730a3;flex-shrink:0;" title="Verify your Groq/OpenAI/Gemini API key live">🔌 Test</button>
         </div>
         <div id="ivApiErrorBanner" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:7px;padding:6px 8px;font-size:10px;color:#991b1b;line-height:1.35;"></div>
 
-        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:7px 9px;font-size:10px;color:#1e3a8a;line-height:1.4;">
-          <strong>Anti-Hallucination &amp; Honesty Guardrail:</strong> Answers strictly cite facts from your uploaded Resume. If the interviewer asks about a tool or skill not in your resume, GhostCue explicitly flags the gap and gives you an honest, pivot-focused response.
+        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:6px 8px;font-size:9.8px;color:#1e3a8a;line-height:1.38;">
+          <strong>Anti-Hallucination Guardrail:</strong> Cites only facts from your Resume. Flags unlisted tools honestly instead of inventing experience.
         </div>
 
-        <div style="font-size:10.5px;font-weight:700;color:#334155;margin-top:2px;">Recent Interview Q&amp;A History</div>
-        <div id="ivHistoryList" style="display:flex;flex-direction:column;gap:5px;flex:1;overflow-y:auto;min-height:70px;">
-          <div style="font-size:10.5px;color:#64748b;text-align:center;padding:10px 4px;">Asked questions will appear here for 1-click review.</div>
+        <div class="iv-field-label" style="margin-top:2px;"><span>Recent Interview Q&amp;A History</span></div>
+        <div id="ivHistoryList" style="display:flex;flex-direction:column;gap:5px;flex:1;overflow-y:auto;min-height:65px;">
+          <div style="font-size:10px;color:#64748b;text-align:center;padding:8px 4px;">Asked questions appear here for 1-click review.</div>
         </div>
       </div>
     </div>
@@ -5937,8 +6051,8 @@ endstream endobj
     await generateInterviewAnswer(currentQ);
     if (testBtn) {
       const ok = !errBanner || errBanner.style.display === 'none';
-      testBtn.textContent = ok ? '✓ Groq Live!' : '⚠️ Retry';
-      setTimeout(() => { testBtn.textContent = '🔌 Test Key'; }, 1800);
+      testBtn.textContent = ok ? '✓ Live!' : '⚠️ Retry';
+      setTimeout(() => { testBtn.textContent = '🔌 Test'; }, 1800);
     }
   };
 
@@ -5960,7 +6074,7 @@ endstream endobj
   window.toggleInterviewListening = function(forceState) {
     ivListening = typeof forceState === 'boolean' ? forceState : !ivListening;
     if (ivListenBtn) {
-      ivListenBtn.textContent = ivListening ? '🟢 Listening to Interviewer: ON' : '🎙️ Listen to Interviewer: OFF';
+      ivListenBtn.textContent = ivListening ? '🟢 Auto-Listen: ON' : '🎙️ Auto-Listen: OFF';
       ivListenBtn.style.background = ivListening ? '#dcfce7' : '#ede9fe';
       ivListenBtn.style.borderColor = ivListening ? '#10b981' : '#8b5cf6';
       ivListenBtn.style.color = ivListening ? '#065f46' : '#5b21b6';
