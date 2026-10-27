@@ -2547,11 +2547,13 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
   // LocalStorage Persistence Engine
   const STORAGE_KEY = 'ghostcue_studio_state_v1';
 
+  let isShowingInterviewAnswerOnHud = false;
+
   function saveStateToStorage() {
     if (document.body.classList.contains('overlay-only-mode')) return;
     try {
       const current = SCRIPTS.find(s => s.id === currentScriptId);
-      if (current) {
+      if (current && !isShowingInterviewAnswerOnHud) {
         current.content = scriptEditorEl.value;
         if (scriptTitleInput) current.title = scriptTitleInput.value;
       }
@@ -2726,6 +2728,7 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
     currentScriptId = id;
     const found = SCRIPTS.find(s => s.id === id) || SCRIPTS[0];
     if (found) {
+      isShowingInterviewAnswerOnHud = false;
       currentScriptId = found.id;
       scriptEditorEl.value = found.content;
       if (scriptTitleInput) scriptTitleInput.value = found.title;
@@ -2757,9 +2760,10 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
   }
 
   // Parse Script & Render Inside Notch HUD
-  function parseAndRenderHud() {
+  function parseAndRenderHud(customRawText) {
+    const rawSource = typeof customRawText === 'string' ? customRawText : scriptEditorEl.value;
     // Normalize inline [SLIDE N] tags onto their own line so mid-line insertions always work
-    const normalizedRaw = scriptEditorEl.value
+    const normalizedRaw = rawSource
       .replace(/([^\n])\s*(\[SLIDE\s*\d*(?:[:\s-][^\]]*)?\])/gi, '$1\n$2')
       .replace(/(\[SLIDE\s*\d*(?:[:\s-][^\]]*)?\])\s*([^\n])/gi, '$1\n$2');
     const lines = normalizedRaw.split('\n').filter(l => l.trim().length > 0);
@@ -2843,7 +2847,10 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
         const firstWord = div.querySelector('.script-word');
         if (firstWord && firstWord.dataset.wordIdx !== undefined) {
           spokenWordIndex = parseInt(firstWord.dataset.wordIdx, 10);
+          lastHighlightedWordIdx = -1;
+          updateWordHighlightClasses(spokenWordIndex);
         }
+        resetVoiceTranscriptTracker(true);
         window.__voiceTargetScrollY = scrollY;
         updateActiveEyeline();
         broadcastState('SCROLL_SYNC', { scrollY, spokenWordIndex });
@@ -3273,7 +3280,22 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
         hudModeStatus.textContent = '⏸ Voice Flow Paused · Click ▶ Play to Resume Speech Sync';
       }
     } else {
-      resetVoiceTranscriptTracker();
+      const words = cachedScriptWords.length ? cachedScriptWords : hudScrollTrack.querySelectorAll('.script-word');
+      const maxScroll = getMaxScroll();
+      if (words.length > 0 && (spokenWordIndex >= words.length - 1 || (maxScroll > 20 && scrollY >= maxScroll - 4))) {
+        scrollY = 0;
+        spokenWordIndex = 0;
+        window.__voiceTargetScrollY = 0;
+        lastHighlightedWordIdx = -1;
+        hudScrollTrack.style.transform = 'translateY(0px)';
+        setSlide(0, false);
+        updateActiveEyeline();
+      }
+      if (words.length > 0) {
+        lastHighlightedWordIdx = -1;
+        updateWordHighlightClasses(spokenWordIndex);
+      }
+      resetVoiceTranscriptTracker(true);
       setOverlayVisible(true);
       console.log('__GHOSTCUE_IPC__:SHOW_OVERLAY');
       console.log('__GHOSTCUE_IPC__:VOICE_MODE_START');
@@ -3289,7 +3311,6 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
         }
         hudModeStatus.textContent = '🎯 Interview AI Active · Speak Script or Ask Question';
       } else {
-        const words = cachedScriptWords.length ? cachedScriptWords : hudScrollTrack.querySelectorAll('.script-word');
         const nextWord = words[spokenWordIndex] ? words[spokenWordIndex].textContent : '';
         hudModeStatus.textContent = nextWord
           ? `🎙️ Voice Flow Ready · Speak "${nextWord}..." to Advance`
@@ -3363,6 +3384,9 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
     cachedScriptWords.forEach(w => {
       w.classList.remove('spoken', 'current-word');
     });
+    if ((scrollMode === 'voice' || scrollMode === 'interview') && !isVoicePaused && cachedScriptWords.length > 0) {
+      updateWordHighlightClasses(0);
+    }
     setSlide(0, false);
     updateActiveEyeline();
     broadcastState('RESET');
@@ -3401,8 +3425,10 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
       const slideFirstWord = marker ? marker.nextElementSibling && marker.nextElementSibling.querySelector('.script-word') : hudScrollTrack.querySelector('.script-word');
       if (slideFirstWord && slideFirstWord.dataset.wordIdx !== undefined) {
         spokenWordIndex = parseInt(slideFirstWord.dataset.wordIdx, 10);
+        lastHighlightedWordIdx = -1;
+        updateWordHighlightClasses(spokenWordIndex);
       }
-      resetVoiceTranscriptTracker();
+      resetVoiceTranscriptTracker(true);
       hudScrollTrack.style.transform = `translateY(${-scrollY}px)`;
       updateActiveEyeline();
       // An explicit jump consumes a [PAUSE] sitting on the landing line instead of re-freezing on it
@@ -3418,11 +3444,34 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
     '6': 'six', '7': 'seven', '8': 'eight', '9': 'nine', '10': 'ten',
     '11': 'eleven', '12': 'twelve', '13': 'thirteen', '14': 'fourteen', '15': 'fifteen',
     '16': 'sixteen', '17': 'seventeen', '18': 'eighteen', '19': 'nineteen', '20': 'twenty',
-    '22': 'twentytwo', '30': 'thirty', '34': 'thirtyfour', '40': 'forty',
-    '42': 'fortytwo', '45': 'fortyfive', '50': 'fifty', '58': 'fiftyeight', '60': 'sixty',
-    '70': 'seventy', '74': 'seventyfour', '80': 'eighty', '90': 'ninety',
-    '100': 'hundred', '128': 'onehundredtwentyeight', '1000': 'thousand'
+    '22': 'twentytwo', '25': 'twentyfive', '28': 'twentyeight', '30': 'thirty', '34': 'thirtyfour',
+    '40': 'forty', '42': 'fortytwo', '45': 'fortyfive', '50': 'fifty', '55': 'fiftyfive',
+    '58': 'fiftyeight', '60': 'sixty', '70': 'seventy', '74': 'seventyfour', '80': 'eighty',
+    '90': 'ninety', '100': 'hundred', '128': 'onehundredtwentyeight', '136': 'onehundredthirtysix',
+    '500': 'fivehundred', '1000': 'thousand'
   };
+
+  function numberToSpokenWords(rawText) {
+    const clean = String(rawText || '').toLowerCase().replace(/[,$%+bmk]/g, '').trim();
+    if (!/^\d+(\.\d+)?$/.test(clean)) return '';
+    if (NUMBER_WORDS_MAP[clean]) return NUMBER_WORDS_MAP[clean];
+    const ones = ['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'];
+    const tens = ['','','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'];
+    const convertInt = (n) => {
+      if (n < 20) return ones[n] || '';
+      if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? ones[n % 10] : '');
+      if (n < 1000) return ones[Math.floor(n / 100)] + 'hundred' + (n % 100 ? convertInt(n % 100) : '');
+      if (n < 10000) return convertInt(Math.floor(n / 1000)) + 'thousand' + (n % 1000 ? convertInt(n % 1000) : '');
+      return String(n);
+    };
+    if (clean.includes('.')) {
+      const [intPart, decPart] = clean.split('.');
+      const intWords = convertInt(parseInt(intPart, 10) || 0);
+      const decWords = decPart.split('').map(d => ones[parseInt(d, 10)] || '').join('');
+      return intWords + 'point' + decWords;
+    }
+    return convertInt(parseInt(clean, 10));
+  }
 
   function normalizeTokenForMatch(raw) {
     if (!raw) return '';
@@ -3451,9 +3500,21 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
     const t = normalizeTokenForMatch(scriptRawText);
     if (!s || !t) return false;
     if (s === t) return true;
-    // Match digits vs spoken number words (e.g., "40%" <-> "40" or "forty", "5" <-> "five")
+    // Match digits vs spoken number words (e.g., "40%" <-> "40" or "forty", "55" <-> "fiftyfive")
     if (NUMBER_WORDS_MAP[t] && NUMBER_WORDS_MAP[t] === s) return true;
     if (NUMBER_WORDS_MAP[s] && NUMBER_WORDS_MAP[s] === t) return true;
+    const numWords = numberToSpokenWords(scriptRawText);
+    if (numWords && (numWords === s || (s.length >= 4 && numWords.endsWith(s)))) return true;
+    // If script token is hyphenated or slash-separated (e.g. "cross-functional", "end-to-end", "Python/SQL"),
+    // match if the spoken token matches its final component or any >=4-char component
+    if (/[-–—/]/.test(String(scriptRawText || ''))) {
+      const subParts = String(scriptRawText).split(/[-–—/]+/).map(normalizeTokenForMatch).filter(Boolean);
+      if (subParts.length > 1) {
+        const lastPart = subParts[subParts.length - 1];
+        if (s === lastPart && lastPart.length >= 3) return true;
+        if (!strictExact && subParts.some(p => p.length >= 4 && p === s)) return true;
+      }
+    }
     if (strictExact) return false;
     // Prefix/stem match only for words >= 5 chars sharing at least 5 leading chars (e.g. "onboarding" vs "onboard", "organizations" vs "organization")
     if (s.length >= 5 && t.length >= 5 && s.slice(0, 5) === t.slice(0, 5) && Math.abs(s.length - t.length) <= 3) {
@@ -3515,16 +3576,23 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
   let lastTranscriptRaw = '';
   let prevTranscriptTokens = [];
   let consumedTranscriptLen = 0;
+  let sessionBaselineTokens = [];
   const COMMON_FILLER_WORDS = new Set([
     'the', 'a', 'an', 'to', 'of', 'in', 'and', 'is', 'it', 'on', 'for', 'with',
     'that', 'this', 'at', 'by', 'from', 'or', 'as', 'be', 'are', 'was', 'we', 'our', 'you', 'your'
   ]);
 
-  function resetVoiceTranscriptTracker() {
+  function resetVoiceTranscriptTracker(preserveSessionPrefix = true) {
     phraseMatchedWords = 0;
     lastTranscriptRaw = '';
-    prevTranscriptTokens = [];
-    consumedTranscriptLen = 0;
+    if (preserveSessionPrefix && prevTranscriptTokens.length > 0) {
+      sessionBaselineTokens = prevTranscriptTokens.slice();
+      consumedTranscriptLen = prevTranscriptTokens.length;
+    } else {
+      sessionBaselineTokens = [];
+      prevTranscriptTokens = [];
+      consumedTranscriptLen = 0;
+    }
   }
 
   window.onNativeTranscript = function(transcriptText) {
@@ -3552,14 +3620,30 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
       .filter(Boolean);
     if (!rawTokens.length) return;
 
-    // Detect if SFSpeechRecognizer started a new session (transcript length shrank significantly)
-    if (rawTokens.length + 2 < prevTranscriptTokens.length) {
+    // Check if this transcript is a continuation of a pre-reset/pre-jump SFSpeechRecognizer buffer
+    if (sessionBaselineTokens.length > 0) {
+      let isSameSessionPrefix = rawTokens.length >= sessionBaselineTokens.length;
+      if (isSameSessionPrefix) {
+        for (let k = 0; k < sessionBaselineTokens.length; k++) {
+          if (rawTokens[k] !== sessionBaselineTokens[k]) {
+            isSameSessionPrefix = false;
+            break;
+          }
+        }
+      }
+      if (isSameSessionPrefix) {
+        consumedTranscriptLen = Math.max(consumedTranscriptLen, sessionBaselineTokens.length);
+      } else {
+        sessionBaselineTokens = [];
+        consumedTranscriptLen = 0;
+      }
+    } else if (rawTokens.length + 2 < prevTranscriptTokens.length) {
+      // SFSpeechRecognizer started a new session (transcript length shrank significantly)
       consumedTranscriptLen = 0;
     }
 
     // Only process newly spoken tokens (or revised final token) that haven't been consumed yet
     const startTokIdx = Math.max(0, Math.min(consumedTranscriptLen, rawTokens.length - 1));
-    const newTokens = rawTokens.slice(startTokIdx);
     prevTranscriptTokens = rawTokens;
 
     // If the exact same token count & last word already matched on the previous partial callback, do not re-advance!
@@ -3572,7 +3656,7 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
 
     for (let tIdx = startTokIdx; tIdx < rawTokens.length; tIdx++) {
       const spokenWord = rawTokens[tIdx];
-      const prevSpokenWord = tIdx > 0 ? rawTokens[tIdx - 1] : null;
+      const prevSpokenWord = (tIdx > 0 && tIdx - 1 >= sessionBaselineTokens.length) ? rawTokens[tIdx - 1] : null;
       const isFiller = COMMON_FILLER_WORDS.has(spokenWord) || spokenWord.length <= 2;
 
       let matchedScriptIdx = -1;
@@ -3582,6 +3666,27 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
         matchedScriptIdx = spokenWordIndex;
       } else if (!isFiller && spokenWordIndex + 1 < words.length && tokensMatch(spokenWord, words[spokenWordIndex + 1].textContent)) {
         matchedScriptIdx = spokenWordIndex + 1;
+      }
+
+      // Priority 1B: Joined compound/hyphenated word or multi-word number at spokenWordIndex..+1
+      // (e.g. "cross" + "functional" -> "cross-functional", "end" + "to" + "end" -> "end-to-end", "fifty" + "five" -> "55")
+      if (matchedScriptIdx === -1 && spokenWordIndex < words.length) {
+        const recentJoined2 = prevSpokenWord ? (prevSpokenWord + spokenWord) : '';
+        const recentJoined3 = tIdx >= 2 ? (rawTokens[tIdx - 2] + rawTokens[tIdx - 1] + spokenWord) : '';
+        const recentJoined4 = rawTokens.slice(Math.max(0, tIdx - 4), tIdx + 1).filter(w => w !== 'and').join('');
+        for (let look = 0; look <= 1 && (spokenWordIndex + look) < words.length; look++) {
+          const rawScriptTxt = words[spokenWordIndex + look].textContent;
+          const targetClean = normalizeTokenForMatch(rawScriptTxt);
+          const targetNumWords = numberToSpokenWords(rawScriptTxt);
+          if (targetClean && (targetClean === recentJoined2 || targetClean === recentJoined3)) {
+            matchedScriptIdx = spokenWordIndex + look;
+            break;
+          }
+          if (targetNumWords && (recentJoined4.includes(targetNumWords) || targetNumWords.endsWith(spokenWord))) {
+            matchedScriptIdx = spokenWordIndex + look;
+            break;
+          }
+        }
       }
 
       // Priority 2: 2-word consecutive phrase match within a bounded 8-word window (allows skipping up to a short clause)
@@ -4257,6 +4362,9 @@ Third, our primary bottleneck for Q4 is **solutions engineering capacity** in EM
   document.getElementById('hudHeaderCloseBtn').onclick = (e) => {
     e.stopPropagation();
     togglePlay(false);
+    if (scrollMode === 'voice' || scrollMode === 'interview') {
+      setVoicePaused(true, true);
+    }
     setOverlayVisible(false);
     console.log('__GHOSTCUE_IPC__:HIDE_OVERLAY');
     broadcastState('OVERLAY_VISIBILITY', { visible: false });
@@ -4903,6 +5011,7 @@ endstream endobj
   }
 
   scriptEditorEl.addEventListener('input', () => {
+    isShowingInterviewAnswerOnHud = false;
     // If user starts typing when library is empty (0 scripts), automatically create a script entry for them
     if (SCRIPTS.length === 0 && scriptEditorEl.value.trim().length > 0) {
       const autoId = 'custom-' + Date.now();
@@ -5149,13 +5258,14 @@ endstream endobj
       applyStealthProtectionUi(Boolean(payload.enabled), false);
     } else if (type === 'INTERVIEW_QA_SYNC') {
       if (payload.hudScript) {
-        scriptEditorEl.value = payload.hudScript;
+        isShowingInterviewAnswerOnHud = true;
         scrollY = 0;
         spokenWordIndex = 0;
         window.__voiceTargetScrollY = 0;
+        resetVoiceTranscriptTracker(true);
         hudScrollTrack.style.transform = 'translateY(0px)';
         setOverlayVisible(true);
-        parseAndRenderHud();
+        parseAndRenderHud(payload.hudScript);
         hudModeStatus.textContent = payload.isGap
           ? '⚠️ Honest Gap Response Ready · Speak Naturally'
           : '🎯 Grounded Interview Answer Ready · Speak Naturally';
@@ -5218,15 +5328,15 @@ endstream endobj
   // PHASE 2: AI-POWERED REAL-TIME INTERVIEW CO-PILOT (GROUNDED RAG + STREAMING)
   // ============================================================================
   const IV_STORAGE_KEY = 'ghostcue_interview_v1';
-  const IV_RESUME_SEED_VERSION = 'aastha_real_resume_v4';
+  const IV_RESUME_SEED_VERSION = 'aastha_real_resume_v5';
   const DEFAULT_SAMPLE_RESUME = [
-    'Aastha Saini — MBA in Marketing & Analytics (NMIMS Hyderabad, 2025–2027) | B.Tech in Electronics & Communication Engineering (2018–2022)',
-    '• Product Intern at TradeIndia.com (Apr 2026 – Jun 2026): Owned the product lifecycle across 3 product lines on both buyer and seller sides. Conducted task-based user journey interviews and found 55 bugs, friction points, and feature gaps. Worked on CTA optimization (Call Now, WhatsApp, PBR, Send Inquiry) which drove a 10% increase in DAU and improved retention (also proved to leadership with data that fixing unpaid user friction supports long-term paid conversion). Prioritized with RICE (numeric order) and MoSCoW (v1 scope cutoff); wrote 136 PRDs, BRDs, FSDs, and use-case diagrams; managed a Sentinel-2 + Google Earth Engine computer-vision pipeline cutting FPO onboarding verification time by 40%.',
-    '• Analyst at HCLTech (Aug 2022 – May 2025, 2.8 years): Led end-to-end implementation of an automated reporting system spanning finance and engineering, cutting reporting costs by 60% and improving accuracy across 3 departments. Overcame initial engineering resistance by building an ROI analysis showing engineering\'s own downstream time savings, not just finance\'s. Managed timeline/resources for a data automation initiative (+15% efficiency), automated data collection with Python (−15% time), built Power BI and Tableau dashboards (+25% response speed), and used Jira and ServiceNow.',
+    'Aastha Saini — MBA in Marketing, Finance & Analytics (NMIMS Hyderabad, 2025–2027) | B.Tech in Electronics & Communication Engineering (2018–2022)',
+    '• Product Intern at TradeIndia.com (Apr 2026 – Jun 2026): Owned the product roadmap and lifecycle across 3 product lines on both buyer and seller sides. Conducted task-based user journey interviews and found 55 bugs, friction points, and feature gaps. Worked on CTA & A/B testing funnel optimization (Call Now, WhatsApp, PBR, Send Inquiry) which drove a 10% increase in DAU and improved retention (also proved to leadership with data that fixing unpaid user friction supports long-term paid conversion). Prioritized with RICE (numeric order) and MoSCoW (v1 scope cutoff); wrote 136 PRDs, BRDs, FSDs, user stories, wireframes (Figma/Confluence), and use-case diagrams in Agile/Scrum sprints; managed a Sentinel-2 + Google Earth Engine computer-vision API pipeline cutting FPO onboarding verification time by 40%.',
+    '• Analyst at HCLTech (Aug 2022 – May 2025, 2.8 years): Led end-to-end implementation of an automated reporting system spanning finance and engineering, cutting reporting costs by 60% and improving accuracy across 3 departments. Overcame initial engineering resistance by building an ROI analysis showing engineering\'s own downstream time savings, not just finance\'s. Managed timeline/resources for a data automation initiative (+15% efficiency), automated data collection with Python and SQL (−15% time), built Power BI and Tableau dashboards (+25% response speed), and collaborated in Agile workflows using Jira, Confluence, and ServiceNow.',
     '• CSR Intern at Prudent Corporate Advisory Services (Jan 2026 – Feb 2026): Built an MIS Excel master dashboard from scratch for FY 2026–27, compiled a 5-year CSR Impact Report, and led the Project Samarth exhibition—coordinating 5+ colleges and the Central Bank of India\'s Chief Manager (front-loading the slowest-moving stakeholder first) and exploring 9+ retail partnerships.',
     '• NMIMS Placement Committee & Leadership: Student Representative on the Placement Committee—building recruiter relationships, coordinating end-to-end interview scheduling, and leading the data vertical. Finance & Marketing core team for college fest (2 years); conducted rural computer-literacy sessions (HCL Committee & Rotary Club).',
-    '• Independent Projects & Hackathons: Built EchoPRD (Whisper ASR + LangChain RAG + vector search copilot that turns user interviews into cited, confidence-scored RICE/MoSCoW backlogs and refuses to guess when evidence is missing), PayEase (28-page PRD for India\'s $500B+ digital payments market with UPI, merchant analytics, multilingual Tier-2/3 support, API specs, and 18-month GTM), Sentinel (Explainable Travel Risk Platform at 83.9% precision), and ReturnProof (Aspire For Her × Logitech Women Who Master Hackathon 2026 National Finalist, 3rd in Hyderabad Zonal Round). Published smart-home Cisco Packet Tracer paper (ICEESC 2021).',
-    '• Certifications & Accolades: Won HCL Annual Hackathon & earned 2x HCL Spot Awards; Bloomberg Markets Analyst (BMC), Financial Markets Analyst (Finlatics), Google Data Analytics Professional Certificate (2024), Microsoft Power BI Data Analyst Associate (2023).',
+    '• Independent Projects & Hackathons: Built EchoPRD (Whisper ASR + LangChain RAG + LLM vector search copilot that turns user interviews into cited, confidence-scored RICE/MoSCoW backlogs and refuses to guess when evidence is missing), PayEase (28-page PRD for India\'s $500B+ digital payments market with UPI, merchant analytics, multilingual Tier-2/3 support, API specs, and 18-month GTM roadmap), Sentinel (Explainable Travel Risk & Fraud/Anomaly Scoring Platform at 83.9% precision), and ReturnProof (Aspire For Her × Logitech Women Who Master Hackathon 2026 National Finalist, 3rd in Hyderabad Zonal Round). Published smart-home Cisco Packet Tracer paper (ICEESC 2021).',
+    '• Certifications & Accolades: Won HCL Annual Hackathon & earned 2x HCL Spot Awards; Bloomberg Markets Analyst (BMC — DCF, valuation & financial markets), Financial Markets Analyst (Finlatics), Google Data Analytics Professional Certificate (2024), Microsoft Power BI Data Analyst Associate (2023).',
     '• Availability: Immediate joiner for remote roles (zero notice period); available full-time on-site (Work From Office / field / relocation) starting end of June right after final MBA exams at NMIMS Hyderabad.'
   ].join('\n');
 
@@ -5237,11 +5347,18 @@ endstream endobj
   ].join('\n');
 
   const KNOWN_TECH_AND_DOMAIN_SKILLS = [
-    'python', 'sql', 'xgboost', 'fastapi', 'react', 'rag', 'llm', 'product management',
-    'roadmap', 'retention', 'onboarding', 'fraud', 'risk', 'dcf', 'valuation', 'finance',
-    'a/b testing', 'analytics', 'streamlit', 'langchain', 'electron', 'swift', 'jira', 'confluence',
+    'python', 'sql', 'rag', 'llm', 'product management',
+    'roadmap', 'retention', 'onboarding', 'risk', 'dcf', 'valuation', 'finance',
+    'a/b testing', 'analytics', 'langchain', 'jira', 'confluence',
     'figma', 'agile', 'scrum', 'power bi', 'tableau', 'whisper', 'prd', 'brd', 'api',
     'kubernetes', 'rust', 'terraform', 'golang', 'kafka', 'solidity', 'sap', 'cobol'
+  ];
+
+  // Specialized hard technical tools that should trigger an Honest Gap pivot when absent from the candidate's resume
+  const STRICT_UNLISTED_TECH_GAPS = [
+    'kubernetes', 'terraform', 'rust', 'golang', 'kafka', 'solidity', 'sap', 'cobol',
+    'cassandra', 'cuda', 'verilog', 'fpga', 'snowflake', 'databricks', 'c++', 'ruby on rails',
+    'angular', 'vue.js', 'react native', 'kotlin', 'xgboost', 'fastapi', 'streamlit'
   ];
 
   let ivListening = false;
@@ -5271,6 +5388,11 @@ endstream endobj
     if (tBtn) tBtn.classList.toggle('active', !isIv);
     if (iBtn) iBtn.classList.toggle('active', isIv);
     try { localStorage.setItem('ghostcue_active_tab', tab); } catch (e) {}
+    if (!isIv && isShowingInterviewAnswerOnHud) {
+      isShowingInterviewAnswerOnHud = false;
+      parseAndRenderHud();
+      broadcastState('SCRIPT_UPDATE', { content: scriptEditorEl.value });
+    }
     if (isIv && !fromInit) {
       // Automatically turn on Interviewer Question Listener when the user explicitly clicks the AI Interview Co-Pilot tab
       togglePlay(false);
@@ -5394,10 +5516,12 @@ endstream endobj
   function buildLocalGroundedInterviewAnswer(question, resumeText, jdText) {
     const qClean = String(question || '').trim();
     const qLower = qClean.toLowerCase();
-    const facts = extractStructuredFacts(resumeText, jdText);
+    const effectiveResume = (resumeText && String(resumeText).trim().length > 10) ? resumeText : DEFAULT_SAMPLE_RESUME;
+    const effectiveJd = (jdText && String(jdText).trim().length > 10) ? jdText : DEFAULT_SAMPLE_JD;
+    const facts = extractStructuredFacts(effectiveResume, effectiveJd);
 
-    // 1. Check if the question asks about a specific technology/skill NOT present in the user's resume
-    const mentionedUnlistedSkills = KNOWN_TECH_AND_DOMAIN_SKILLS.filter(skill => {
+    // 1. Check if the question asks about a specific hard technology/tool NOT present in the user's resume
+    const mentionedUnlistedSkills = STRICT_UNLISTED_TECH_GAPS.filter(skill => {
       const regex = new RegExp(`\\b${skill.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
       return regex.test(qLower) && !facts.resLower.includes(skill);
     });
@@ -5509,19 +5633,37 @@ endstream endobj
       };
     }
 
-    // CASE B_WHY_MBA: "Why MBA?" / "Why did you decide to do an MBA?" / "Why switch from engineering/analytics to MBA/Product/Business?"
-    if (/why.*mba|why did you.*mba|why switch from|why product|why transition/i.test(qLower)) {
+    // CASE B_WHY_MBA: "Why MBA?" / "Why did you decide to do an MBA?" / "Why did you leave HCLTech?" / "Why switch from engineering/analytics to MBA/Product/Business?"
+    if (/why.*mba|why did you.*mba|why switch from|why product|why transition|why.*leave.*hcl|why.*left.*hcl|why.*quit.*hcl|why.*leave.*last/i.test(qLower)) {
       const hudScript = [
-        `[SLIDE 1: 🎓 WHY MBA / WHY THIS TRANSITION]`,
-        `After my B.Tech, I worked as an **Analyst at HCLTech**, where I led a project automating reporting between finance and engineering and presented the business case to leadership.`,
+        `[SLIDE 1: 🎓 WHY MBA / WHY I TRANSITIONED FROM HCLTECH]`,
+        `After my B.Tech, I worked for **2.8 years as an Analyst at HCLTech**, where I led a project automating reporting between finance and engineering (−60% cost) and presented the business case to leadership.`,
         `[PAUSE 2s] That's when I realized I enjoyed the **business and product side** more — understanding the **'why' behind decisions** and working directly with stakeholders.`,
-        `[SLOW DOWN] Winning the **HCL hackathon** and earning **two spot awards** gave me the confidence that I could think beyond pure engineering, so I pursued my MBA at **NMIMS** to pair formal strategy and product skills with my technical foundation.`
+        `[SLOW DOWN] Winning the **HCL hackathon** and earning **two spot awards** gave me the confidence that I could think beyond pure engineering, so I left to pursue my full-time **MBA at NMIMS Hyderabad** and pair strategy and product ownership with my technical foundation.`
       ].join('\n');
       return {
         isGap: false,
         hudScript,
-        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ "Why MBA?" — Grounded in Your HCLTech Story</div>` +
-          `<div><strong>Story:</strong> Leading the finance-engineering automation business case at HCLTech (+ Hackathon win &amp; 2 spot awards) sparked the move to understand the 'why' behind decisions via an MBA.</div>`
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ "Why MBA / Why Leave HCLTech?" — Grounded in Your HCLTech Story</div>` +
+          `<div><strong>Story:</strong> Leading the finance-engineering automation business case at HCLTech (+ Hackathon win &amp; 2 spot awards) sparked the move to pursue a full-time MBA at NMIMS Hyderabad.</div>`
+      };
+    }
+
+    // CASE B_WHY_COMPANY: "Why do you want to join our company?" / "Why this company?" / "What excites you about us?"
+    if (/why.*join.*company|why.*this company|why.*our company|why.*work here|why.*us\b|what excites you about/i.test(qLower)) {
+      const hudScript = [
+        `[SLIDE 1: 🎯 WHY THIS COMPANY & ROLE]`,
+        `**Three things.** **First**, the problems you're solving around ${matchedRoleSkillsStr} sit right at the intersection of what I've shipped — owning **3 product lines and 136 PRDs at TradeIndia** (+10% DAU) and automating **Python/SQL** workflows at **HCLTech** (−60% cost).`,
+        `[PAUSE 2s] **Second**, I thrive in high-ownership environments where product, data, and business outcomes connect directly to customer retention and revenue.`,
+        `[SLOW DOWN] **Third**, with my **NMIMS MBA**, **Bloomberg/Finlatics** grounding, and AI builds like **EchoPRD**, I can contribute from day one without a steep ramp-up.`
+      ].join('\n');
+      return {
+        isGap: false,
+        hudScript,
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ "Why This Company?" — Tailored to Target JD</div>` +
+          `<div style="margin-bottom:4px;"><strong>First:</strong> Direct alignment with JD focus (${escapeHtml(facts.matchedSkills.slice(0, 4).join(', ').toUpperCase() || 'Product & Analytics')}) + TradeIndia &amp; HCLTech proof.</div>` +
+          `<div style="margin-bottom:4px;"><strong>Second:</strong> High-ownership culture connecting product, data, and revenue/retention.</div>` +
+          `<div><strong>Third:</strong> Day-one readiness combining ECE + HCLTech + TradeIndia + NMIMS MBA.</div>`
       };
     }
 
@@ -5799,6 +5941,57 @@ endstream endobj
       };
     }
 
+    // CASE B6c: Data / SQL / Metrics / KPIs / A/B Testing / Valuation Decision-Making
+    if (/\bsql\b|data.*decision|used data|metrics|kpi|a\/b test|experiment|funnel|dcf|valuation|financial model/i.test(qLower)) {
+      const hudScript = [
+        `[SLIDE 1: 📊 DATA, SQL & METRICS-DRIVEN DECISIONS]`,
+        `**Three examples.** **First**, at **TradeIndia**, I analyzed buyer-seller funnel drop-offs across **55 user journey gaps** on **Call Now, WhatsApp, PBR, and Send Inquiry** CTAs — prioritizing fixes with **RICE** to lift **DAU by 10%** and proving with data that fixing unpaid friction lifts long-term paid conversion.`,
+        `[PAUSE 2s] **Second**, at **HCLTech**, I used **Python, SQL, Power BI, and Tableau** to automate cross-department reporting — cutting costs by **60%** and speeding up stakeholder response times by **25%**.`,
+        `[SLOW DOWN] **Third**, I pair product analytics with financial rigour from my **NMIMS MBA, Bloomberg BMC, Finlatics, and Google Data Analytics** certifications.`
+      ].join('\n');
+      return {
+        isGap: false,
+        hudScript,
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Data, SQL &amp; Metrics Decision Story (TradeIndia + HCLTech)</div>` +
+          `<div style="margin-bottom:4px;"><strong>First (Product Funnel Data):</strong> TradeIndia 55 user journey gaps &amp; CTA optimization → +10% DAU &amp; conversion proof.</div>` +
+          `<div style="margin-bottom:4px;"><strong>Second (SQL/Python/Power BI):</strong> HCLTech reporting automation (−60% cost, +25% response speed).</div>` +
+          `<div><strong>Third (Financial &amp; Analytics Grounding):</strong> NMIMS MBA + Bloomberg + Finlatics + Google Data Analytics.</div>`
+      };
+    }
+
+    // CASE B6d: Agile / Scrum / PRD Writing / Requirement Gathering / Figma / Jira / Confluence
+    if (/\bagile\b|\bscrum\b|write a prd|gather requirement|user stories|acceptance criteria|figma|confluence|sprint/i.test(qLower)) {
+      const hudScript = [
+        `[SLIDE 1: 📋 PRDS, AGILE EXECUTION & REQUIREMENT GATHERING]`,
+        `At **TradeIndia**, I wrote **136 PRDs, BRDs, FSDs, and use-case diagrams** across **3 product lines** — starting from task-based user journey interviews, translating friction points into clear user stories and acceptance criteria, and prioritizing with **RICE and MoSCoW**.`,
+        `[PAUSE 2s] I also authored a **28-page end-to-end PRD for PayEase** (covering user research, wireframes, API specs, and an 18-month GTM) and built **EchoPRD** to automate cited RICE/MoSCoW backlogs from raw interviews.`,
+        `[SLOW DOWN] Across **TradeIndia and HCLTech**, I worked daily in **Agile sprints** with engineering and design using **Jira, Confluence, and Figma** to ship on time.`
+      ].join('\n');
+      return {
+        isGap: false,
+        hudScript,
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ PRD Authoring &amp; Agile Execution (136 PRDs + PayEase + EchoPRD)</div>` +
+          `<div style="margin-bottom:4px;"><strong>TradeIndia:</strong> 136 PRDs, BRDs, FSDs &amp; use-case diagrams across 3 product lines (+10% DAU).</div>` +
+          `<div style="margin-bottom:4px;"><strong>PayEase &amp; EchoPRD:</strong> 28-page fintech PRD + AI voice-to-PRD copilot.</div>` +
+          `<div><strong>Agile Workflow:</strong> Daily sprint execution with engineers &amp; designers via Jira, Confluence &amp; Figma.</div>`
+      };
+    }
+
+    // CASE B6e: Salary / Compensation Expectations
+    if (/salary|compensation|ctc|pay expectation|package/i.test(qLower)) {
+      const hudScript = [
+        `[SLIDE 1: 💼 COMPENSATION EXPECTATIONS]`,
+        `I'm primarily focused on the **scope of ownership and impact** in this role, and I'm comfortable with compensation aligned with your standard post-MBA band for candidates bringing **2.8 years of HCLTech experience** plus hands-on product delivery at **TradeIndia**.`,
+        `[PAUSE 2s] Happy to align on the exact structure once we discuss the full compensation breakdown and growth milestones.`
+      ].join('\n');
+      return {
+        isGap: false,
+        hudScript,
+        summaryHtml: `<div style="color:#86efac;font-weight:700;margin-bottom:6px;">✓ Compensation &amp; CTC Answer</div>` +
+          `<div><strong>Approach:</strong> Anchors on role ownership + 2.8 years HCLTech + TradeIndia PM experience + NMIMS MBA within the company's standard band.</div>`
+      };
+    }
+
     // CASE B7: Open-Ended — "Do you have any questions for us?" (Reverse Interview Questions)
     if (/questions for us|questions for me|anything.*ask us|your questions/i.test(qLower)) {
       const hudScript = [
@@ -6025,15 +6218,16 @@ endstream endobj
   window.pushInterviewAnswerToHud = function(customHudScript) {
     const textToPush = customHudScript || ivCurrentHudsonScript;
     if (!textToPush) return;
-    scriptEditorEl.value = textToPush;
+    isShowingInterviewAnswerOnHud = true;
     scrollY = 0;
     spokenWordIndex = 0;
     window.__voiceTargetScrollY = 0;
+    resetVoiceTranscriptTracker(true);
     hudScrollTrack.style.transform = 'translateY(0px)';
     setOverlayVisible(true);
     console.log('__GHOSTCUE_IPC__:SHOW_OVERLAY');
-    parseAndRenderHud();
-    broadcastState('SCRIPT_UPDATE', { content: textToPush });
+    parseAndRenderHud(textToPush);
+    broadcastState('INTERVIEW_QA_SYNC', { hudScript: textToPush, isGap: false });
     broadcastState('SCROLL_SYNC', { scrollY: 0, spokenWordIndex: 0 });
   };
 
