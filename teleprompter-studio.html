@@ -2318,7 +2318,7 @@
       <div class="iv-card">
         <div class="iv-section-header">
           <span class="iv-section-title">3. AI Engine &amp; Q&amp;A Log</span>
-          <span id="ivKeySavedStatus" style="font-size:9.5px;color:#059669;font-weight:700;white-space:nowrap;">🔒 Stored Locally</span>
+          <span id="ivKeySavedStatus" class="iv-badge-grounded" style="flex-shrink:0;">✓ Active</span>
         </div>
 
         <div class="iv-field-label"><span>Response Engine</span></div>
@@ -5262,16 +5262,10 @@ endstream endobj
       }
       const keyStatusEl = document.getElementById('ivKeySavedStatus');
       if (keyStatusEl) {
-        if (cleanKey.startsWith('gsk_')) {
-          keyStatusEl.textContent = '✓ Groq Key Active (' + cleanKey.slice(0, 7) + '…)';
-        } else if (cleanKey.startsWith('AIza')) {
-          keyStatusEl.textContent = '✓ Gemini Key Active';
-        } else if (cleanKey.startsWith('sk-')) {
-          keyStatusEl.textContent = '✓ OpenAI Key Active';
-        } else if (cleanKey.length > 8) {
-          keyStatusEl.textContent = '✓ API Key Saved (' + cleanKey.slice(0, 5) + '…)';
+        if (cleanKey.length > 8) {
+          keyStatusEl.textContent = '✓ Cloud Active';
         } else {
-          keyStatusEl.textContent = '🔒 Offline Mode (No Key)';
+          keyStatusEl.textContent = '🔒 Offline Mode';
         }
       }
       const data = {
